@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BarberQ: A Smart Digital Queue Management System</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,400&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div id="app">
+
+<!-- ═══════════════ LANDING ═══════════════ -->
+<div class="screen active" id="s-land">
+
+  <div class="scroll" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100%;padding:40px 24px;text-align:center;position:relative;overflow:hidden">
+
+    <div class="glow-gold"></div>
+    <div class="glow-cyan"></div>
+
+    <div style="font-size:64px;margin-bottom:12px;filter:drop-shadow(0 0 20px rgba(245,200,66,.3))">✂️</div>
+
+    <div style="font-size:56px;font-weight:800;letter-spacing:-2px;line-height:1;margin-bottom:10px;font-family:'Syne',sans-serif">
+      Barber<span style="color:var(--gold)"> - Q</span>
+    </div>
+
+    <p style="color:var(--txt2);font-size:16px;max-width:260px;line-height:1.6;margin-bottom:48px">
+      Skip the wait. Book your barber in real-time.
+    </p>
+
+    <div style="width:100%;max-width:340px;display:flex;flex-direction:column;gap:12px">
+
+      <button class="btn btn-gold btn-full" style="height:54px;font-size:16px" onclick="go('s-auth')">
+        Get Started
+      </button>
+
+      <button class="btn btn-outline btn-full" style="height:54px;font-size:16px" onclick="demoAs('customer')">
+        👤 Demo as Customer
+      </button>
+
+      <button class="btn btn-outline btn-full" style="height:54px;font-size:16px" onclick="demoAs('barber')">
+        ✂️ Demo as Barber
+      </button>
+
+    </div>
+
+    <div style="margin-top:52px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;width:100%;max-width:300px">
+
+      <div>
+        <div style="font-size:26px;font-weight:800;color:var(--gold);font-family:'Syne',sans-serif">2.4k+</div>
+        <div style="font-size:12px;color:var(--txt2)">Barbers</div>
+      </div>
+
+      <div>
+        <div style="font-size:26px;font-weight:800;color:var(--gold);font-family:'Syne',sans-serif">18k+</div>
+        <div style="font-size:12px;color:var(--txt2)">Customers</div>
+      </div>
+
+      <div>
+        <div style="font-size:26px;font-weight:800;color:var(--gold);font-family:'Syne',sans-serif">4.9★</div>
+        <div style="font-size:12px;color:var(--txt2)">Rating</div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ═══════════════ AUTH ═══════════════ -->
+<div class="screen" id="s-auth">
+
+  <div class="nav">
+    <button class="nav-back" onclick="go('s-land')">← Back</button>
+    <span></span>
+    <span></span>
+  </div>
+
+  <div class="scroll" style="display:flex;flex-direction:column;justify-content:center;padding:32px 24px">
+
+    <div style="max-width:360px;width:100%;margin:0 auto">
+
+      <div id="auth-p1">
+
+        <div style="font-size:28px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:8px">
+          Enter your phone
+        </div>
+
+        <p style="color:var(--txt2);margin-bottom:32px;font-size:14px">
+          We'll send a one-time verification code
+        </p>
+
+        <label>Phone Number</label>
+
+        <div style="display:flex;gap:8px;margin-bottom:24px">
+
+          <select class="inp" style="width:88px">
+            <option>+91</option>
+            <option>+1</option>
+            <option>+44</option>
+            <option>+971</option>
+          </select>
+
+          <input class="inp" id="ph" type="tel" placeholder="98765 43210" style="flex:1">
+
+        </div>
+
+        <button class="btn btn-gold btn-full" style="height:52px" onclick="sendOtp()">
+          Send OTP
+        </button>
+
+      </div>
+
+
+      <div id="auth-p2" style="display:none">
+
+        <div style="font-size:28px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:8px">
+          Verify OTP
+        </div>
+
+        <p style="color:var(--txt2);margin-bottom:8px;font-size:14px">
+          Code sent to
+          <strong id="ph-show" style="color:var(--txt)"></strong>
+        </p>
+
+        <!--<div style="background:var(--gdim);border:1px solid var(--gold);border-radius:var(--r);padding:10px 14px;font-size:13px;color:var(--gold);margin-bottom:24px">
+          Use code <strong>1234</strong> to continue
+        </div>-->
+
+        <div id="otp-message"
+     style="background:var(--gdim);
+            border:1px solid var(--gold);
+            border-radius:var(--r);
+            padding:10px 14px;
+            font-size:13px;
+            color:var(--gold);
+            margin-bottom:24px;">
+    Your OTP is being generated...
+</div>
+
+        <div class="otp-wrap" id="otp-row">
+
+          <input class="otp-box" maxlength="1" id="o0"
+          oninput="otpFwd(this,0)"
+          onkeydown="otpBack(this,0,event)">
+
+          <input class="otp-box" maxlength="1" id="o1"
+          oninput="otpFwd(this,1)"
+          onkeydown="otpBack(this,1,event)">
+
+          <input class="otp-box" maxlength="1" id="o2"
+          oninput="otpFwd(this,2)"
+          onkeydown="otpBack(this,2,event)">
+
+          <input class="otp-box" maxlength="1" id="o3"
+          oninput="otpFwd(this,3)"
+          onkeydown="otpBack(this,3,event)">
+
+        </div>
+
+        <button class="btn btn-gold btn-full" style="height:52px;margin-top:24px" onclick="verifyOtp()">
+          Verify &amp; Continue
+        </button>
+
+        <button class="btn btn-ghost btn-full" style="margin-top:8px"
+        onclick="showEl('auth-p1');hideEl('auth-p2')">
+          ← Change Number
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ═══════════════ ROLE ═══════════════ -->
+<div class="screen" id="s-role">
+
+  <div class="nav">
+    <button class="nav-back" onclick="go('s-auth')">← Back</button>
+    <span></span>
+    <span></span>
+  </div>
+
+  <div class="scroll" style="display:flex;flex-direction:column;justify-content:center;padding:32px 24px">
+
+    <div style="max-width:360px;width:100%;margin:0 auto">
+
+      <div style="font-size:28px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:6px">
+        Who are you?
+      </div>
+
+      <p style="color:var(--txt2);margin-bottom:36px;font-size:14px">
+        Choose how you'd like to use Barber - Q
+      </p>
+
+      <div style="display:flex;flex-direction:column;gap:14px">
+
+        <div class="glass"
+        style="padding:24px;cursor:pointer;transition:all .2s;border:2px solid transparent"
+        onclick="demoAs('customer')"
+        onmouseenter="this.style.borderColor='var(--gold)'"
+        onmouseleave="this.style.borderColor='transparent'">
+
+          <div style="font-size:44px;margin-bottom:10px">👤</div>
+
+          <div style="font-size:20px;font-weight:700;font-family:'Syne',sans-serif;margin-bottom:6px">
+            Customer
+          </div>
+
+          <p style="color:var(--txt2);font-size:14px;line-height:1.5">
+            Find nearby barbers, join queues remotely, and track your turn live.
+          </p>
+
+        </div>
+
+
+        <div class="glass"
+        style="padding:24px;cursor:pointer;transition:all .2s;border:2px solid transparent"
+        onclick="demoAs('barber')"
+        onmouseenter="this.style.borderColor='var(--cyan)'"
+        onmouseleave="this.style.borderColor='transparent'">
+
+          <div style="font-size:44px;margin-bottom:10px">✂️</div>
+
+          <div style="font-size:20px;font-weight:700;font-family:'Syne',sans-serif;margin-bottom:6px">
+            Barber / Shop Owner
+          </div>
+
+          <p style="color:var(--txt2);font-size:14px;line-height:1.5">
+            Manage your live queue, track customers, and grow your business.
+          </p>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ═══════════════ CUSTOMER DASHBOARD ═══════════════ -->
+<div class="screen" id="s-cust">
+
+  <div class="nav">
+
+    <div class="nav-brand">
+      Barber <span>- Q</span>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:10px">
+
+      <span style="font-size:13px;color:var(--txt2)">
+        📍 Lucknow
+      </span>
+
+     <!--- <div class="av"
+      style="width:36px;height:36px;background:var(--gdim);border:2px solid var(--gold);color:var(--gold);font-size:14px;cursor:pointer"
+      onclick="openProfile()">
+        A
+      </div>-->
+
+
+
+      <div class="av" 
+id="top-avatar"
+style="width:36px;height:36px;background:var(--gdim);border:2px solid var(--gold);color:var(--gold);font-size:14px;cursor:pointer" 
+onclick="openProfile()"> 
+  C
+</div>
+
+    </div>
+
+  </div>
+
+
+  <div class="scroll pad pad-b" id="cust-home">
+
+    <div style="padding:8px 0 18px">
+
+      <div style="font-size:22px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:2px">
+        Find a Barber 🔍
+      </div>
+
+      <div style="color:var(--txt2);font-size:13px">
+        Showing shops near Hazratganj
+      </div>
+
+    </div>
+
+    <input class="inp"
+    placeholder="Search barber shops..."
+    style="margin-bottom:16px">
+
+    <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:18px">
+
+      <span class="tag tg" style="cursor:pointer">All</span>
+      <span class="tag tgray" style="cursor:pointer">⭐ Top Rated</span>
+      <span class="tag tgray" style="cursor:pointer">📍 Nearby</span>
+      <span class="tag tgray" style="cursor:pointer">⚡ Open Now</span>
+
+    </div>
+
+    <div id="shop-list"></div>
+
+  </div>
+
+
+  <div class="scroll pad pad-b fadein" id="cust-queue" style="display:none">
+
+    <div style="font-size:22px;font-weight:800;font-family:'Syne',sans-serif;padding:8px 0 18px">
+      My Queue Status
+    </div>
+
+    <div id="my-q"></div>
+
+  </div>
+
+
+  <div class="tabs" id="c-tabs">
+
+    <button class="tab on" onclick="cTab('home',this)">
+      <span class="tab-ico">🏠</span>
+      Home
+    </button>
+
+    <button class="tab" onclick="cTab('queue',this)">
+      <span class="tab-ico">🎫</span>
+      My Queue
+    </button>
+
+    <button class="tab" onclick="openProfile()">
+      <span class="tab-ico">👤</span>
+      Profile
+    </button>
+
+  </div>
+
+</div>
+
+
+<!-- ═══════════════ SHOP DETAIL ═══════════════ -->
+<div class="screen" id="s-shop">
+
+  <div class="nav">
+
+    <button class="nav-back" onclick="go('s-cust')">
+      ← Back
+    </button>
+
+    <div id="sh-title"
+    style="font-weight:700;font-size:15px;font-family:'Syne',sans-serif">
+    </div>
+
+    <span></span>
+
+  </div>
+
+  <div class="scroll pad pad-b" id="sh-body"></div>
+
+</div>
+
+
+<!-- ═══════════════ BARBER DASHBOARD ═══════════════ -->
+<div class="screen" id="s-barb">
+
+  <div class="nav">
+
+    <div class="nav-brand">
+      Barber<span> - Q</span>
+      <span style="font-size:12px;font-weight:400;color:var(--txt2)">
+        Pro
+      </span>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:10px">
+
+      <span id="shop-status"
+      class="tag tgreen pulse"
+      style="cursor:pointer"
+      onclick="toggleShop()">
+        ● Open
+      </span>
+
+      <div class="av"
+      style="width:36px;height:36px;background:var(--cdim);border:2px solid var(--cyan);color:var(--cyan);font-size:14px;cursor:pointer"
+      onclick="openProfile()">
+        R
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <div class="scroll pad pad-b" id="b-queue-tab">
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
+
+      <div class="stat">
+        <div style="font-size:20px;margin-bottom:4px">👥</div>
+        <div class="stat-n" style="color:var(--gold)" id="b-inq">6</div>
+        <div class="stat-l">In Queue</div>
+      </div>
+
+      <div class="stat">
+        <div style="font-size:20px;margin-bottom:4px">✅</div>
+        <div class="stat-n" style="color:var(--green)" id="b-done">8</div>
+        <div class="stat-l">Done Today</div>
+      </div>
+
+      <div class="stat">
+
+        <div style="font-size:20px;margin-bottom:4px">💰</div>
+
+        <div class="stat-n"
+        style="font-size:20px;color:var(--gold)"
+        id="b-earn">
+          ₹1,840
+        </div>
+
+        <div class="stat-l">Today's Earnings</div>
+
+        <div class="pbar">
+          <div class="pfill" style="width:61%"></div>
+        </div>
+
+      </div>
+
+      <div class="stat">
+
+        <div style="font-size:20px;margin-bottom:4px">⏱️</div>
+
+        <div class="stat-n" id="b-wait">
+          28
+        </div>
+
+        <div class="stat-l">
+          Avg Wait (min)
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <div style="font-size:18px;font-weight:700;font-family:'Syne',sans-serif;margin-bottom:14px">
+      Live Queue
+    </div>
+
+    <div id="b-qlist"></div>
+
+    <button class="btn btn-outline btn-full"
+    style="margin-top:4px"
+    onclick="addDemoCustomer()">
+      + Add Walk-in Customer
+    </button>
+
+  </div>
+
+
+  <div class="scroll pad pad-b"
+  id="b-svc-tab"
+  style="display:none">
+
+    <div style="font-size:20px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:18px">
+      Services
+    </div>
+
+    <div id="b-svclist"></div>
+
+    <button class="btn btn-outline btn-full"
+    style="margin-top:12px"
+    onclick="openModal('m-svc')">
+      + Add Service
+    </button>
+
+  </div>
+
+
+  <div class="scroll pad pad-b"
+  id="b-analytics-tab"
+  style="display:none">
+
+    <div style="font-size:20px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:18px">
+      Analytics
+    </div>
+
+    <div id="b-analytics"></div>
+
+  </div>
+
+
+  <div class="tabs" id="b-tabs">
+
+    <button class="tab on"
+    onclick="bTab('queue',this)">
+      <span class="tab-ico">📋</span>
+      Queue
+    </button>
+
+    <button class="tab"
+    onclick="bTab('svc',this)">
+      <span class="tab-ico">✂️</span>
+      Services
+    </button>
+
+    <button class="tab"
+    onclick="bTab('analytics',this)">
+      <span class="tab-ico">📊</span>
+      Analytics
+    </button>
+
+    <button class="tab"
+    onclick="openProfile()">
+      <span class="tab-ico">👤</span>
+      Profile
+    </button>
+
+  </div>
+
+</div>
+
+
+<!-- ═══════════════ PROFILE ═══════════════ -->
+<div class="screen" id="s-prof">
+
+  <div class="nav">
+
+    <button class="nav-back" onclick="go(S.prev)">
+      ← Back
+    </button>
+
+    <div style="font-weight:700;font-family:'Syne',sans-serif">
+      Profile
+    </div>
+
+    <span></span>
+
+  </div>
+
+  <div class="scroll pad" id="prof-body"></div>
+
+</div>
+
+
+<!-- ═══════════════ MODALS ═══════════════ -->
+
+<!-- Join Queue -->
+<div class="overlay" id="m-join">
+
+  <div class="modal">
+
+    <div style="font-size:20px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:18px">
+      Join Queue
+    </div>
+
+    <label style="margin-bottom:10px">
+      Select a Service
+    </label>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px"
+    id="m-svcs"></div>
+
+    <div style="background:var(--s2);border-radius:var(--r);padding:16px;margin-bottom:18px">
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+
+        <span style="color:var(--txt2);font-size:14px">
+          Your token number
+        </span>
+
+        <span class="tag tg" id="m-tok">
+          #7
+        </span>
+
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center">
+
+        <span style="color:var(--txt2);font-size:14px">
+          Est. waiting time
+        </span>
+
+        <span style="color:var(--gold);font-weight:600" id="m-wait">
+          ~28 min
+        </span>
+
+      </div>
+
+    </div>
+
+
+    <div style="display:flex;gap:10px">
+
+      <button class="btn btn-outline"
+      style="flex:1"
+      onclick="closeModal('m-join')">
+        Cancel
+      </button>
+
+      <button class="btn btn-gold"
+      style="flex:1"
+      onclick="confirmJoin()">
+        Confirm & Join ✓
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- Success -->
+<div class="overlay" id="m-ok">
+
+  <div class="modal" style="text-align:center">
+
+    <div style="font-size:60px;margin-bottom:12px">
+      🎉
+    </div>
+
+    <div style="font-size:24px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:6px">
+      You're in the Queue!
+    </div>
+
+    <p style="color:var(--txt2);font-size:14px;margin-bottom:22px" id="ok-sub">
+      Token #7 · ~28 min wait
+    </p>
+
+    <div style="background:var(--gdim);border:2px solid var(--gold);border-radius:var(--rl);padding:24px;margin-bottom:20px">
+
+      <div style="font-size:12px;color:var(--txt2);margin-bottom:4px">
+        Your Token
+      </div>
+
+      <div style="font-size:76px;font-weight:800;font-family:'Syne',sans-serif;color:var(--gold);line-height:1"
+      id="ok-tok">
+        7
+      </div>
+
+      <div style="font-size:14px;color:var(--txt2);margin-top:6px"
+      id="ok-svc">
+        Hair Cut
+      </div>
+
+    </div>
+
+    <p style="font-size:13px;color:var(--txt2);margin-bottom:20px">
+      We'll notify you when your turn is near. Feel free to step out!
+    </p>
+
+    <button class="btn btn-gold btn-full"
+    onclick="closeModal('m-ok');cTab('queue',null)">
+      View My Queue Status →
+    </button>
+
+  </div>
+
+</div>
+
+
+<!-- Add Service -->
+<div class="overlay" id="m-svc">
+
+  <div class="modal">
+
+    <div style="font-size:20px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:18px">
+      Add Service
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:20px">
+
+      <div>
+        <label>Service Name</label>
+        <input class="inp" id="sn" placeholder="e.g. Hair Cut">
+      </div>
+
+      <div>
+        <label>Price (₹)</label>
+        <input class="inp" id="sp" type="number" placeholder="250" min="0">
+      </div>
+
+      <div>
+        <label>Duration (minutes)</label>
+        <input class="inp" id="sd" type="number" placeholder="20" min="5">
+      </div>
+
+      <div>
+        <label>Emoji Icon</label>
+        <input class="inp" id="se" placeholder="💇" maxlength="2" value="💇">
+      </div>
+
+    </div>
+
+    <div style="display:flex;gap:10px">
+
+      <button class="btn btn-outline"
+      style="flex:1"
+      onclick="closeModal('m-svc')">
+        Cancel
+      </button>
+
+      <button class="btn btn-gold"
+      style="flex:1"
+      onclick="addSvc()">
+        Add Service
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- Rate Shop -->
+<div class="overlay" id="m-rate">
+
+  <div class="modal" style="text-align:center">
+
+    <div style="font-size:20px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:6px">
+      Rate Your Experience
+    </div>
+
+    <p style="color:var(--txt2);font-size:14px;margin-bottom:20px"
+    id="rate-shop-name">
+      Royal Cuts
+    </p>
+
+    <div style="display:flex;justify-content:center;gap:4px;margin-bottom:16px"
+    id="star-row">
+
+      <button class="star-btn" onclick="setStar(1)">☆</button>
+      <button class="star-btn" onclick="setStar(2)">☆</button>
+      <button class="star-btn" onclick="setStar(3)">☆</button>
+      <button class="star-btn" onclick="setStar(4)">☆</button>
+      <button class="star-btn" onclick="setStar(5)">☆</button>
+
+    </div>
+
+    <textarea class="inp"
+    id="rate-txt"
+    rows="3"
+    placeholder="Share your experience (optional)"
+    style="resize:none;margin-bottom:16px"></textarea>
+
+    <div style="display:flex;gap:10px">
+
+      <button class="btn btn-outline"
+      style="flex:1"
+      onclick="closeModal('m-rate')">
+        Skip
+      </button>
+
+      <button class="btn btn-gold"
+      style="flex:1"
+      onclick="submitRating()">
+        Submit Rating
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- Toast -->
+<div id="toast">
+  <span id="t-ico">✅</span>
+  <span id="t-msg">Done</span>
+</div>
+
+
+</div>
+
+<script src="script.js"></script>
+
+</body>
+</html>
