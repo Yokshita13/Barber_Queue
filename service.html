@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BarberQ: A Smart Digital Queue Management System</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,400&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <!-- Add Service -->
+    <div class="overlay" id="m-svc">
+
+        <div class="modal">
+
+            <div style="font-size:20px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:18px">
+                Add Service
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:20px">
+
+                <div>
+                    <label>Service Name</label>
+                    <input class="inp" id="sn" placeholder="e.g. Hair Cut">
+                </div>
+
+                <div>
+                    <label>Price (₹)</label>
+                    <input class="inp" id="sp" type="number" placeholder="250" min="0">
+                </div>
+
+                <div>
+                    <label>Duration (minutes)</label>
+                    <input class="inp" id="sd" type="number" placeholder="20" min="5">
+                </div>
+
+                <div>
+                    <label>Emoji Icon</label>
+                    <input class="inp" id="se" placeholder="💇" maxlength="2" value="💇">
+                </div>
+
+            </div>
+
+            <div style="display:flex;gap:10px">
+
+                <button class="btn btn-outline" style="flex:1" onclick="closeModal('m-svc')">
+                    Cancel
+                </button>
+
+                <button class="btn btn-gold" style="flex:1" onclick="addSvc()">
+                    Add Service
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <script src="script.js"></script>
+</body>
+
+</html>

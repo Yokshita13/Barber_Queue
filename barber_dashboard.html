@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BarberQ: A Smart Digital Queue Management System</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,400&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <!-- <div class="screen" id="s-barb">
+
+        <div class="nav">
+
+            <div class="nav-brand">
+                Barber<span> - Q</span>
+                <span style="font-size:12px;font-weight:400;color:var(--txt2)">
+                    Pro
+                </span>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:10px">
+
+                <span id="shop-status" class="tag tgreen pulse" style="cursor:pointer" onclick="toggleShop()">
+                    ● Open
+                </span>
+
+                <div class="av"
+                    style="width:36px;height:36px;background:var(--cdim);border:2px solid var(--cyan);color:var(--cyan);font-size:14px;cursor:pointer"
+                    onclick="openProfile()">
+                    R
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="scroll pad pad-b" id="b-queue-tab">
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
+
+                <div class="stat">
+                    <div style="font-size:20px;margin-bottom:4px">👥</div>
+                    <div class="stat-n" style="color:var(--gold)" id="b-inq">6</div>
+                    <div class="stat-l">In Queue</div>
+                </div>
+
+                <div class="stat">
+                    <div style="font-size:20px;margin-bottom:4px">✅</div>
+                    <div class="stat-n" style="color:var(--green)" id="b-done">8</div>
+                    <div class="stat-l">Done Today</div>
+                </div>
+
+                <div class="stat">
+
+                    <div style="font-size:20px;margin-bottom:4px">💰</div>
+
+                    <div class="stat-n" style="font-size:20px;color:var(--gold)" id="b-earn">
+                        ₹1,840
+                    </div>
+
+                    <div class="stat-l">Today's Earnings</div>
+
+                    <div class="pbar">
+                        <div class="pfill" style="width:61%"></div>
+                    </div>
+
+                </div>
+
+                <div class="stat">
+
+                    <div style="font-size:20px;margin-bottom:4px">⏱️</div>
+
+                    <div class="stat-n" id="b-wait">
+                        28
+                    </div>
+
+                    <div class="stat-l">
+                        Avg Wait (min)
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div style="font-size:18px;font-weight:700;font-family:'Syne',sans-serif;margin-bottom:14px">
+                Live Queue
+            </div>
+
+            <div id="b-qlist"></div>
+
+            <button class="btn btn-outline btn-full" style="margin-top:4px" onclick="addDemoCustomer()">
+                + Add Walk-in Customer
+            </button>
+
+        </div>
+
+
+        <div class="scroll pad pad-b" id="b-svc-tab" style="display:none">
+
+            <div style="font-size:20px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:18px">
+                Services
+            </div>
+
+            <div id="b-svclist"></div>
+
+            <button class="btn btn-outline btn-full" style="margin-top:12px" onclick="openModal('m-svc')">
+                + Add Service
+            </button>
+
+        </div>
+
+
+        <div class="scroll pad pad-b" id="b-analytics-tab" style="display:none">
+
+            <div style="font-size:20px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:18px">
+                Analytics
+            </div>
+
+            <div id="b-analytics"></div>
+
+        </div>
+
+
+        <div class="tabs" id="b-tabs">
+
+            <button class="tab on" onclick="bTab('queue',this)">
+                <span class="tab-ico">📋</span>
+                Queue
+            </button>
+
+            <button class="tab" onclick="bTab('svc',this)">
+                <span class="tab-ico">✂️</span>
+                Services
+            </button>
+
+            <button class="tab" onclick="bTab('analytics',this)">
+                <span class="tab-ico">📊</span>
+                Analytics
+            </button>
+
+            <button class="tab" onclick="openProfile()">
+                <span class="tab-ico">👤</span>
+                Profile
+            </button>
+
+        </div>
+
+    </div> -->
+
+
+
+
+  <!-- ═══════════════ BARBER DASHBOARD ═══════════════ -->
+  <div class="screen" id="s-barb">
+
+    <div class="nav">
+
+      <div class="nav-brand">
+        Barber<span> - Q</span>
+        <span style="font-size:12px;font-weight:400;color:var(--txt2)">
+          Pro
+        </span>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:10px">
+
+        <span id="shop-status" class="tag tgreen pulse" style="cursor:pointer" onclick="toggleShop()">
+          ● Open
+        </span>
+
+        <div class="av"
+          style="width:36px;height:36px;background:var(--cdim);border:2px solid var(--cyan);color:var(--cyan);font-size:14px;cursor:pointer"
+          onclick="openProfile()">
+          R
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <div class="scroll pad pad-b" id="b-queue-tab">
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
+
+        <div class="stat">
+          <div style="font-size:20px;margin-bottom:4px">👥</div>
+          <div class="stat-n" style="color:var(--gold)" id="b-inq">6</div>
+          <div class="stat-l">In Queue</div>
+        </div>
+
+        <div class="stat">
+          <div style="font-size:20px;margin-bottom:4px">✅</div>
+          <div class="stat-n" style="color:var(--green)" id="b-done">8</div>
+          <div class="stat-l">Done Today</div>
+        </div>
+
+        <div class="stat">
+
+          <div style="font-size:20px;margin-bottom:4px">💰</div>
+
+          <div class="stat-n" style="font-size:20px;color:var(--gold)" id="b-earn">
+            ₹1,840
+          </div>
+
+          <div class="stat-l">Today's Earnings</div>
+
+          <div class="pbar">
+            <div class="pfill" style="width:61%"></div>
+          </div>
+
+        </div>
+
+        <div class="stat">
+
+          <div style="font-size:20px;margin-bottom:4px">⏱️</div>
+
+          <div class="stat-n" id="b-wait">
+            28
+          </div>
+
+          <div class="stat-l">
+            Avg Wait (min)
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div style="font-size:18px;font-weight:700;font-family:'Syne',sans-serif;margin-bottom:14px">
+        Live Queue
+      </div>
+
+      <div id="b-qlist"></div>
+
+      <button class="btn btn-outline btn-full" style="margin-top:4px" onclick="addDemoCustomer()">
+        + Add Walk-in Customer
+      </button>
+
+    </div>
+
+
+    <div class="scroll pad pad-b" id="b-svc-tab" style="display:none">
+
+      <div style="font-size:20px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:18px">
+        Services
+      </div>
+
+      <div id="b-svclist"></div>
+
+      <button class="btn btn-outline btn-full" style="margin-top:12px" onclick="openModal('m-svc')">
+        + Add Service
+      </button>
+
+    </div>
+
+
+    <div class="scroll pad pad-b" id="b-analytics-tab" style="display:none">
+
+      <div style="font-size:20px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:18px">
+        Analytics
+      </div>
+
+      <div id="b-analytics"></div>
+
+    </div>
+
+
+    <div class="tabs" id="b-tabs">
+
+      <button class="tab on" onclick="bTab('queue',this)">
+        <span class="tab-ico">📋</span>
+        Queue
+      </button>
+
+      <button class="tab" onclick="bTab('svc',this)">
+        <span class="tab-ico">✂️</span>
+        Services
+      </button>
+
+      <button class="tab" onclick="bTab('analytics',this)">
+        <span class="tab-ico">📊</span>
+        Analytics
+      </button>
+
+      <button class="tab" onclick="openProfile()">
+        <span class="tab-ico">👤</span>
+        Profile
+      </button>
+
+    </div>
+
+  </div>
+  <script src="script.js"></script>
+
+</body>
+
+</html>

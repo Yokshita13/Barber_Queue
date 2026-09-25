@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BarberQ: A Smart Digital Queue Management System</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,400&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <!-- Join Queue -->
+    <!-- <div class="overlay" id="m-join">
+
+        <div class="modal">
+
+            <div style="font-size:20px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:18px">
+                Join Queue
+            </div>
+
+            <label style="margin-bottom:10px">
+                Select a Service
+            </label>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px" id="m-svcs"></div>
+
+            <div style="background:var(--s2);border-radius:var(--r);padding:16px;margin-bottom:18px">
+
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+
+                    <span style="color:var(--txt2);font-size:14px">
+                        Your token number
+                    </span>
+
+                    <span class="tag tg" id="m-tok">
+                        #7
+                    </span>
+
+                </div>
+
+                <div style="display:flex;justify-content:space-between;align-items:center">
+
+                    <span style="color:var(--txt2);font-size:14px">
+                        Est. waiting time
+                    </span>
+
+                    <span style="color:var(--gold);font-weight:600" id="m-wait">
+                        ~28 min
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <div style="display:flex;gap:10px">
+
+                <button class="btn btn-outline" style="flex:1" onclick="closeModal('m-join')">
+                    Cancel
+                </button>
+
+                <button class="btn btn-gold" style="flex:1" onclick="confirmJoin()">
+                    Confirm & Join ✓
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    Success 
+
+    <div class="overlay" id="m-ok">
+
+        <div class="modal" style="text-align:center">
+
+            <div style="font-size:60px;margin-bottom:12px">
+                🎉
+            </div>
+
+            <div style="font-size:24px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:6px">
+                You're in the Queue!
+            </div>
+
+            <p style="color:var(--txt2);font-size:14px;margin-bottom:22px" id="ok-sub">
+                Token #7 · ~28 min wait
+            </p>
+
+            <div
+                style="background:var(--gdim);border:2px solid var(--gold);border-radius:var(--rl);padding:24px;margin-bottom:20px">
+
+                <div style="font-size:12px;color:var(--txt2);margin-bottom:4px">
+                    Your Token
+                </div>
+
+                <div style="font-size:76px;font-weight:800;font-family:'Syne',sans-serif;color:var(--gold);line-height:1"
+                    id="ok-tok">
+                    7
+                </div>
+
+                <div style="font-size:14px;color:var(--txt2);margin-top:6px" id="ok-svc">
+                    Hair Cut
+                </div>
+
+            </div>
+
+            <p style="font-size:13px;color:var(--txt2);margin-bottom:20px">
+                We'll notify you when your turn is near. Feel free to step out!
+            </p>
+
+            <button class="btn btn-gold btn-full" onclick="closeModal('m-ok');cTab('queue',null)">
+                View My Queue Status →
+            </button>
+
+        </div>
+
+    </div>
+
+
+     Add Service 
+
+
+
+    <div class="overlay" id="m-svc">
+
+        <div class="modal">
+
+            <div style="font-size:20px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:18px">
+                Add Service
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:20px">
+
+                <div>
+                    <label>Service Name</label>
+                    <input class="inp" id="sn" placeholder="e.g. Hair Cut">
+                </div>
+
+                <div>
+                    <label>Price (₹)</label>
+                    <input class="inp" id="sp" type="number" placeholder="250" min="0">
+                </div>
+
+                <div>
+                    <label>Duration (minutes)</label>
+                    <input class="inp" id="sd" type="number" placeholder="20" min="5">
+                </div>
+
+                <div>
+                    <label>Emoji Icon</label>
+                    <input class="inp" id="se" placeholder="💇" maxlength="2" value="💇">
+                </div>
+
+            </div>
+
+            <div style="display:flex;gap:10px">
+
+                <button class="btn btn-outline" style="flex:1" onclick="closeModal('m-svc')">
+                    Cancel
+                </button>
+
+                <button class="btn btn-gold" style="flex:1" onclick="addSvc()">
+                    Add Service
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    Rate Shop 
+
+
+
+
+
+
+
+
+    <div class="overlay" id="m-rate">
+
+        <div class="modal" style="text-align:center">
+
+            <div style="font-size:20px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:6px">
+                Rate Your Experience
+            </div>
+
+            <p style="color:var(--txt2);font-size:14px;margin-bottom:20px" id="rate-shop-name">
+                Royal Cuts
+            </p>
+
+            <div style="display:flex;justify-content:center;gap:4px;margin-bottom:16px" id="star-row">
+
+                <button class="star-btn" onclick="setStar(1)">☆</button>
+                <button class="star-btn" onclick="setStar(2)">☆</button>
+                <button class="star-btn" onclick="setStar(3)">☆</button>
+                <button class="star-btn" onclick="setStar(4)">☆</button>
+                <button class="star-btn" onclick="setStar(5)">☆</button>
+
+            </div>
+
+            <textarea class="inp" id="rate-txt" rows="3" placeholder="Share your experience (optional)"
+                style="resize:none;margin-bottom:16px"></textarea>
+
+            <div style="display:flex;gap:10px">
+
+                <button class="btn btn-outline" style="flex:1" onclick="closeModal('m-rate')">
+                    Skip
+                </button>
+
+                <button class="btn btn-gold" style="flex:1" onclick="submitRating()">
+                    Submit Rating
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    Toast
+    <div id="toast">
+        <span id="t-ico">✅</span>
+        <span id="t-msg">Done</span>
+    </div> -->
+
+
+
+<!-- ═══════════════ MODALS ═══════════════ -->
+
+<!-- Join Queue -->
+<div class="overlay" id="m-join">
+
+  <div class="modal">
+
+    <div style="font-size:20px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:18px">
+      Join Queue
+    </div>
+
+    <label style="margin-bottom:10px">
+      Select a Service
+    </label>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px"
+    id="m-svcs"></div>
+
+    <div style="background:var(--s2);border-radius:var(--r);padding:16px;margin-bottom:18px">
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+
+        <span style="color:var(--txt2);font-size:14px">
+          Your token number
+        </span>
+
+        <span class="tag tg" id="m-tok">
+          #7
+        </span>
+
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center">
+
+        <span style="color:var(--txt2);font-size:14px">
+          Est. waiting time
+        </span>
+
+        <span style="color:var(--gold);font-weight:600" id="m-wait">
+          ~28 min
+        </span>
+
+      </div>
+
+    </div>
+
+
+    <div style="display:flex;gap:10px">
+
+      <button class="btn btn-outline"
+      style="flex:1"
+      onclick="closeModal('m-join')">
+        Cancel
+      </button>
+
+      <button class="btn btn-gold"
+      style="flex:1"
+      onclick="confirmJoin()">
+        Continue to Payment →
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <script src="script.js"></script>
+</body>
+
+</html>

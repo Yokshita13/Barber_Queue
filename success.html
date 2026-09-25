@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BarberQ: A Smart Digital Queue Management System</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,400&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<!-- Success -->
+<div class="overlay" id="m-ok">
+
+  <div class="modal" style="text-align:center">
+
+    <div style="font-size:60px;margin-bottom:12px">
+      🎉
+    </div>
+
+    <div style="font-size:24px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:6px">
+      You're in the Queue!
+    </div>
+
+    <p style="color:var(--txt2);font-size:14px;margin-bottom:10px" id="ok-sub">
+      Token #7 · ~28 min wait
+    </p>
+
+    <p style="font-size:13px;font-weight:600;margin-bottom:16px" id="ok-pay-note">
+    </p>
+
+    <div style="background:var(--gdim);border:2px solid var(--gold);border-radius:var(--rl);padding:24px;margin-bottom:20px">
+
+      <div style="font-size:12px;color:var(--txt2);margin-bottom:4px">
+        Your Token
+      </div>
+
+      <div style="font-size:76px;font-weight:800;font-family:'Syne',sans-serif;color:var(--gold);line-height:1"
+      id="ok-tok">
+        7
+      </div>
+
+      <div style="font-size:14px;color:var(--txt2);margin-top:6px"
+      id="ok-svc">
+        Hair Cut
+      </div>
+
+    </div>
+
+    <p style="font-size:13px;color:var(--txt2);margin-bottom:20px">
+      We'll notify you when your turn is near. Feel free to step out!
+    </p>
+
+    <button class="btn btn-gold btn-full"
+    onclick="closeModal('m-ok');cTab('queue',null)">
+      View My Queue Status →
+    </button>
+
+  </div>
+
+</div>
+
+
+        <script src="script.js"></script>
+</body>
+</html>
