@@ -1,70 +1,206 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BarberQ: A Smart Digital Queue Management System</title>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,400&display=swap"
-        rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>BarberQ - Payment</title>
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,0..40,400&display=swap"
+    rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-    <!-- Payment -->
-<div class="overlay" id="m-pay">
 
-  <div class="modal">
+  <!-- ========================= PAYMENT MODAL ========================= -->
 
-    <div style="font-size:20px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:4px">
-      Payment
-    </div>
+  <div class="overlay" id="m-pay">
 
-    <p style="color:var(--txt2);font-size:13px;margin-bottom:18px" id="pay-svc">
-      Hair Cut · Token #7
-    </p>
+    <div class="modal">
 
-    <div style="background:var(--gdim);border:1px solid var(--gold);border-radius:var(--r);padding:16px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center">
-      <span style="font-size:13px;color:var(--txt2)">Amount to Pay</span>
-      <span style="font-size:26px;font-weight:800;font-family:'Syne',sans-serif;color:var(--gold)" id="pay-amt">₹250</span>
-    </div>
-
-    <label style="margin-bottom:10px">Choose Payment Method</label>
-
-    <div class="pay-opt sel" id="pay-online" onclick="selectPayMethod('online')">
-      <span style="font-size:22px">📲</span>
-      <div style="flex:1">
-        <div style="font-weight:600;font-size:14px">Pay Online Now</div>
-        <div style="font-size:12px;color:var(--txt2)">UPI, Card, Wallet — secured checkout</div>
+      <!-- Title -->
+      <div style="
+                font-size:20px;
+                font-weight:800;
+                font-family:'Syne',sans-serif;
+                margin-bottom:4px;
+            ">
+        Payment
       </div>
-    </div>
 
-    <div class="pay-opt" id="pay-shop" onclick="selectPayMethod('shop')">
-      <span style="font-size:22px">💵</span>
-      <div style="flex:1">
-        <div style="font-weight:600;font-size:14px">Pay at Shop</div>
-        <div style="font-size:12px;color:var(--txt2)">Settle in cash or card after your service</div>
+
+      <!-- Service + Token -->
+      <p id="pay-svc" style="
+                    color:var(--txt2);
+                    font-size:13px;
+                    margin-bottom:18px;
+                ">
+        Hair Cut · Token #7
+      </p>
+
+      <!-- ========================= AMOUNT ========================= -->
+
+      <div style="
+                background:var(--gdim);
+                border:1px solid var(--gold);
+                border-radius:var(--r);
+                padding:16px;
+                margin-bottom:20px;
+                display:flex;
+                justify-content:space-between;
+                align-items:center;
+            ">
+
+        <span style="
+                    font-size:13px;
+                    color:var(--txt2);
+                ">
+          Amount to Pay
+        </span>
+
+        <span id="pay-amt" style="
+                        font-size:26px;
+                        font-weight:800;
+                        font-family:'Syne',sans-serif;
+                        color:var(--gold);
+                    ">
+          ₹250
+        </span>
+
       </div>
+
+      <div id="upi-qr-section" style="text-align:center; margin-bottom:18px;">
+
+        <div id="upi-qr-crop" style="
+            width:180px;
+            height:180px;
+            overflow:hidden;
+            border-radius:var(--r);
+            background:#fff;
+            margin:0 auto 10px;
+            position:relative;
+        ">
+          <img id="upi-qr-img" src="QR.webp" alt="UPI QR Code" style="
+                position:absolute;
+                width:227px;
+                height:auto;
+                max-width:none;
+                left:-23px;
+                top:-66px;
+                padding:0;
+                margin:0;
+                border:0;
+                border-radius:0;
+            ">
+        </div>
+
+        <div style="
+        font-size:12px;
+        color:var(--txt2);
+        margin-bottom:4px;
+    ">
+          Scan with any UPI app
+        </div>
+
+        <!-- =========================  PAYMENT METHODS ========================= -->
+
+        <label style="margin-bottom:10px">
+          Choose Payment Method
+        </label>
+
+
+        <!-- Online -->
+        <div class="pay-opt sel" id="pay-online" onclick="selectPayMethod('online')">
+
+          <span style="font-size:22px">
+            📲
+          </span>
+
+          <div style="flex:1">
+
+            <div style="
+                        font-weight:600;
+                        font-size:14px;
+                    ">
+              Pay Online Now
+            </div>
+
+            <div style="
+                        font-size:12px;
+                        color:var(--txt2);
+                    ">
+              UPI, Card, Wallet — secured checkout
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- Pay at Shop -->
+        <div class="pay-opt" id="pay-shop" onclick="selectPayMethod('shop')">
+
+          <span style="font-size:22px">
+            💵
+          </span>
+
+          <div style="flex:1">
+
+            <div style="
+                        font-weight:600;
+                        font-size:14px;
+                    ">
+              Pay at Shop
+            </div>
+
+            <div style="
+                        font-size:12px;
+                        color:var(--txt2);
+                    ">
+              Settle in cash or card after your service
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- ========================= ACTION BUTTONS  ========================= -->
+
+        <div style="
+                display:flex;
+                gap:10px;
+                margin-top:8px;
+            ">
+
+          <button class="btn btn-outline" style="flex:1" onclick="closeModal('m-pay')">
+            Back
+          </button>
+
+
+          <button class="btn btn-gold" style="flex:1" onclick="processPayment()">
+
+            <span id="pay-btn-label">
+              Pay &amp; Join Queue
+            </span>
+
+          </button>
+
+        </div>
+
+      </div>
+
     </div>
 
-    <div style="display:flex;gap:10px;margin-top:8px">
+    <script src="script.js"></script>
 
-      <button class="btn btn-outline"
-      style="flex:1"
-      onclick="closeModal('m-pay')">
-        Back
-      </button>
+</body>
 
-      <button class="btn btn-gold"
-      style="flex:1"
-      onclick="processPayment()">
-        <span id="pay-btn-label">Pay &amp; Join Queue</span>
-      </button>
-
-    </div>
-
-  </div>
-
-</div>
+</html>
         <script src="script.js"></script>
 </body>
 </html>
