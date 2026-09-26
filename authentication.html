@@ -12,106 +12,7 @@
 </head>
 
 <body>
-
-  <!-- <div class="screen" id="s-auth">
-
-        <div class="nav">
-            <button class="nav-back" onclick="go('s-land')">← Back</button>
-            <span></span>
-            <span></span>
-        </div>
-
-        <div class="scroll" style="display:flex;flex-direction:column;justify-content:center;padding:32px 24px">
-
-            <div style="max-width:360px;width:100%;margin:0 auto">
-
-                <div id="auth-p1">
-
-                    <div style="font-size:28px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:8px">
-                        Enter your phone
-                    </div>
-
-                    <p style="color:var(--txt2);margin-bottom:32px;font-size:14px">
-                        We'll send a one-time verification code
-                    </p>
-
-                    <label>Phone Number</label>
-
-                    <div style="display:flex;gap:8px;margin-bottom:24px">
-
-                        <select class="inp" style="width:88px">
-                            <option>+91</option>
-                            <option>+1</option>
-                            <option>+44</option>
-                            <option>+971</option>
-                        </select>
-
-                        <input class="inp" id="ph" type="tel" placeholder="98765 43210" style="flex:1">
-
-                    </div>
-
-                    <button class="btn btn-gold btn-full" style="height:52px" onclick="sendOtp()">
-                        Send OTP
-                    </button>
-
-                </div>
-
-
-                <div id="auth-p2" style="display:none">
-
-                    <div style="font-size:28px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:8px">
-                        Verify OTP
-                    </div>
-
-                    <p style="color:var(--txt2);margin-bottom:8px;font-size:14px">
-                        Code sent to
-                        <strong id="ph-show" style="color:var(--txt)"></strong>
-                    </p>
-
-                    <div id="otp-message" style="background:var(--gdim);
-            border:1px solid var(--gold);
-            border-radius:var(--r);
-            padding:10px 14px;
-            font-size:13px;
-            color:var(--gold);
-            margin-bottom:24px;">
-                        Your OTP is being generated...
-                    </div>
-
-                    <div class="otp-wrap" id="otp-row">
-
-                        <input class="otp-box" maxlength="1" id="o0" oninput="otpFwd(this,0)"
-                            onkeydown="otpBack(this,0,event)">
-
-                        <input class="otp-box" maxlength="1" id="o1" oninput="otpFwd(this,1)"
-                            onkeydown="otpBack(this,1,event)">
-
-                        <input class="otp-box" maxlength="1" id="o2" oninput="otpFwd(this,2)"
-                            onkeydown="otpBack(this,2,event)">
-
-                        <input class="otp-box" maxlength="1" id="o3" oninput="otpFwd(this,3)"
-                            onkeydown="otpBack(this,3,event)">
-
-                    </div>
-
-                    <button class="btn btn-gold btn-full" style="height:52px;margin-top:24px" onclick="verifyOtp()">
-                        Verify &amp; Continue
-                    </button>
-
-                    <button class="btn btn-ghost btn-full" style="margin-top:8px"
-                        onclick="showEl('auth-p1');hideEl('auth-p2')">
-                        ← Change Number
-                    </button>
-
-                </div>
-
-            </div>
-
-        </div>
-    </div> -->
-
-
-  <!-- ═══════════════ AUTH ═══════════════ -->
+  
   <div class="screen" id="s-auth">
 
     <div class="nav">
@@ -136,7 +37,16 @@
 
           <label>Your Name</label>
 
-          <input class="inp" id="pname" type="text" style="margin-bottom:20px">
+          <input class="inp" id="pname" type="text" placeholder="Enter your Name" style="margin-bottom:20px">
+
+          <label>Location</label>
+          <div style="display:flex;gap:8px;margin-bottom:20px">
+            <input class="inp" id="ploc" type="text" placeholder="Enter your Location" style="flex:1">
+            <button type="button" class="btn btn-outline" style="white-space:nowrap"
+              onclick="useMyLocation('ploc', this)">
+              📍 Use Current
+            </button>
+          </div>
 
           <label>Phone Number</label>
 
@@ -397,14 +307,16 @@
           <button class="btn btn-ghost btn-full" style="margin-top:8px" onclick="showEl('auth-p1');hideEl('auth-p2')">
             ← Change Number
           </button>
-          
+
         </div>
 
       </div>
 
     </div>
   </div>
+
   <script src="script.js"></script>
+
 </body>
 
 </html>
