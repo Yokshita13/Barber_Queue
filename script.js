@@ -9,7 +9,7 @@ const S={
   user:{
     name:'',
     phone:'',
-    location:'Hazratganj, Lucknow'
+    location:''
   },
 
   inQueue:false,
@@ -23,6 +23,12 @@ const S={
   pendingJoin:null,
   payMethod:'online',
   payments:[],
+
+  // Customer activity is recorded only after real actions.
+  queueHistory:[],
+  ratedShops:[],
+  paymentMethods:[],
+  lastCompletedVisit:null,
 
   services:[
     {id:1,name:'Hair Cut',price:250,dur:20,ico:'💇'},
@@ -65,14 +71,7 @@ function go(id){
   document.querySelectorAll('.screen')
     .forEach(s=>s.classList.remove('active'));
 
-  const target=document.getElementById(id);
-
-  if(!target){
-    console.error('go(): no screen found with id "'+id+'"');
-    return;
-  }
-
-  target.classList.add('active');
+  document.getElementById(id).classList.add('active');
 
   if(id==='s-cust'){
     renderShops();
@@ -113,18 +112,11 @@ function hideEl(id){
 }
 
 function openModal(id){
-  const el=document.getElementById(id);
-  if(!el){
-    console.error('openModal(): no element found with id "'+id+'"');
-    return;
-  }
-  el.classList.add('open');
+  document.getElementById(id).classList.add('open');
 }
 
 function closeModal(id){
-  const el=document.getElementById(id);
-  if(!el)return;
-  el.classList.remove('open');
+  document.getElementById(id).classList.remove('open');
 }
 
 let tTimer;
@@ -149,11 +141,29 @@ function toast(ico,msg){
 
 // ═══════ AUTH ═══════
 
-let generatedOTP = "";
+    let generatedOTP = "";
 
-function sendOtp() {
+    // The HTML components load asynchronously.  Verify waits until
+    // the role screen has been loaded before navigating to it.
+    let componentsReady = Promise.resolve();
+
+    // function sendOtp() {
+    //     const phone = document.getElementById("ph").value.trim();
+    //     const nameVal = document.getElementById("pname").value.trim();
+
+    //     if (!/^\d{10}$/.test(phone)) {
+    //         toast("⚠️","Please enter a valid 10-digit phone number");
+    //         return;
+    //     }
+
+    //     S.user.phone = '+91 ' + phone;
+    //     S.user.name = nameVal || 'Customer';
+
+    function sendOtp() {
     const phone = document.getElementById("ph").value.trim();
     const nameVal = document.getElementById("pname").value.trim();
+    const locEl = document.getElementById("ploc");
+    const locVal = locEl ? locEl.value.trim() : '';
 
     if (!/^\d{10}$/.test(phone)) {
         toast("⚠️","Please enter a valid 10-digit phone number");
@@ -162,84 +172,110 @@ function sendOtp() {
 
     S.user.phone = '+91 ' + phone;
     S.user.name = nameVal || 'Customer';
+    S.user.location = locVal || 'Not set';
 
-    generatedOTP = Math.floor(1000 + Math.random() * 9000).toString();
+        generatedOTP = Math.floor(1000 + Math.random() * 9000).toString();
 
-    console.log("Generated OTP:", generatedOTP);
+        console.log("Generated OTP:", generatedOTP);
 
-    document.getElementById("ph-show").textContent =
-        "+91 " + phone;
+        document.getElementById("ph-show").textContent =
+            "+91 " + phone;
 
-    document.getElementById("otp-message").innerHTML =
-        "Use code <strong>" + generatedOTP + "</strong> to continue";
+        document.getElementById("otp-message").innerHTML =
+            "Use code <strong>" + generatedOTP + "</strong> to continue";
 
-    document.getElementById("auth-p1").style.display = "none";
+        document.getElementById("auth-p1").style.display = "none";
 
-    document.getElementById("auth-p2").style.display = "block";
-
-    document.getElementById("o0").value = "";
-    document.getElementById("o1").value = "";
-    document.getElementById("o2").value = "";
-    document.getElementById("o3").value = "";
-
-    document.getElementById("o0").focus();
-}
-
-
-function verifyOtp() {
-
-    const enteredOTP =
-        document.getElementById("o0").value +
-        document.getElementById("o1").value +
-        document.getElementById("o2").value +
-        document.getElementById("o3").value;
-
-    if (enteredOTP === generatedOTP) {
-
-        toast("✅","OTP verified successfully!");
-
-        go("s-role");
-
-    } else {
-
-        toast("⚠️","Invalid OTP — please try again");
+        document.getElementById("auth-p2").style.display = "block";
 
         document.getElementById("o0").value = "";
         document.getElementById("o1").value = "";
         document.getElementById("o2").value = "";
         document.getElementById("o3").value = "";
+
         document.getElementById("o0").focus();
-
     }
-}
 
 
-function otpFwd(input, index) {
+    async function verifyOtp() {
 
-    input.value = input.value.replace(/\D/g, "");
+        const fields = [
+            document.getElementById("o0"),
+            document.getElementById("o1"),
+            document.getElementById("o2"),
+            document.getElementById("o3")
+        ];
 
-    if (input.value.length === 1 && index < 3) {
+        if (fields.some(el => !el)) {
+            console.error("OTP input fields are missing.");
+            return;
+        }
 
-        document
-            .getElementById("o" + (index + 1))
-            .focus();
+        const enteredOTP = fields.map(el => el.value.trim()).join("");
+
+        console.log("Entered OTP:", enteredOTP);
+        console.log("Generated OTP:", generatedOTP);
+
+        if (enteredOTP !== generatedOTP || generatedOTP === "") {
+            toast("⚠️", "Invalid OTP — please try again");
+
+            fields.forEach(el => el.value = "");
+            fields[0].focus();
+            return;
+        }
+
+        // Wait for all split HTML files to finish loading.
+        try {
+            await componentsReady;
+        } catch (error) {
+            console.error("BarberQ components failed to load:", error);
+            toast("⚠️", "Please wait for BarberQ to finish loading.");
+            return;
+        }
+
+        const roleScreen = document.getElementById("s-role");
+
+        if (!roleScreen) {
+            console.error("s-role was not loaded. Check role.html and index.html.");
+            toast("⚠️", "Role screen could not be loaded.");
+            return;
+        }
+
+        // Navigate only after the target screen definitely exists.
+        go("s-role");
+
+        setTimeout(() => {
+            toast("✅", "OTP verified successfully!");
+        }, 100);
     }
-}
 
 
-function otpBack(input, index, event) {
+    function otpFwd(input, index) {
 
-    if (
-        event.key === "Backspace" &&
-        input.value === "" &&
-        index > 0
-    ) {
+        input.value = input.value.replace(/\D/g, "");
 
-        document
-            .getElementById("o" + (index - 1))
-            .focus();
+        if (input.value.length === 1 && index < 3) {
+
+            document
+                .getElementById("o" + (index + 1))
+                .focus();
+        }
     }
-}
+
+
+    function otpBack(input, index, event) {
+
+        if (
+            event.key === "Backspace" &&
+            input.value === "" &&
+            index > 0
+        ) {
+
+            document
+                .getElementById("o" + (index - 1))
+                .focus();
+        }
+    }
 
 // ═══════ CUSTOMER ═══════
 function renderShops(){
@@ -720,8 +756,13 @@ function finalizeJoin(p,s,paidOnline){
     date:new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short'})
   });
 
-  if(paidOnline)
+  if(paidOnline){
     S.onlineCollected+=p.price;
+
+    if(!S.paymentMethods.includes('Online Payment')){
+      S.paymentMethods.push('Online Payment');
+    }
+  }
 
   closeModal('m-pay');
 
@@ -1075,11 +1116,52 @@ function doneToken(){
   if(sv)
     S.earn+=sv.price;
 
-  document.getElementById('b-done').textContent=
-    S.doneCnt;
+  // Record a customer visit ONLY when the customer's own queue token
+  // is actually completed. Joining a queue does not count as a visit.
+  if(S.inQueue && S.myTok===done.tok){
 
-  document.getElementById('b-earn').textContent=
-    '₹'+S.earn.toLocaleString('en-IN');
+    const shopId=S.myShopId;
+    const shop=S.shops[shopId];
+
+    const visit={
+      token:done.tok,
+      shopId:shopId,
+      shop:shop ? shop.name : 'Barber Shop',
+      service:done.svc,
+      date:new Date().toLocaleDateString('en-IN',{
+        day:'2-digit',
+        month:'short',
+        year:'numeric'
+      })
+    };
+
+    S.queueHistory.unshift(visit);
+    S.lastCompletedVisit=visit;
+
+    // A pay-at-shop payment becomes a completed payment now.
+    const payment=S.payments.find(p=>
+      p.token===done.tok && p.status==='Pending'
+    );
+
+    if(payment){
+      payment.status='Paid';
+
+      if(!S.paymentMethods.includes('Pay at Shop')){
+        S.paymentMethods.push('Pay at Shop');
+      }
+    }
+
+    S.inQueue=false;
+    S.myTok=null;
+    S.mySvc='';
+    S.myShopId=null;
+  }
+
+  const doneEl=document.getElementById('b-done');
+  const earnEl=document.getElementById('b-earn');
+
+  if(doneEl) doneEl.textContent=S.doneCnt;
+  if(earnEl) earnEl.textContent='₹'+S.earn.toLocaleString('en-IN');
 
   if(S.bq.length>0){
 
@@ -1092,10 +1174,11 @@ function doneToken(){
 
   renderBQ();
 
-  toast(
-    '✅',
-    'Token completed! Calling next customer.'
-  );
+  if(S.lastCompletedVisit && S.lastCompletedVisit.token===done.tok){
+    toast('✅','Your service is complete! Your visit has been added to history.');
+  }else{
+    toast('✅','Token completed! Calling next customer.');
+  }
 }
 
 
@@ -1741,6 +1824,12 @@ function renderProfile(){
 
   const userName = S.user.name || 'Customer';
   const userPhone = S.user.phone || 'Phone not available';
+  const userLocation = S.user.location || 'Not set';
+  const visitCount = S.queueHistory.length;
+  const ratedCount = S.ratedShops.length;
+  const paymentMethodText = S.paymentMethods.length
+    ? S.paymentMethods.join(' · ')
+    : 'No payment methods used yet';
 
   const initial = userName.charAt(0).toUpperCase();
 
@@ -1822,7 +1911,7 @@ function renderProfile(){
           </div>
 
           <div class="prow-val">
-            ${S.user.location}
+            ${userLocation}
           </div>
 
         </div>
@@ -1843,7 +1932,7 @@ function renderProfile(){
           </div>
 
           <div class="prow-val">
-            12 visits
+            ${visitCount} ${visitCount===1?'visit':'visits'}
           </div>
 
         </div>
@@ -1864,7 +1953,7 @@ function renderProfile(){
           </div>
 
           <div class="prow-val">
-            4 shops
+            ${ratedCount} ${ratedCount===1?'shop':'shops'}
           </div>
 
         </div>
@@ -1873,7 +1962,7 @@ function renderProfile(){
 
       </div>
 
-      <div class="prow" style="cursor:pointer" onclick="toast('💳','Saved: UPI, and 1 card ending 4821')">
+      <div class="prow" style="cursor:pointer" onclick="showPaymentMethods()">
 
         <div class="prow-ico">💳</div>
 
@@ -1884,7 +1973,7 @@ function renderProfile(){
           </div>
 
           <div class="prow-val">
-            UPI · Card ••••4821
+            ${paymentMethodText}
           </div>
 
         </div>
@@ -1954,18 +2043,68 @@ function renderProfile(){
 }
 
 
-function editProfile() {
+function showPaymentMethods(){
 
+  if(!S.paymentMethods.length){
+    toast('💳','No payment methods used yet.');
+    return;
+  }
+
+  toast('💳','Methods used: '+S.paymentMethods.join(', '));
+}
+
+
+// function editProfile() {
+
+//     document.getElementById('ep-name').value = S.user.name || '';
+//     document.getElementById('ep-phone').value = (S.user.phone || '').replace('+91 ', '');
+
+//     openModal('m-editprof');
+// }
+
+function editProfile() {
     document.getElementById('ep-name').value = S.user.name || '';
     document.getElementById('ep-phone').value = (S.user.phone || '').replace('+91 ', '');
+
+    const locEl = document.getElementById('ep-location');
+    if (locEl) locEl.value = (S.user.location && S.user.location !== 'Not set') ? S.user.location : '';
 
     openModal('m-editprof');
 }
 
-function saveProfileEdit() {
+// function saveProfileEdit() {
 
+//     const name = document.getElementById('ep-name').value.trim();
+//     const phone = document.getElementById('ep-phone').value.trim();
+
+//     if (name === '') {
+//         toast('⚠️', 'Please enter a valid name');
+//         return;
+//     }
+
+//     if (!/^\d{10}$/.test(phone)) {
+//         toast('⚠️', 'Please enter a valid 10-digit phone number');
+//         return;
+//     }
+
+//     S.user.name = name;
+//     S.user.phone = '+91 ' + phone;
+
+//     closeModal('m-editprof');
+
+//     updateUserAvatar();
+
+//     renderProfile();
+
+//     toast('✅', 'Profile updated successfully');
+// }
+
+
+function saveProfileEdit() {
     const name = document.getElementById('ep-name').value.trim();
     const phone = document.getElementById('ep-phone').value.trim();
+    const locEl = document.getElementById('ep-location');
+    const location = locEl ? locEl.value.trim() : '';
 
     if (name === '') {
         toast('⚠️', 'Please enter a valid name');
@@ -1979,15 +2118,87 @@ function saveProfileEdit() {
 
     S.user.name = name;
     S.user.phone = '+91 ' + phone;
+    S.user.location = location || 'Not set';
 
     closeModal('m-editprof');
-
     updateUserAvatar();
-
     renderProfile();
-
     toast('✅', 'Profile updated successfully');
 }
+
+
+
+
+
+
+function useMyLocation(inputId, btn) {
+
+    if (!navigator.geolocation) {
+        toast('⚠️', 'Your browser does not support location access');
+        return;
+    }
+
+    const inputEl = document.getElementById(inputId);
+    if (!inputEl) return;
+
+    const originalLabel = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner"></span>';
+    btn.disabled = true;
+
+    navigator.geolocation.getCurrentPosition(
+        async (position) => {
+
+            const { latitude, longitude } = position.coords;
+
+            try {
+                const res = await fetch(
+                    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
+                );
+
+                if (!res.ok) throw new Error('Reverse geocoding failed');
+
+                const data = await res.json();
+                const addr = data.address || {};
+
+                // Build a short "Area, City" style string
+                const area = addr.suburb || addr.neighbourhood || addr.residential || addr.road || '';
+                const city = addr.city || addr.town || addr.village || addr.state_district || '';
+
+                const shortAddress = [area, city].filter(Boolean).join(', ') || data.display_name || 'Location found';
+
+                inputEl.value = shortAddress;
+                toast('📍', 'Location detected');
+
+            } catch (err) {
+                console.error(err);
+                toast('⚠️', 'Could not determine address from location');
+            } finally {
+                btn.innerHTML = originalLabel;
+                btn.disabled = false;
+            }
+        },
+        (error) => {
+            btn.innerHTML = originalLabel;
+            btn.disabled = false;
+
+            if (error.code === error.PERMISSION_DENIED) {
+                toast('⚠️', 'Location permission denied');
+            } else {
+                toast('⚠️', 'Could not get your location');
+            }
+        },
+        { timeout: 10000 }
+    );
+}
+
+
+
+
+
+
+
+
+
 
 
 
@@ -2048,6 +2259,35 @@ function submitRating(){
     return;
   }
 
+  if(!S.lastCompletedVisit){
+    toast(
+      'ℹ️',
+      'You can rate a shop after completing your service.'
+    );
+    return;
+  }
+
+  const visit=S.lastCompletedVisit;
+
+  if(S.ratedShops.some(r=>r.shopId===visit.shopId)){
+    toast('ℹ️','You have already rated this shop.');
+    return;
+  }
+
+  const review=document.getElementById('rate-txt')?.value.trim() || '';
+
+  S.ratedShops.push({
+    shopId:visit.shopId,
+    shop:visit.shop,
+    rating:S.rating,
+    review:review,
+    date:new Date().toLocaleDateString('en-IN',{
+      day:'2-digit',
+      month:'short',
+      year:'numeric'
+    })
+  });
+
   closeModal('m-rate');
 
   toast(
@@ -2063,9 +2303,13 @@ function submitRating(){
       b=>b.textContent='☆'
     );
 
-  document.getElementById('rate-txt').value='';
-}
+  const rateTxt=document.getElementById('rate-txt');
+  if(rateTxt) rateTxt.value='';
 
+  if(document.getElementById('s-prof')?.classList.contains('active')){
+    renderProfile();
+  }
+}
 
 // ═══════ SUPPORT / CUSTOMER CARE ═══════
 const FAQS=[
@@ -2240,6 +2484,28 @@ async function loadComponent(containerId, fileName) {
   console.log('✓ Loaded ' + fileName);
 }
 
+// async function loadComponents() {
+//   try {
+//     await Promise.all([
+//       loadComponent('landing-container', 'landing.html'),
+//       loadComponent('authentication-container', 'authentication.html'),
+//       loadComponent('role-container', 'role.html'),
+//       loadComponent('customer-container', 'customer_dashboard.html'),
+//       loadComponent('shop-container', 'shop_detail.html'),
+//       loadComponent('barber-container', 'barber_dashboard.html'),
+//       loadComponent('profile-container', 'profile.html'),
+//       loadComponent('support-container', 'support.html'),
+//       loadComponent('modals-container', 'modals.html')
+//     ]);
+
+//     console.log('✓ All BarberQ HTML components loaded');
+//   } catch (error) {
+//     console.error('❌ BarberQ loading failed:', error);
+//   }
+// }
+
+// componentsReady = loadComponents();
+
 async function loadComponents() {
   try {
     await Promise.all([
@@ -2259,23 +2525,9 @@ async function loadComponents() {
     ]);
 
     console.log('✓ All BarberQ HTML components loaded');
-
-    const loader = document.getElementById('app-loader');
-    if (loader) loader.remove();
-
   } catch (error) {
-
     console.error('❌ BarberQ loading failed:', error);
-
-    const loaderText = document.getElementById('app-loader-text');
-
-    if (loaderText) {
-      loaderText.innerHTML =
-        'Could not load the app.<br>' +
-        '<span style="font-size:12px;color:var(--red)">' + error.message + '</span><br>' +
-        '<span style="font-size:12px">Make sure every partial .html file listed above sits next to index.html, and that you are opening this through a local server (not double-clicking the file).</span>';
-    }
   }
 }
 
-loadComponents();
+componentsReady = loadComponents();
