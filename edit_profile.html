@@ -2,146 +2,145 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BarberQ: A Smart Digital Queue Management System</title>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,400&display=swap"
-        rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BarberQ: A Smart Digital Queue Management System</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,400&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-<!-- Edit Profile -->
-<div class="overlay" id="m-editprof">
+  <!-- Edit Profile -->
+  <div class="overlay" id="m-editprof">
 
-  <div class="modal">
+    <div class="modal">
 
-    <div style="font-size:20px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:18px">
-      Edit Profile
-    </div>
+      <div style="font-size:20px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:18px">
+        Edit Profile
+      </div>
 
-    <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:20px">
+      <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:20px">
 
+        <div>
+          <label>Full Name</label>
+          <input class="inp" id="ep-name" placeholder="Your name">
+        </div>
+
+        <div>
+          <label>Phone Number</label>
+          <input class="inp" id="ep-phone" type="tel" placeholder="98765 43210" maxlength="10">
+        </div>
+
+      </div>
       <div>
-        <label>Full Name</label>
-        <input class="inp" id="ep-name" placeholder="Your name">
+        <label>Location</label>
+        <div style="display:flex;gap:8px;margin-bottom:20px">
+          <input class="inp" id="ep-location" type="text" placeholder="e.g. Hazratganj, Lucknow" style="flex:1">
+          <button type="button" class="btn btn-outline" style="white-space:nowrap"
+            onclick="useMyLocation('ep-location', this)">
+            📍 Use Current
+          </button>
+        </div>
       </div>
+      <div style="display:flex;gap:10px">
 
-      <div>
-        <label>Phone Number</label>
-        <input class="inp" id="ep-phone" type="tel" placeholder="98765 43210" maxlength="10">
+        <button class="btn btn-outline" style="flex:1" onclick="closeModal('m-editprof')">
+          Cancel
+        </button>
+
+        <button class="btn btn-gold" style="flex:1" onclick="saveProfileEdit()">
+          Save Changes
+        </button>
+
       </div>
-
-    </div>
-
-    <div style="display:flex;gap:10px">
-
-      <button class="btn btn-outline"
-      style="flex:1"
-      onclick="closeModal('m-editprof')">
-        Cancel
-      </button>
-
-      <button class="btn btn-gold"
-      style="flex:1"
-      onclick="saveProfileEdit()">
-        Save Changes
-      </button>
 
     </div>
 
   </div>
 
-</div>
 
+  <!-- Rate Shop -->
+  <div class="overlay" id="m-rate">
 
-<!-- Rate Shop -->
-<div class="overlay" id="m-rate">
+    <div class="modal" style="text-align:center">
 
-  <div class="modal" style="text-align:center">
-
-    <div style="font-size:20px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:6px">
-      Rate Your Experience
-    </div>
-
-    <p style="color:var(--txt2);font-size:14px;margin-bottom:20px"
-    id="rate-shop-name">
-      Royal Cuts
-    </p>
-
-    <div style="display:flex;justify-content:center;gap:4px;margin-bottom:16px"
-    id="star-row">
-
-      <button class="star-btn" onclick="setStar(1)">☆</button>
-      <button class="star-btn" onclick="setStar(2)">☆</button>
-      <button class="star-btn" onclick="setStar(3)">☆</button>
-      <button class="star-btn" onclick="setStar(4)">☆</button>
-      <button class="star-btn" onclick="setStar(5)">☆</button>
-
-    </div>
-
-    <textarea class="inp"
-    id="rate-txt"
-    rows="3"
-    placeholder="Share your experience (optional)"
-    style="resize:none;margin-bottom:16px"></textarea>
-
-    <div style="display:flex;gap:10px">
-
-      <button class="btn btn-outline"
-      style="flex:1"
-      onclick="closeModal('m-rate')">
-        Skip
-      </button>
-
-      <button class="btn btn-gold"
-      style="flex:1"
-      onclick="submitRating()">
-        Submit Rating
-      </button>
-
-    </div>
-
-  </div>
-
-</div>
-
-
-<!-- Live Chat -->
-<div class="overlay" id="m-chat">
-
-  <div class="modal">
-
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-      <div style="font-size:18px;font-weight:800;font-family:'Syne',sans-serif">
-        🎧 Live Support
+      <div style="font-size:20px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:6px">
+        Rate Your Experience
       </div>
-      <span class="tag tgreen" style="font-size:11px">● Online</span>
-    </div>
 
-    <div class="chat-box" id="chat-box">
-      <div class="chat-msg them">Hi! 👋 I'm the Barber-Q support bot. How can I help you today?</div>
-    </div>
+      <p style="color:var(--txt2);font-size:14px;margin-bottom:20px" id="rate-shop-name">
+        Royal Cuts
+      </p>
 
-    <div style="display:flex;gap:8px">
-      <input class="inp" id="chat-inp" placeholder="Type your message..." style="flex:1" onkeydown="if(event.key==='Enter')sendChatMsg()">
-      <button class="btn btn-gold" style="padding:12px 16px" onclick="sendChatMsg()">➤</button>
-    </div>
+      <div style="display:flex;justify-content:center;gap:4px;margin-bottom:16px" id="star-row">
 
-    <button class="btn btn-ghost btn-full" style="margin-top:10px" onclick="closeModal('m-chat')">Close Chat</button>
+        <button class="star-btn" onclick="setStar(1)">☆</button>
+        <button class="star-btn" onclick="setStar(2)">☆</button>
+        <button class="star-btn" onclick="setStar(3)">☆</button>
+        <button class="star-btn" onclick="setStar(4)">☆</button>
+        <button class="star-btn" onclick="setStar(5)">☆</button>
+
+      </div>
+
+      <textarea class="inp" id="rate-txt" rows="3" placeholder="Share your experience (optional)"
+        style="resize:none;margin-bottom:16px"></textarea>
+
+      <div style="display:flex;gap:10px">
+
+        <button class="btn btn-outline" style="flex:1" onclick="closeModal('m-rate')">
+          Skip
+        </button>
+
+        <button class="btn btn-gold" style="flex:1" onclick="submitRating()">
+          Submit Rating
+        </button>
+
+      </div>
+
+    </div>
 
   </div>
 
-</div>
+
+  <!-- Live Chat -->
+  <div class="overlay" id="m-chat">
+
+    <div class="modal">
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <div style="font-size:18px;font-weight:800;font-family:'Syne',sans-serif">
+          🎧 Live Support
+        </div>
+        <span class="tag tgreen" style="font-size:11px">● Online</span>
+      </div>
+
+      <div class="chat-box" id="chat-box">
+        <div class="chat-msg them">Hi! 👋 I'm the Barber-Q support bot. How can I help you today?</div>
+      </div>
+
+      <div style="display:flex;gap:8px">
+        <input class="inp" id="chat-inp" placeholder="Type your message..." style="flex:1"
+          onkeydown="if(event.key==='Enter')sendChatMsg()">
+        <button class="btn btn-gold" style="padding:12px 16px" onclick="sendChatMsg()">➤</button>
+      </div>
+
+      <button class="btn btn-ghost btn-full" style="margin-top:10px" onclick="closeModal('m-chat')">Close Chat</button>
+
+    </div>
+
+  </div>
 
 
-<!-- Toast -->
-<div id="toast">
-  <span id="t-ico">✅</span>
-  <span id="t-msg">Done</span>
-</div>
-    <script src="script.js"></script>
+  <!-- Toast -->
+  <div id="toast">
+    <span id="t-ico">✅</span>
+    <span id="t-msg">Done</span>
+  </div>
+
+  <script src="script.js"></script>
+
 </body>
 
 </html>
