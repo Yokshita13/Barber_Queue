@@ -141,6 +141,7 @@ function toast(ico,msg){
 // ═══════ AUTH ═══════
     let generatedOTP = "";
     let componentsReady = Promise.resolve();
+
     function sendOtp() {
     const phone = document.getElementById("ph").value.trim();
     const nameVal = document.getElementById("pname").value.trim();
@@ -230,8 +231,6 @@ function toast(ico,msg){
             toast("✅", "OTP verified successfully!");
         }, 100);
     }
-
-
     function otpFwd(input, index) {
 
         input.value = input.value.replace(/\D/g, "");
@@ -668,6 +667,30 @@ function confirmJoin() {
 }
 
 
+function updateUpiQr() {
+
+    const qrImg = document.getElementById('upi-qr-img');
+
+    if (!qrImg) {
+        console.warn('UPI QR image element not found');
+        return;
+    }
+
+    qrImg.src = 'QR.webp';
+    qrImg.alt = 'UPI QR Code';
+
+    qrImg.style.position = 'absolute';
+    qrImg.style.width = '227px';
+    qrImg.style.height = 'auto';
+    qrImg.style.maxWidth = 'none';
+    qrImg.style.left = '-23px';
+    qrImg.style.top = '-60px';
+    qrImg.style.padding = '0';
+    qrImg.style.margin = '0';
+    qrImg.style.borderRadius = '0';
+}
+
+
 function openPayModal() {
     const p = S.pendingJoin;
 
@@ -679,17 +702,14 @@ function openPayModal() {
     const amountEl = document.getElementById('pay-amt');
     const serviceEl = document.getElementById('pay-svc');
 
-    if (amountEl) {
-        amountEl.textContent = '₹' + p.price;
-    }
+    if (amountEl) amountEl.textContent = '₹' + p.price;
+    if (serviceEl) serviceEl.textContent = p.svcName + ' · Token #' + p.tok;
 
-    if (serviceEl) {
-        serviceEl.textContent =
-            p.svcName + ' · Token #' + p.tok;
-    }
+    updateUpiQr();
 
-    // Always show QR when payment modal opens
-    // updateUpiQr();
+    const payBtnLabel = document.getElementById('pay-btn-label');
+    if (payBtnLabel) payBtnLabel.textContent = 'Pay & Join Queue';
+
     selectPayMethod('online');
     openModal('m-pay');
 }
@@ -698,81 +718,93 @@ function openPayModal() {
 function selectPayMethod(method) {
     S.payMethod = method;
 
-    document
-        .querySelectorAll('.pay-opt')
-        .forEach(el => {
-            el.classList.remove('sel');
-        });
+    document.querySelectorAll('.pay-opt').forEach(el => el.classList.remove('sel'));
 
-    const selected =
-        document.getElementById('pay-' + method);
+    const selected = document.getElementById('pay-' + method);
+    if (selected) selected.classList.add('sel');
 
-    if (selected) {
-        selected.classList.add('sel');
-    }
+    const qrSection = document.getElementById('upi-qr-section');
+    if (qrSection) qrSection.style.display = method === 'online' ? 'block' : 'none';
 
-    const qrSection =
-        document.getElementById('upi-qr-section');
-
-    const button =
-        document.getElementById('pay-btn-label');
-
-    // Show QR only for online payment
-    if (qrSection) {
-        qrSection.style.display =
-            method === 'online' ? 'block' : 'none';
-    }
-
+    const button = document.getElementById('pay-btn-label');
     if (!button) return;
 
-    if (method === 'shop') {
-        button.textContent =
-            'Confirm & Join (Pay at Shop)';
-    } else {
-        button.textContent =
-            'Pay & Join Queue';
-    }
+    button.textContent = method === 'shop'
+        ? 'Confirm & Join (Pay at Shop)'
+        : 'Pay & Join Queue';
 }
 
 
-function processPayment() {
+async function processPayment() {
     const p = S.pendingJoin;
-
-    if (!p) {
-        toast('⚠️', 'No pending queue request');
-        return;
-    }
+    if (!p) { toast('⚠️', 'No pending queue request'); return; }
 
     const s = S.shops[p.shopId];
+    if (!s) { toast('⚠️', 'Shop information not found'); return; }
 
-    if (!s) {
-        toast('⚠️', 'Shop information not found');
+    if (S.payMethod !== 'online') {
+        finalizeJoin(p, s, false);
         return;
     }
 
-    if (S.payMethod === 'online') {
+    const button = document.getElementById('pay-btn-label');
+    if (button) button.innerHTML = '<span class="spinner"></span> Creating order…';
 
-        const button =
-            document.getElementById('pay-btn-label');
+    try {
+        const orderRes = await fetch('http://127.0.0.1:5000/api/payments/create-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ amount: p.price })
+        });
 
-        if (button) {
-            button.innerHTML =
-                '<span class="spinner"></span> Processing…';
-        }
+        if (!orderRes.ok) throw new Error('Could not create order');
+        const order = await orderRes.json();
 
-        /*
-         * DEMO PAYMENT
-         * Replace this with Razorpay/backend
-         * verification for real payments.
-         */
-        setTimeout(() => {
-            finalizeJoin(p, s, true);
-        }, 1000);
+        const options = {
+            key: order.key_id,
+            amount: order.amount,
+            currency: order.currency,
+            order_id: order.order_id,
+            name: 'Barber-Q',
+            description: p.svcName + ' · Token #' + p.tok,
+            handler: async function (response) {
 
-        return;
+                const verifyRes = await fetch('http://127.0.0.1:5000/api/payments/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        razorpay_order_id: response.razorpay_order_id,
+                        razorpay_payment_id: response.razorpay_payment_id,
+                        razorpay_signature: response.razorpay_signature
+                    })
+                });
+
+                const result = await verifyRes.json();
+
+                if (result.verified) {
+                    finalizeJoin(p, s, true);
+                } else {
+                    toast('⚠️', 'Payment verification failed');
+                    if (button) button.textContent = 'Pay & Join Queue';
+                }
+            },
+            modal: {
+                ondismiss: function () {
+                    if (button) button.textContent = 'Pay & Join Queue';
+                    toast('ℹ️', 'Payment cancelled');
+                }
+            },
+            theme: { color: '#f5c842' }
+        };
+
+        const rzp = new Razorpay(options);
+        rzp.open();
+
+    } catch (err) {
+        console.error(err);
+        toast('⚠️', 'Could not start payment — please try again');
+        if (button) button.textContent = 'Pay & Join Queue';
     }
-
-    finalizeJoin(p, s, false);
 }
 
 
@@ -785,298 +817,60 @@ function finalizeJoin(p, s, paidOnline) {
 
     s.q++;
 
-    if (!Array.isArray(S.payments)) {
-        S.payments = [];
-    }
+    if (!Array.isArray(S.payments)) S.payments = [];
 
     S.payments.unshift({
-        id:
-            'PAY' +
-            Date.now()
-                .toString()
-                .slice(-8),
-
+        id: 'PAY' + Date.now().toString().slice(-8),
         shop: s.name,
         svc: p.svcName,
         amount: p.price,
-
-        method:
-            paidOnline
-                ? 'Online'
-                : 'Pay at Shop',
-
-        status:
-            paidOnline
-                ? 'Paid'
-                : 'Pending',
-
-        date:
-            new Date().toLocaleDateString(
-                'en-IN',
-                {
-                    day: '2-digit',
-                    month: 'short'
-                }
-            )
+        method: paidOnline ? 'Online' : 'Pay at Shop',
+        status: paidOnline ? 'Paid' : 'Pending',
+        date: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })
     });
 
     if (paidOnline) {
-
-        if (typeof S.onlineCollected !== 'number') {
-            S.onlineCollected = 0;
-        }
-
+        if (typeof S.onlineCollected !== 'number') S.onlineCollected = 0;
         S.onlineCollected += p.price;
+
+        if (!S.paymentMethods.includes('Online Payment')) {
+            S.paymentMethods.push('Online Payment');
+        }
+    } else {
+        if (!S.paymentMethods.includes('Pay at Shop')) {
+            S.paymentMethods.push('Pay at Shop');
+        }
     }
 
     closeModal('m-pay');
 
-    const tokenEl =
-        document.getElementById('ok-tok');
+    const tokenEl = document.getElementById('ok-tok');
+    const subEl = document.getElementById('ok-sub');
+    const serviceEl = document.getElementById('ok-svc');
 
-    const subEl =
-        document.getElementById('ok-sub');
+    if (tokenEl) tokenEl.textContent = S.myTok;
+    if (subEl) subEl.textContent = 'Token #' + S.myTok + ' · ~' + s.wait + ' min wait';
+    if (serviceEl) serviceEl.textContent = S.mySvc;
 
-    const serviceEl =
-        document.getElementById('ok-svc');
-
-    if (tokenEl) {
-        tokenEl.textContent = S.myTok;
-    }
-
-    if (subEl) {
-        subEl.textContent =
-            'Token #' +
-            S.myTok +
-            ' · ~' +
-            s.wait +
-            ' min wait';
-    }
-
-    if (serviceEl) {
-        serviceEl.textContent = S.mySvc;
-    }
-
-    const note =
-        document.getElementById('ok-pay-note');
-
+    const note = document.getElementById('ok-pay-note');
     if (note) {
-
-        note.style.color =
-            paidOnline
-                ? 'var(--green)'
-                : 'var(--txt2)';
-
-        note.textContent =
-            paidOnline
-                ? '✅ Payment of ₹' +
-                  p.price +
-                  ' received'
-                : '💵 Pay ₹' +
-                  p.price +
-                  ' at the shop';
+        note.style.color = paidOnline ? 'var(--green)' : 'var(--txt2)';
+        note.textContent = paidOnline
+            ? '✅ Payment of ₹' + p.price + ' received'
+            : '💵 Pay ₹' + p.price + ' at the shop';
     }
 
     openModal('m-ok');
 
     toast(
         paidOnline ? '✅' : '🎫',
-        paidOnline
-            ? 'Payment successful!'
-            : 'Added to queue — pay at shop'
+        paidOnline ? 'Payment successful!' : 'Added to queue — pay at shop'
     );
 
     setTimeout(() => {
-
-        toast(
-            '🔔',
-            'Heads up! 2 people ahead of you in queue'
-        );
-
+        toast('🔔', 'Heads up! 2 people ahead of you in queue');
     }, 12000);
 }
-
-// ═══════════════════════════════════════ UPI QR CODE ═══════════════════════════════════════
-
-function updateUpiQr() {
-
-    const qrImg = document.getElementById('upi-qr-img');
-
-    if (!qrImg) {
-        console.warn('UPI QR image element not found');
-        return;
-    }
-
-    // Use the existing QR.webp poster
-    qrImg.src = 'QR.webp';
-    qrImg.alt = 'UPI QR Code';
-
-    // Crop the poster and show ONLY the QR area
-    qrImg.style.position = 'absolute';
-    qrImg.style.width = '227px';
-    qrImg.style.height = 'auto';
-    qrImg.style.maxWidth = 'none';
-
-    // QR position inside your 927 × 1288 image
-    qrImg.style.left = '-23px';
-    qrImg.style.top = '-60px';
-
-    qrImg.style.padding = '0';
-    qrImg.style.margin = '0';
-    qrImg.style.borderRadius = '0';
-}
-// ═══════════════════════════════════════ COPY UPI ID ═══════════════════════════════════════
-
-function openPayModal() {
-
-    const p = S.pendingJoin;
-
-    if (!p) {
-        toast('⚠️', 'No pending queue request');
-        return;
-    }
-
-    const amountEl = document.getElementById('pay-amt');
-    const serviceEl = document.getElementById('pay-svc');
-
-    if (amountEl) {
-        amountEl.textContent = '₹' + p.price;
-    }
-
-    if (serviceEl) {
-        serviceEl.textContent =
-            p.svcName + ' · Token #' + p.tok;
-    }
-
-    updateUpiQr();
-
-    selectPayMethod('online');
-
-    openModal('m-pay');
-}
-
-function openPayModal(){
-
-  const p=S.pendingJoin;
-
-  if(!p)return;
-
-  document.getElementById('pay-amt').textContent='₹'+p.price;
-
-  document.getElementById('pay-svc').textContent=
-    p.svcName+' · Token #'+p.tok;
-
-  updateUpiQr(p.price, p.svcName+' - Token '+p.tok);
-
-  selectPayMethod('online');
-
-  openModal('m-pay');
-}
-
-function selectPayMethod(m){
-
-  S.payMethod=m;
-
-  document.querySelectorAll('.pay-opt')
-  .forEach(el=>el.classList.remove('sel'));
-
-  document.getElementById('pay-'+m).classList.add('sel');
-
-  document.getElementById('pay-btn-label').textContent=
-    m==='shop'
-    ?'Confirm & Join (Pay at Shop)'
-    :'Pay & Join Queue';
-
-  const qrSection=document.getElementById('upi-qr-section');
-  if(qrSection) qrSection.style.display = m==='online' ? 'block' : 'none';
-}
-
-function processPayment(){
-
-  const p=S.pendingJoin;
-
-  if(!p)return;
-
-  const s=S.shops[p.shopId];
-
-  if(S.payMethod==='online'){
-
-    document.getElementById('pay-btn-label').innerHTML=
-      '<span class="spinner"></span> Processing…';
-
-    setTimeout(()=>{
-      finalizeJoin(p,s,true);
-    },1000);
-
-  }else{
-
-    finalizeJoin(p,s,false);
-
-  }
-}
-
-
-function finalizeJoin(p,s,paidOnline){
-
-  S.inQueue=true;
-
-  S.myTok=p.tok;
-
-  S.mySvc=p.svcName;
-
-  S.myShopId=p.shopId;
-
-  s.q++;
-
-  S.payments.unshift({
-    id:'PAY'+Date.now().toString().slice(-8),
-    shop:s.name,
-    svc:p.svcName,
-    amount:p.price,
-    method:paidOnline?'Online':'Pay at Shop',
-    status:paidOnline?'Paid':'Pending',
-    date:new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short'})
-  });
-
-  if(paidOnline){
-    S.onlineCollected+=p.price;
-
-    if(!S.paymentMethods.includes('Online Payment')){
-      S.paymentMethods.push('Online Payment');
-    }
-  }
-
-  closeModal('m-pay');
-
-  document.getElementById('ok-tok').textContent=S.myTok;
-
-  document.getElementById('ok-sub').textContent=
-    'Token #'+S.myTok+' · ~'+s.wait+' min wait';
-
-  document.getElementById('ok-svc').textContent=S.mySvc;
-
-  const note=document.getElementById('ok-pay-note');
-
-  if(note){
-    note.style.color=paidOnline?'var(--green)':'var(--txt2)';
-    note.textContent=paidOnline
-      ?'✅ Payment of ₹'+p.price+' received'
-      :'💵 Pay ₹'+p.price+' at the shop';
-  }
-
-  openModal('m-ok');
-
-  toast(
-    paidOnline?'✅':'🎫',
-    paidOnline?'Payment successful!':'Added to queue — pay at shop'
-  );
-
-  setTimeout(
-    ()=>toast('🔔','Heads up! 2 people ahead of you in queue'),
-    12000
-  );
-}
-
 
 function leaveQ(){
 
