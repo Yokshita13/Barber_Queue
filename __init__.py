@@ -16,6 +16,10 @@ def create_app():
     db.init_app(app)
     CORS(app)
 
+    # Register blueprints
+    from .payments import payments_bp
+    app.register_blueprint(payments_bp)
+
     # Import models
     from .models import (
         User,
