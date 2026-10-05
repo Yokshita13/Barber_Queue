@@ -39,4 +39,5 @@ def create_app():
     def home():
         return "TrimQ Backend is Running!"
 
+
     return app
