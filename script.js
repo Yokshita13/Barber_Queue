@@ -12,6 +12,21 @@ const S={
     location:''
   },
 
+barber:{
+  name:'',
+  phone:'',
+  shopName:'',
+  address:'',
+  openingTime:'',
+  closingTime:'',
+  rating:0,
+  ratingCount:0,
+  payoutBank:'',
+  payoutLast4:'',
+  photo:'',
+  onlineCollected:0
+},
+
   inQueue:false,
   myTok:7,
   mySvc:'Hair Cut',
@@ -1673,31 +1688,49 @@ function renderAnalytics(){
   `;
 }
 
+function bTab(tab, el){
 
-function bTab(name,el){
+  const tabs = {
+    queue: 'b-queue-tab',
+    svc: 'b-svc-tab',
+    analytics: 'b-analytics-tab',
+    profile: 'b-profile-tab'
+  };
 
-  document.getElementById('b-queue-tab').style.display=
-    name==='queue'?'block':'none';
+  Object.values(tabs).forEach(id => {
+    const section = document.getElementById(id);
+    if(section) section.style.display = 'none';
+  });
 
-  document.getElementById('b-svc-tab').style.display=
-    name==='svc'?'block':'none';
+  const target = document.getElementById(tabs[tab]);
 
-  document.getElementById('b-analytics-tab').style.display=
-    name==='analytics'?'block':'none';
+  if(target){
+    target.style.display = 'block';
+  }
+
+  document.querySelectorAll('#b-tabs .tab').forEach(t => {
+    t.classList.remove('on');
+  });
 
   if(el){
-
-    document.querySelectorAll('#b-tabs .tab')
-    .forEach(t=>t.classList.remove('on'));
-
     el.classList.add('on');
   }
 
-  if(name==='svc')
-    renderSvcs();
+  if(tab === 'queue'){
+    renderBQ();
+  }
 
-  if(name==='analytics')
+  if(tab === 'svc'){
+    renderSvcs();
+  }
+
+  if(tab === 'analytics'){
     renderAnalytics();
+  }
+
+  if(tab === 'profile'){
+    renderBarberProfile();
+  }
 }
 
 // ═══════ PAYMENT HISTORY (for profile) ═══════
@@ -1778,19 +1811,372 @@ function requestRefund(paymentId){
   }, 2500);
 }
 
-// ═══════ PROFILE ═══════
+function renderBarberProfile(){
+
+  const b = S.barber || {};
+
+  const setText = (id, value) => {
+    const el = document.getElementById(id);
+    if(el) el.textContent = value;
+  };
+
+  setText(
+    'barber-profile-name',
+    b.name || 'Not set'
+  );
+
+  setText(
+    'barber-profile-fullname',
+    b.name || 'Not set'
+  );
+
+  setText(
+    'barber-profile-phone',
+    b.phone || 'Not set'
+  );
+
+  setText(
+    'barber-profile-shop',
+    b.shopName || 'Shop name not set'
+  );
+
+  setText(
+    'barber-profile-shopname',
+    b.shopName || 'Not set'
+  );
+
+  setText(
+    'barber-profile-address',
+    b.address || 'Not set'
+  );
+
+  const hours =
+    b.openingTime && b.closingTime
+      ? b.openingTime + ' – ' + b.closingTime
+      : 'Not set';
+
+  setText(
+    'barber-profile-hours',
+    hours
+  );
+
+  const rating =
+    Number(b.rating) > 0
+      ? Number(b.rating).toFixed(1) + ' / 5.0'
+      : 'No ratings yet';
+
+  setText(
+    'barber-profile-rating',
+    rating
+  );
+
+  setText(
+    'barber-profile-rating-count',
+    `${Number(b.ratingCount) || 0} reviews`
+  );
+
+  const bank =
+    b.payoutBank && b.payoutLast4
+      ? b.payoutBank + ' ••••' + b.payoutLast4
+      : 'Not set';
+
+  setText(
+    'barber-profile-bank',
+    bank
+  );
+
+  setText(
+    'barber-profile-online',
+    '₹' + (
+      Number(b.onlineCollected) || 0
+    ).toLocaleString('en-IN')
+  );
+
+
+  const photo =
+    document.getElementById('barber-profile-photo');
+
+  if(photo){
+
+    if(b.photo){
+
+      photo.innerHTML = `
+        <img
+          src="${b.photo}"
+          alt="Shop Photo"
+          style="
+            width:100%;
+            height:100%;
+            object-fit:cover;
+            border-radius:50%;
+          "
+        >
+      `;
+
+    }else{
+
+      photo.textContent =
+        b.name
+          ? b.name.charAt(0).toUpperCase()
+          : 'B';
+
+    }
+  }
+}
+
+function editBarberProfile(){
+
+  const b = S.barber || {};
+
+  const fields = {
+    'bp-name': b.name || '',
+    'bp-phone': (b.phone || '').replace('+91 ', ''),
+    'bp-shop': b.shopName || '',
+    'bp-address': b.address || '',
+    'bp-open': b.openingTime || '',
+    'bp-close': b.closingTime || '',
+    'bp-bank': b.payoutBank || '',
+    'bp-last4': b.payoutLast4 || ''
+  };
+
+  Object.entries(fields).forEach(([id, value]) => {
+
+    const el = document.getElementById(id);
+
+    if(el){
+      el.value = value;
+    }
+
+  });
+
+  openModal('m-editbarber');
+}
+
+function saveBarberProfile(){
+
+  const name =
+    document.getElementById('bp-name')?.value.trim() || '';
+
+  const phone =
+    document.getElementById('bp-phone')?.value.trim() || '';
+
+  const shop =
+    document.getElementById('bp-shop')?.value.trim() || '';
+
+  const address =
+    document.getElementById('bp-address')?.value.trim() || '';
+
+  const opening =
+    document.getElementById('bp-open')?.value || '';
+
+  const closing =
+    document.getElementById('bp-close')?.value || '';
+
+  const bank =
+    document.getElementById('bp-bank')?.value.trim() || '';
+
+  const last4 =
+    document.getElementById('bp-last4')?.value.trim() || '';
+
+
+  if(!name){
+    toast('⚠️','Please enter your full name');
+    return;
+  }
+
+
+  if(!/^\d{10}$/.test(phone)){
+    toast('⚠️','Please enter a valid 10-digit phone number');
+    return;
+  }
+
+
+  if(!shop){
+    toast('⚠️','Please enter your shop name');
+    return;
+  }
+
+
+  if(!address){
+    toast('⚠️','Please enter your shop address');
+    return;
+  }
+
+
+  if(!opening || !closing){
+    toast('⚠️','Please enter opening and closing time');
+    return;
+  }
+
+
+  if(opening >= closing){
+    toast('⚠️','Closing time must be after opening time');
+    return;
+  }
+
+
+  if(bank && !/^[A-Za-z ]+$/.test(bank)){
+    toast('⚠️','Please enter a valid bank name');
+    return;
+  }
+
+
+  if(last4 && !/^\d{4}$/.test(last4)){
+    toast('⚠️','Account number must contain exactly 4 digits');
+    return;
+  }
+
+
+  S.barber.name = name;
+  S.barber.phone = '+91 ' + phone;
+  S.barber.shopName = shop;
+  S.barber.address = address;
+  S.barber.openingTime = opening;
+  S.barber.closingTime = closing;
+  S.barber.payoutBank = bank;
+  S.barber.payoutLast4 = last4;
+
+
+  closeModal('m-editbarber');
+
+  renderBarberProfile();
+
+  toast('✅','Barber profile updated successfully');
+}
+
+function updateShopPhoto(){
+
+  const input = document.createElement('input');
+
+  input.type = 'file';
+  input.accept = 'image/png,image/jpeg,image/webp';
+
+  input.onchange = function(){
+
+    const file = input.files[0];
+
+    if(!file) return;
+
+
+    if(file.size > 5 * 1024 * 1024){
+
+      toast('⚠️','Image must be smaller than 5 MB');
+      return;
+
+    }
+
+
+    const reader = new FileReader();
+
+    reader.onload = function(e){
+
+      S.barber.photo = e.target.result;
+
+      renderBarberProfile();
+
+      toast('📷','Shop photo updated successfully');
+
+    };
+
+    reader.readAsDataURL(file);
+  };
+
+
+  input.click();
+}
+
+
+function logoutBarber(){
+
+  S.role = null;
+
+  toast(
+    '👋',
+    'Logged out successfully'
+  );
+
+  setTimeout(() => {
+    go('s-land');
+  }, 600);
+}
+
+
+function deleteBarberAccount(){
+
+  const confirmed = confirm(
+    'Are you sure you want to delete your barber account?'
+  );
+
+  if(!confirmed) return;
+
+  S.barber = {
+    name:'',
+    phone:'',
+    shopName:'',
+    address:'',
+    openingTime:'',
+    closingTime:'',
+    rating:0,
+    ratingCount:0,
+    payoutBank:'',
+    payoutLast4:'',
+    photo:'',
+    onlineCollected:0
+  };
+
+  S.role = null;
+
+  toast(
+    '🗑️',
+    'Barber account deleted'
+  );
+
+  setTimeout(() => {
+    go('s-land');
+  }, 700);
+}
+
+
 function renderProfile(){
 
   const isB = S.role === 'barber';
 
-  // BARBER PROFILE
-  if(isB){
+// ═══════ BARBER PROFILE ═══════
+if(isB){
 
-    document.getElementById('prof-body').innerHTML = `
+  const b = S.barber;
 
-      <div style="text-align:center;padding:24px 0 28px">
+  const barberName = b.name || 'Barber Name Not Set';
+  const phone = b.phone || 'Phone not set';
+  const shopName = b.shopName || 'Shop name not set';
+  const address = b.address || 'Address not set';
 
-        <div class="av"
+  const hours =
+    b.openingTime && b.closingTime
+      ? `${b.openingTime} – ${b.closingTime}`
+      : 'Hours not set';
+
+  const rating =
+    b.ratingCount > 0
+      ? `${b.rating.toFixed(1)} / 5.0 (${b.ratingCount} reviews)`
+      : 'No ratings yet';
+
+  const payout =
+    b.payoutBank && b.payoutLast4
+      ? `${b.payoutBank} ••••${b.payoutLast4}`
+      : 'Payout account not set';
+
+  const initial =
+    barberName.charAt(0).toUpperCase();
+
+  document.getElementById('prof-body').innerHTML = `
+
+    <div style="
+      text-align:center;
+      padding:24px 0 28px
+    ">
+
+      <div class="av"
         style="
           width:80px;
           height:80px;
@@ -1799,140 +2185,272 @@ function renderProfile(){
           background:var(--cdim);
           border:3px solid var(--cyan);
           color:var(--cyan)
-        ">
-          R
+        "
+      >
+        ${initial}
+      </div>
+
+      <div style="
+        font-size:22px;
+        font-weight:800;
+        font-family:'Syne',sans-serif
+      ">
+        ${barberName}
+      </div>
+
+      <div style="
+        color:var(--txt2);
+        font-size:13px;
+        margin-top:4px
+      ">
+        ${shopName}
+      </div>
+
+      <span class="tag tgreen" style="margin-top:10px">
+        Verified Barber
+      </span>
+
+    </div>
+
+
+    <div style="margin-bottom:20px">
+
+      <!-- Phone -->
+      <div class="prow">
+
+        <div class="prow-ico">📱</div>
+
+        <div style="flex:1">
+          <div class="prow-lab">
+            Phone
+          </div>
+
+          <div class="prow-val">
+            ${phone}
+          </div>
         </div>
 
-        <div style="
-          font-size:22px;
-          font-weight:800;
-          font-family:'Syne',sans-serif
-        ">
-          Rahul Sharma
-        </div>
-
-        <div style="
-          color:var(--txt2);
-          font-size:13px;
-          margin-top:4px
-        ">
-          Royal Cuts · Hazratganj, Lucknow
-        </div>
-
-        <span class="tag tgreen" style="margin-top:10px">
-          Verified Barber
-        </span>
+        <span style="color:var(--txt2)">›</span>
 
       </div>
 
-      <div style="margin-bottom:20px">
 
-        <div class="prow">
-          <div class="prow-ico">📱</div>
-          <div style="flex:1">
-            <div class="prow-lab">Phone</div>
-            <div class="prow-val">+91 98765 43210</div>
+      <!-- Shop Name -->
+      <div class="prow">
+
+        <div class="prow-ico">🏪</div>
+
+        <div style="flex:1">
+          <div class="prow-lab">
+            Shop Name
           </div>
-          <span style="color:var(--txt2)">›</span>
+
+          <div class="prow-val">
+            ${shopName}
+          </div>
         </div>
 
-        <div class="prow">
-          <div class="prow-ico">🏪</div>
-          <div style="flex:1">
-            <div class="prow-lab">Shop Name</div>
-            <div class="prow-val">Royal Cuts</div>
-          </div>
-          <span style="color:var(--txt2)">›</span>
-        </div>
-
-        <div class="prow">
-          <div class="prow-ico">📍</div>
-          <div style="flex:1">
-            <div class="prow-lab">Address</div>
-            <div class="prow-val">Hazratganj, Lucknow</div>
-          </div>
-          <span style="color:var(--txt2)">›</span>
-        </div>
-
-        <div class="prow">
-          <div class="prow-ico">🕐</div>
-          <div style="flex:1">
-            <div class="prow-lab">Hours</div>
-            <div class="prow-val">9:00 AM – 8:00 PM</div>
-          </div>
-          <span style="color:var(--txt2)">›</span>
-        </div>
-
-        <div class="prow">
-          <div class="prow-ico">⭐</div>
-          <div style="flex:1">
-            <div class="prow-lab">My Rating</div>
-            <div class="prow-val">4.8 / 5.0</div>
-          </div>
-          <span style="color:var(--txt2)">›</span>
-        </div>
-
-        <div class="prow" style="cursor:pointer" onclick="toast('💳','Payout account: HDFC Bank ••••4821')">
-          <div class="prow-ico">🏦</div>
-          <div style="flex:1">
-            <div class="prow-lab">Payout Account</div>
-            <div class="prow-val">HDFC Bank ••••4821</div>
-          </div>
-          <span style="color:var(--txt2)">›</span>
-        </div>
-
-        <div class="prow" style="cursor:pointer" onclick="go('s-support')">
-          <div class="prow-ico">🎧</div>
-          <div style="flex:1">
-            <div class="prow-lab">Support</div>
-            <div class="prow-val">Help &amp; Support</div>
-          </div>
-          <span style="color:var(--txt2)">›</span>
-        </div>
+        <span style="color:var(--txt2)">›</span>
 
       </div>
 
-      <div style="font-size:15px;font-weight:700;font-family:'Syne',sans-serif;margin-bottom:12px">
-        Online Payments Collected Today
-      </div>
 
-      <div class="card card-p" style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center">
-        <span style="color:var(--txt2);font-size:13px">Via Barber-Q Pay</span>
-        <span style="font-size:22px;font-weight:800;font-family:'Syne',sans-serif;color:var(--gold)">
-          ₹${S.onlineCollected.toLocaleString('en-IN')}
-        </span>
-      </div>
+      <!-- Address -->
+      <div class="prow">
 
-      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="prow-ico">📍</div>
 
-        <button class="btn btn-outline btn-full"
-          onclick="editProfile()">
-          ✏️ Edit Profile
-        </button>
+        <div style="flex:1">
+          <div class="prow-lab">
+            Address
+          </div>
 
-        <button class="btn btn-outline btn-full"
-          onclick="toast('📷','Shop photo upload coming soon!')">
-          📷 Update Shop Photo
-        </button>
+          <div class="prow-val">
+            ${address}
+          </div>
+        </div>
 
-        <button class="btn btn-red btn-full"
-          onclick="logout()">
-          Logout
-        </button>
-
-        <button class="btn btn-ghost btn-full"
-          style="color:var(--red)"
-          onclick="toast('⚠️','Account deletion requires email confirmation')">
-          Delete Account
-        </button>
+        <span style="color:var(--txt2)">›</span>
 
       </div>
 
-      <div style="height:24px"></div>
-    `;
 
-    return;
-  }
+      <!-- Hours -->
+      <div class="prow">
+
+        <div class="prow-ico">🕐</div>
+
+        <div style="flex:1">
+          <div class="prow-lab">
+            Hours
+          </div>
+
+          <div class="prow-val">
+            ${hours}
+          </div>
+        </div>
+
+        <span style="color:var(--txt2)">›</span>
+
+      </div>
+
+
+      <!-- Rating -->
+      <div class="prow">
+
+        <div class="prow-ico">⭐</div>
+
+        <div style="flex:1">
+          <div class="prow-lab">
+            My Rating
+          </div>
+
+          <div class="prow-val">
+            ${rating}
+          </div>
+        </div>
+
+        <span style="color:var(--txt2)">›</span>
+
+      </div>
+
+
+      <!-- Payout -->
+      <div class="prow">
+
+        <div class="prow-ico">🏦</div>
+
+        <div style="flex:1">
+          <div class="prow-lab">
+            Payout Account
+          </div>
+
+          <div class="prow-val">
+            ${payout}
+          </div>
+        </div>
+
+        <span style="color:var(--txt2)">›</span>
+
+      </div>
+
+
+      <!-- Support -->
+      <div
+        class="prow"
+        style="cursor:pointer"
+        onclick="go('s-support')"
+      >
+
+        <div class="prow-ico">🎧</div>
+
+        <div style="flex:1">
+
+          <div class="prow-lab">
+            Support
+          </div>
+
+          <div class="prow-val">
+            Help &amp; Support
+          </div>
+
+        </div>
+
+        <span style="color:var(--txt2)">›</span>
+
+      </div>
+
+    </div>
+
+
+    <!-- Online Payments -->
+
+    <div style="
+      font-size:15px;
+      font-weight:700;
+      font-family:'Syne',sans-serif;
+      margin-bottom:12px
+    ">
+      Online Payments Collected Today
+    </div>
+
+    <div
+      class="card card-p"
+      style="
+        margin-bottom:20px;
+        display:flex;
+        justify-content:space-between;
+        align-items:center
+      "
+    >
+
+      <span style="
+        color:var(--txt2);
+        font-size:13px
+      ">
+        Via Barber-Q Pay
+      </span>
+
+      <span style="
+        font-size:22px;
+        font-weight:800;
+        font-family:'Syne',sans-serif;
+        color:var(--gold)
+      ">
+        ₹${S.onlineCollected.toLocaleString('en-IN')}
+      </span>
+
+    </div>
+
+
+    <!-- Buttons -->
+
+    <div style="
+      display:flex;
+      flex-direction:column;
+      gap:10px
+    ">
+
+      <button
+        class="btn btn-outline btn-full"
+        onclick="editBarberProfile()"
+      >
+        ✏️ Edit Profile
+      </button>
+
+
+      <button
+        class="btn btn-outline btn-full"
+        onclick="toast('📷','Shop photo upload coming soon!')"
+      >
+        📷 Update Shop Photo
+      </button>
+
+
+      <button
+        class="btn btn-red btn-full"
+        onclick="logout()"
+      >
+        Logout
+      </button>
+
+
+      <button
+        class="btn btn-ghost btn-full"
+        style="color:var(--red)"
+        onclick="toast('⚠️','Account deletion requires email confirmation')"
+      >
+        Delete Account
+      </button>
+
+    </div>
+
+    <div style="height:24px"></div>
+
+  `;
+
+  return;
+}
 
   // ═══════ CUSTOMER PROFILE ═══════
 
