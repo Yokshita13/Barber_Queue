@@ -61,20 +61,25 @@ barber:{
   ],
 
   bq:[
-    {tok:3,name:'Rajesh K.',svc:'Hair Cut',dur:20,st:'cur',eta:0},
-    {tok:4,name:'Amit S.',svc:'Beard Trim',dur:15,st:'nxt',eta:20},
-    {tok:5,name:'Priya M.',svc:'Hair Color',dur:60,st:'wait',eta:35},
-    {tok:6,name:'Suresh P.',svc:'Hair Cut',dur:20,st:'wait',eta:95},
-    {tok:7,name:'Anuj T.',svc:'Hair Spa',dur:90,st:'wait',eta:115},
-    {tok:8,name:'Deepa R.',svc:'Facial',dur:45,st:'wait',eta:205},
+    // {tok:3,name:'Rajesh K.',svc:'Hair Cut',dur:20,st:'cur',eta:0},
+    // {tok:4,name:'Amit S.',svc:'Beard Trim',dur:15,st:'nxt',eta:20},
+    // {tok:5,name:'Priya M.',svc:'Hair Color',dur:60,st:'wait',eta:35},
+    // {tok:6,name:'Suresh P.',svc:'Hair Cut',dur:20,st:'wait',eta:95},
+    // {tok:7,name:'Anuj T.',svc:'Hair Spa',dur:90,st:'wait',eta:115},
+    // {tok:8,name:'Deepa R.',svc:'Facial',dur:45,st:'wait',eta:205},
   ],
 
-  earn:1840,
-  doneCnt:8,
+  earn:0,
+  doneCnt:0,
   onlineCollected:0
 
 };
+// Load saved barber services
+const savedServices = localStorage.getItem('barberServices');
 
+if (savedServices) {
+  S.services = JSON.parse(savedServices);
+}
 
 // ═══════ NAV ═══════
 function go(id){
@@ -1308,62 +1313,98 @@ function skipToken(){
   );
 }
 
+let nextTok = 1;
 
-const walkinNames=[
-  'Vikram R.',
-  'Sanjeev P.',
-  'Kavya S.',
-  'Rohit M.',
-  'Meera K.',
-  'Arjun D.',
-  'Sneha T.'
-];
+function openWalkinModal() {
 
-let nextTok=9;
+  const nameInput = document.getElementById('walkin-name');
+  const serviceSelect = document.getElementById('walkin-service');
 
+  if (!nameInput || !serviceSelect) {
+    console.error('Walk-in form elements not found');
+    return;
+  }
 
-function addDemoCustomer(){
+  nameInput.value = '';
 
-  const sv=
-    S.services[
-      Math.floor(
-        Math.random()*S.services.length
-      )
-    ];
+  serviceSelect.innerHTML = '';
 
-  const last=
-    S.bq[S.bq.length-1];
+  S.services.forEach(service => {
 
-  const n={
-    tok:nextTok++,
-    name:
-      walkinNames[
-        Math.floor(
-          Math.random()*walkinNames.length
-        )
-      ],
-    svc:sv.name,
-    dur:sv.dur,
-    st:'wait',
-    eta:(last?.eta||10)+sv.dur
+    const option = document.createElement('option');
+
+    option.value = service.id;
+
+    option.textContent =
+      `${service.name} — ₹${service.price} (${service.dur} min)`;
+
+    serviceSelect.appendChild(option);
+
+  });
+
+  openModal('m-walkin');
+
+  setTimeout(() => {
+    nameInput.focus();
+  }, 100);
+}
+
+function addWalkinCustomer() {
+
+  const nameInput = document.getElementById('walkin-name');
+  const serviceSelect = document.getElementById('walkin-service');
+
+  const name = nameInput.value.trim();
+
+  if (!name) {
+    toast('⚠️', 'Please enter customer name');
+    nameInput.focus();
+    return;
+  }
+
+  const serviceId = Number(serviceSelect.value);
+
+  const service = S.services.find(
+    s => s.id === serviceId
+  );
+
+  if (!service) {
+    toast('⚠️', 'Please select a service');
+    return;
+  }
+
+  const customer = {
+    tok: nextTok++,
+    name: name,
+    svc: service.name,
+    dur: service.dur,
+    st: S.bq.length === 0 ? 'cur' : 'wait',
+    eta: calculateWalkinETA()
   };
 
-  S.bq.push(n);
+  S.bq.push(customer);
 
-  if(S.bq.length===1)
-    S.bq[0].st='cur';
-
-  else if(S.bq.length===2)
-    S.bq[1].st='nxt';
+  closeModal('m-walkin');
 
   renderBQ();
 
   toast(
-    '👋',
-    'New customer added to queue!'
+    '✅',
+    `${name} added to the queue`
   );
 }
 
+function calculateWalkinETA() {
+
+  if (S.bq.length === 0) {
+    return 0;
+  }
+
+  return S.bq.reduce(
+    (total, customer) => total + Number(customer.dur || 0),
+    0
+  );
+}
 
 function toggleShop(){
 
@@ -1438,64 +1479,101 @@ function renderSvcs(){
   `).join('');
 }
 
-
 function addSvc(){
 
-  const n=
-    document.getElementById('sn').value.trim();
+  const nameEl = document.getElementById('sn');
+  const priceEl = document.getElementById('sp');
+  const durationEl = document.getElementById('sd');
+  const emojiEl = document.getElementById('svc-ico');
 
-  const p=
-    parseInt(
-      document.getElementById('sp').value
-    );
-
-  const d=
-    parseInt(
-      document.getElementById('sd').value
-    );
-
-  const e=
-    document.getElementById('se').value||'💼';
-
-  if(!n||isNaN(p)||isNaN(d)){
-
-    toast(
-      '⚠️',
-      'Please fill all fields'
-    );
-
+  if(!nameEl || !priceEl || !durationEl || !emojiEl){
+    console.error('Add Service fields are missing.');
+    toast('⚠️','Add Service form is not loaded correctly');
     return;
   }
 
-  S.services.push({
-    id:S.services.length+1,
-    name:n,
-    price:p,
-    dur:d,
-    ico:e
-  });
+  const n = nameEl.value.trim();
+  const p = parseInt(priceEl.value);
+  const d = parseInt(durationEl.value);
+  const e = emojiEl.value.trim() || '💇';
 
+  // Validation
+  if(!n){
+    toast('⚠️','Please enter service name');
+    nameEl.focus();
+    return;
+  }
+
+  if(isNaN(p) || p < 0){
+    toast('⚠️','Please enter a valid price');
+    priceEl.focus();
+    return;
+  }
+
+  if(isNaN(d) || d < 5){
+    toast('⚠️','Please enter a valid duration');
+    durationEl.focus();
+    return;
+  }
+
+  // Add service
+  const newService = {
+    id: Date.now(),
+    name: n,
+    price: p,
+    dur: d,
+    ico: e
+  };
+
+  S.services.push(newService);
+
+  // Save permanently in browser
+  localStorage.setItem(
+    'barberServices',
+    JSON.stringify(S.services)
+  );
+
+  // Close modal
   closeModal('m-svc');
 
+  // Refresh service list
   renderSvcs();
+
+  // Reset form
+  nameEl.value = '';
+  priceEl.value = '';
+  durationEl.value = '';
+
+  emojiEl.value = '💇';
+
+  const selectedEmoji = document.getElementById('emoji-selected');
+  if(selectedEmoji){
+    selectedEmoji.textContent = '💇';
+  }
+
+  const picker = document.getElementById('emoji-picker');
+  if(picker){
+    picker.style.display = 'none';
+  }
 
   toast(
     '✅',
     `Service "${n}" added!`
   );
-
-  document.getElementById('sn').value='';
-  document.getElementById('sp').value='';
-  document.getElementById('sd').value='';
-  document.getElementById('se').value='💇';
 }
 
 
 function delSvc(i){
 
-  const n=S.services[i].name;
+  const n = S.services[i].name;
 
-  S.services.splice(i,1);
+  S.services.splice(i, 1);
+
+  // SAVE UPDATED SERVICES
+  localStorage.setItem(
+    'barberServices',
+    JSON.stringify(S.services)
+  );
 
   renderSvcs();
 
@@ -1505,6 +1583,173 @@ function delSvc(i){
   );
 }
 
+const serviceEmojis = [
+// Hair
+  '💇','💇‍♂️','💇‍♀️','💈','✂️','🪮','🧴',
+  
+  // Beard / Shaving
+  '🧔','🪒','👨‍🦰','👨‍🦱',
+  
+  // Beauty / Skin
+  '💆','🧖','🧖‍♂️','🧖‍♀️','✨','🧴','🫧',
+  
+  // Nails
+  '💅',
+  
+  // Hair styling / Coloring
+  '🎨','🖌️','🌈','✨',
+  
+  // Makeup / Beauty
+  '💄','👄','👁️','💋',
+  
+  // Spa / Grooming
+  '🛁','🧼','🧽','🌸','🌺','🌹',
+
+  // 😀 Smileys & People
+  '😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇',
+  '🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚',
+  '😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🤩',
+  '🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣',
+  '😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬',
+  '🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗',
+  '🤔','🫣','🤭','🫢','🫡','🤫','🫠','🤥','😶','🫥',
+  '😐','😑','😬','🙄','😯','😦','😧','😮','😲','🥱',
+  '😴','🤤','😪','😵','🤐','🥴','🤢','🤮','🤧','😷',
+
+  // 👨 People
+  '👶','🧒','👦','👧','🧑','👱','👨','👩',
+  '🧔','👴','👵','🙍','🙎','🙅','🙆','💁',
+  '🙋','🧏','🙇','🤦','🤷','👮','👷','💂',
+  '🕵️','👩‍⚕️','👨‍⚕️','👩‍🏫','👨‍🏫',
+  '👩‍💻','👨‍💻','👩‍🍳','👨‍🍳','👩‍🎨','👨‍🎨',
+  '👩‍🚀','👨‍🚀','🤵','👰','🫅',
+
+  // 💇 Salon / Beauty / Grooming
+  '💇','💇‍♂️','💇‍♀️','💈','✂️','🪮','🪒',
+  '🧔','🧴','💆','💆‍♂️','💆‍♀️',
+  '🧖','🧖‍♂️','🧖‍♀️','💅','💄',
+  '👄','👁️','👀','🪞','🧼','🫧',
+  '🛁','🧽','🎨','🖌️','✨','💎',
+  '👑','⭐','🌟','🔥','💫',
+
+  // 🐶 Animals
+  '🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼',
+  '🐨','🐯','🦁','🐮','🐷','🐸','🐵','🙈',
+  '🙉','🙊','🐒','🐔','🐧','🐦','🐤','🦆',
+  '🦅','🦉','🦇','🐺','🐗','🐴','🦄','🐝',
+  '🪲','🐞','🦋','🐌','🐢','🐍','🦎','🐙',
+  '🦀','🐠','🐟','🐡','🦈','🐳','🐋','🦭',
+
+  // 🌸 Nature
+  '🌸','🌺','🌹','🌷','🌻','🌼','🌱','🌿',
+  '☘️','🍀','🌳','🌴','🌵','🌾','🍃','🍂',
+  '🍁','🍄','🌍','🌎','🌏','🌙','🌞','☀️',
+  '🌤️','⛅','🌧️','⛈️','🌩️','❄️','☃️',
+  '🌈','⚡','🔥','💧','🌊','⭐','🌟','✨',
+
+  // 🍎 Food & Drinks
+  '🍎','🍐','🍊','🍋','🍌','🍉','🍇','🍓',
+  '🫐','🍒','🍑','🥭','🍍','🥥','🥝','🍅',
+  '🍆','🥑','🥦','🥕','🌽','🌶️','🫑','🥒',
+  '🥬','🧄','🧅','🥔','🍞','🥐','🥨','🧀',
+  '🍔','🍟','🍕','🌭','🌮','🌯','🥗','🍿',
+  '🍩','🍪','🎂','🍰','🧁','🍫','🍭','🍬',
+  '☕','🍵','🧋','🥤','🧃','🍹','🍸','🍺',
+
+  // ⚽ Sports & Activities
+  '⚽','🏀','🏈','⚾','🥎','🎾','🏐','🏉',
+  '🥏','🎱','🏓','🏸','🏒','🏑','🥊','🥋',
+  '⛳','🏹','🎣','🤿','🏋️','🤸','🤾','🏃',
+  '🚴','🏊','🧘','🧗','🎯','🎮','🕹️','🎲',
+  '♟️','🎨','🎭','🎬','🎤','🎧','🎼','🎹',
+  '🥇','🥈','🥉','🏆','🏅','🎖️','🎟️',
+
+  // 🚗 Travel & Places
+  '🚗','🚕','🚙','🚌','🚎','🏎️','🚓','🚑',
+  '🚒','🚐','🛻','🚚','🚛','🚜','🏍️','🛵',
+  '🚲','✈️','🛫','🛬','🚁','🚀','🛸','🚢',
+  '⛵','🚤','🚂','🚆','🚇','🚉','🏠','🏡',
+  '🏢','🏥','🏫','🏨','🏪','🏬','🏰','🗽',
+  '🗼','⛩️','🕌','⛪','🛕','🏖️','🏝️','🏔️',
+
+  // 💻 Objects / Technology
+  '📱','💻','🖥️','🖨️','⌨️','🖱️','💾','💿',
+  '📷','📸','📹','🎥','📺','📻','☎️','📞',
+  '🔋','🔌','💡','🔦','🕯️','📚','📖','📝',
+  '✏️','🖊️','📌','📍','📎','🔑','🔒','🔓',
+  '🛠️','🔧','🔨','⚙️','🧰','🧲','🔍','🔎',
+
+  // 💰 Money / Shopping
+  '💰','💵','💴','💶','💷','🪙','💳','💎',
+  '🛍️','🛒','🎁','🏷️','💸','💲','🧾','📦',
+
+  // ❤️ Symbols
+  '❤️','🧡','💛','💚','💙','💜','🖤','🤍',
+  '🤎','💔','❣️','💕','💞','💓','💗','💖',
+  '💘','💝','💟','☮️','✝️','☪️','🕉️','☯️',
+  '♈','♉','♊','♋','♌','♍','♎','♏',
+  '♐','♑','♒','♓','✅','❌','⭕','❗',
+  '❓','‼️','⁉️','⚠️','🚫','🔴','🟠','🟡',
+  '🟢','🔵','🟣','⚫','⚪','🟤',
+
+  // 👍 Gestures
+  '👍','👎','👌','✌️','🤞','🤟','🤘','🤙',
+  '👈','👉','👆','👇','☝️','✋','🤚','🖐️',
+  '🖖','👏','🙌','👐','🤲','🙏','💪','🤝',
+  '👋','💅','🫶','🫰',
+
+  // 🇮🇳 Flags
+  '🇮🇳','🇺🇸','🇬🇧','🇨🇦','🇦🇺','🇯🇵','🇰🇷',
+  '🇨🇳','🇫🇷','🇩🇪','🇮🇹','🇪🇸','🇦🇪','🇸🇬',
+  '🇮🇩','🇧🇷','🇲🇾','🇹🇭','🇿🇦','🇷🇺'
+];
+function loadEmojiPicker(){
+
+  const grid = document.getElementById('emoji-grid');
+
+  if(!grid) return;
+
+  grid.innerHTML = serviceEmojis.map(emoji => `
+    <button
+      type="button"
+      onclick="selectServiceEmoji('${emoji}')"
+      style="
+        border:none;
+        background:transparent;
+        font-size:24px;
+        cursor:pointer;
+        border-radius:8px;
+        padding:6px;
+      "
+      title="${emoji}">
+      ${emoji}
+    </button>
+  `).join('');
+}
+function toggleEmojiPicker(){
+
+  const picker = document.getElementById('emoji-picker');
+
+  if(!picker) return;
+
+  if(picker.style.display === 'none' || picker.style.display === ''){
+    picker.style.display = 'block';
+    loadEmojiPicker();
+  }else{
+    picker.style.display = 'none';
+  }
+}
+function selectServiceEmoji(emoji){
+
+  const selected = document.getElementById('emoji-selected');
+  const hidden = document.getElementById('svc-ico');
+  const picker = document.getElementById('emoji-picker');
+
+  if(selected) selected.textContent = emoji;
+  if(hidden) hidden.value = emoji;
+
+  if(picker) picker.style.display = 'none';
+}
 
 function renderAnalytics(){
 
