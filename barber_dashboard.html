@@ -39,17 +39,11 @@
         gap:10px;
       ">
 
-        <span
-          id="shop-status"
-          class="tag tgreen pulse"
-          style="cursor:pointer"
-          onclick="toggleShop()">
+        <span id="shop-status" class="tag tgreen pulse" style="cursor:pointer" onclick="toggleShop()">
           ● Open
         </span>
 
-        <div
-          class="av"
-          style="
+        <div class="av" style="
             width:36px;
             height:36px;
             background:var(--cdim);
@@ -57,8 +51,7 @@
             color:var(--cyan);
             font-size:14px;
             cursor:pointer;
-          "
-          onclick="bTab('profile',document.querySelector('#b-tabs .tab:last-child'))">
+          " onclick="bTab('profile',document.querySelector('#b-tabs .tab:last-child'))">
           B
         </div>
 
@@ -80,11 +73,8 @@
         <div class="stat">
           <div style="font-size:20px;margin-bottom:4px">👥</div>
 
-          <div
-            class="stat-n"
-            style="color:var(--gold)"
-            id="b-inq">
-            6
+          <div class="stat-n" style="color:var(--gold)" id="b-inq">
+            0
           </div>
 
           <div class="stat-l">
@@ -99,11 +89,8 @@
             ✅
           </div>
 
-          <div
-            class="stat-n"
-            style="color:var(--green)"
-            id="b-done">
-            8
+          <div class="stat-n" style="color:var(--green)" id="b-done">
+            0
           </div>
 
           <div class="stat-l">
@@ -119,11 +106,8 @@
             💰
           </div>
 
-          <div
-            class="stat-n"
-            style="font-size:20px;color:var(--gold)"
-            id="b-earn">
-            ₹1,840
+          <div class="stat-n" style="font-size:20px;color:var(--gold)" id="b-earn">
+            ₹0
           </div>
 
           <div class="stat-l">
@@ -131,9 +115,7 @@
           </div>
 
           <div class="pbar">
-            <div
-              class="pfill"
-              style="width:61%">
+            <div class="pfill" style="width:61%">
             </div>
           </div>
 
@@ -146,9 +128,7 @@
             ⏱️
           </div>
 
-          <div
-            class="stat-n"
-            id="b-wait">
+          <div class="stat-n" id="b-wait">
             28
           </div>
 
@@ -174,10 +154,7 @@
       <div id="b-qlist"></div>
 
 
-      <button
-        class="btn btn-outline btn-full"
-        style="margin-top:4px"
-        onclick="addDemoCustomer()">
+      <button class="btn btn-outline btn-full" style="margin-top:4px" onclick="openWalkinModal()">
         + Add Walk-in Customer
       </button>
 
@@ -186,10 +163,7 @@
 
     <!--SERVICES TAB-->
 
-    <div
-      class="scroll pad pad-b"
-      id="b-svc-tab"
-      style="display:none">
+    <div class="scroll pad pad-b" id="b-svc-tab" style="display:none">
 
       <div style="
         font-size:20px;
@@ -204,10 +178,7 @@
       <div id="b-svclist"></div>
 
 
-      <button
-        class="btn btn-outline btn-full"
-        style="margin-top:12px"
-        onclick="openModal('m-svc')">
+      <button class="btn btn-outline btn-full" style="margin-top:12px" onclick="openModal('m-svc')">
         + Add Service
       </button>
 
@@ -216,10 +187,7 @@
 
     <!-- ANALYTICS TAB-->
 
-    <div
-      class="scroll pad pad-b"
-      id="b-analytics-tab"
-      style="display:none">
+    <div class="scroll pad pad-b" id="b-analytics-tab" style="display:none">
 
       <div style="
         font-size:20px;
@@ -238,15 +206,9 @@
 
     <!-- PROFILE TAB -->
 
-    <div
-      class="scroll pad pad-b"
-      id="b-profile-tab"
-      style="display:none">
-
-<div style="margin-bottom:20px;">
-  <button
-      onclick="bTab('queue', document.querySelector('#b-tabs .tab:first-child'))"
-      style="
+    <div class="scroll pad pad-b" id="b-profile-tab" style="display:none">
+      <div style="margin-bottom:20px;">
+        <button onclick="bTab('queue', document.querySelector('#b-tabs .tab:first-child'))" style="
       background:none;
       border:none;
       color:var(--txt2);
@@ -254,9 +216,9 @@
       cursor:pointer;
       padding:0;
     ">
-    ← Back
-  </button>
-</div>
+          ← Back
+        </button>
+      </div>
 
       <!-- PROFILE HEADER -->
 
@@ -265,10 +227,7 @@
         margin-bottom:24px;
       ">
 
-        <div
-          id="barber-profile-photo"
-          class="av"
-          style="
+        <div id="barber-profile-photo" class="av" style="
             width:82px;
             height:82px;
             margin:0 auto 12px;
@@ -284,9 +243,7 @@
         </div>
 
 
-        <div
-          id="barber-profile-name"
-          style="
+        <div id="barber-profile-name" style="
             font-size:22px;
             font-weight:800;
             font-family:'Syne',sans-serif;
@@ -295,9 +252,7 @@
         </div>
 
 
-        <div
-          id="barber-profile-shop"
-          style="
+        <div id="barber-profile-shop" style="
             color:var(--txt2);
             margin-top:5px;
           ">
@@ -319,9 +274,7 @@
       </div>
 
 
-      <div
-        class="card"
-        style="margin-bottom:20px">
+      <div class="card" style="margin-bottom:20px">
 
         <div style="margin-bottom:16px">
 
@@ -329,9 +282,7 @@
             Full Name
           </div>
 
-          <div
-            id="barber-profile-fullname"
-            style="
+          <div id="barber-profile-fullname" style="
               margin-top:4px;
               font-weight:600;
             ">
@@ -347,9 +298,7 @@
             Phone Number
           </div>
 
-          <div
-            id="barber-profile-phone"
-            style="
+          <div id="barber-profile-phone" style="
               margin-top:4px;
               font-weight:600;
             ">
@@ -373,9 +322,7 @@
       </div>
 
 
-      <div
-        class="card"
-        style="margin-bottom:20px">
+      <div class="card" style="margin-bottom:20px">
 
         <div style="margin-bottom:16px">
 
@@ -383,9 +330,7 @@
             Shop Name
           </div>
 
-          <div
-            id="barber-profile-shopname"
-            style="
+          <div id="barber-profile-shopname" style="
               margin-top:4px;
               font-weight:600;
             ">
@@ -401,9 +346,7 @@
             Address
           </div>
 
-          <div
-            id="barber-profile-address"
-            style="
+          <div id="barber-profile-address" style="
               margin-top:4px;
               font-weight:600;
             ">
@@ -419,9 +362,7 @@
             Opening Hours
           </div>
 
-          <div
-            id="barber-profile-hours"
-            style="
+          <div id="barber-profile-hours" style="
               margin-top:4px;
               font-weight:600;
             ">
@@ -445,13 +386,9 @@
       </div>
 
 
-      <div
-        class="card"
-        style="margin-bottom:20px">
+      <div class="card" style="margin-bottom:20px">
 
-        <div
-          id="barber-profile-rating"
-          style="
+        <div id="barber-profile-rating" style="
             font-size:20px;
             font-weight:800;
           ">
@@ -459,9 +396,7 @@
         </div>
 
 
-        <div
-          id="barber-profile-rating-count"
-          style="
+        <div id="barber-profile-rating-count" style="
             color:var(--txt2);
             margin-top:5px;
           ">
@@ -492,9 +427,7 @@
       </div>
 
 
-      <div
-        class="card"
-        style="margin-bottom:20px">
+      <div class="card" style="margin-bottom:20px">
 
         <div style="margin-bottom:16px">
 
@@ -502,9 +435,7 @@
             Bank Account
           </div>
 
-          <div
-            id="barber-profile-bank"
-            style="
+          <div id="barber-profile-bank" style="
               margin-top:4px;
               font-weight:600;
             ">
@@ -520,9 +451,7 @@
             Online Payments Collected
           </div>
 
-          <div
-            id="barber-profile-online"
-            style="
+          <div id="barber-profile-online" style="
               margin-top:4px;
               font-size:20px;
               font-weight:800;
@@ -547,33 +476,22 @@
         Account
       </div>
 
-      <button
-  class="btn btn-outline btn-full"
-  style="margin-bottom:10px"
-  onclick="editBarberProfile()">
-  ✏️ Edit Profile
-</button>
+      <button class="btn btn-outline btn-full" style="margin-bottom:10px" onclick="editBarberProfile()">
+        ✏️ Edit Profile
+      </button>
 
-<button
-  class="btn btn-outline btn-full"
-  style="margin-bottom:10px"
-  onclick="updateShopPhoto()">
-  📷 Update Shop Photo
-</button>
+      <button class="btn btn-outline btn-full" style="margin-bottom:10px" onclick="updateShopPhoto()">
+        📷 Update Shop Photo
+      </button>
 
-<button
-  class="btn btn-outline btn-full"
-  style="margin-bottom:10px"
-  onclick="logoutBarber()">
-  🚪 Logout
-</button>
+      <button class="btn btn-outline btn-full" style="margin-bottom:10px" onclick="logoutBarber()">
+        🚪 Logout
+      </button>
 
-<button
-  class="btn btn-outline btn-full"
-  style="color:#ff6b6b;border-color:#ff6b6b"
-  onclick="deleteBarberAccount()">
-  🗑️ Delete Account
-</button>
+      <button class="btn btn-outline btn-full" style="color:#ff6b6b;border-color:#ff6b6b"
+        onclick="deleteBarberAccount()">
+        🗑️ Delete Account
+      </button>
 
     </div>
 
@@ -582,9 +500,7 @@
 
     <div class="tabs" id="b-tabs">
 
-      <button
-        class="tab on"
-        onclick="bTab('queue',this)">
+      <button class="tab on" onclick="bTab('queue',this)">
 
         <span class="tab-ico">
           📋
@@ -595,9 +511,7 @@
       </button>
 
 
-      <button
-        class="tab"
-        onclick="bTab('svc',this)">
+      <button class="tab" onclick="bTab('svc',this)">
 
         <span class="tab-ico">
           ✂️
@@ -608,9 +522,7 @@
       </button>
 
 
-      <button
-        class="tab"
-        onclick="bTab('analytics',this)">
+      <button class="tab" onclick="bTab('analytics',this)">
 
         <span class="tab-ico">
           📊
@@ -621,9 +533,7 @@
       </button>
 
 
-      <button
-        class="tab"
-        onclick="bTab('profile',this)">
+      <button class="tab" onclick="bTab('profile',this)">
 
         <span class="tab-ico">
           👤
@@ -640,9 +550,7 @@
 
   <!--BARBER EDIT PROFILE MODAL-->
 
-  <div
-    class="overlay"
-    id="m-editbarber">
+  <div class="overlay" id="m-editbarber">
 
     <div class="modal">
 
@@ -671,12 +579,7 @@
             Full Name
           </label>
 
-          <input
-            class="inp"
-            id="bp-name"
-            type="text"
-            placeholder="Your full name"
-            maxlength="50">
+          <input class="inp" id="bp-name" type="text" placeholder="Your full name" maxlength="50">
 
         </div>
 
@@ -689,13 +592,7 @@
             Phone Number
           </label>
 
-          <input
-            class="inp"
-            id="bp-phone"
-            type="tel"
-            placeholder="9876543210"
-            maxlength="10"
-            inputmode="numeric">
+          <input class="inp" id="bp-phone" type="tel" placeholder="9876543210" maxlength="10" inputmode="numeric">
 
         </div>
 
@@ -708,12 +605,7 @@
             Shop Name
           </label>
 
-          <input
-            class="inp"
-            id="bp-shop"
-            type="text"
-            placeholder="Your shop name"
-            maxlength="60">
+          <input class="inp" id="bp-shop" type="text" placeholder="Your shop name" maxlength="60">
 
         </div>
 
@@ -726,12 +618,7 @@
             Shop Address
           </label>
 
-          <input
-            class="inp"
-            id="bp-address"
-            type="text"
-            placeholder="e.g. Hazratganj, Lucknow"
-            maxlength="120">
+          <input class="inp" id="bp-address" type="text" placeholder="e.g. Hazratganj, Lucknow" maxlength="120">
 
         </div>
 
@@ -744,10 +631,7 @@
             Opening Time
           </label>
 
-          <input
-            class="inp"
-            id="bp-open"
-            type="time">
+          <input class="inp" id="bp-open" type="time">
 
         </div>
 
@@ -760,10 +644,7 @@
             Closing Time
           </label>
 
-          <input
-            class="inp"
-            id="bp-close"
-            type="time">
+          <input class="inp" id="bp-close" type="time">
 
         </div>
 
@@ -776,12 +657,7 @@
             Bank Name
           </label>
 
-          <input
-            class="inp"
-            id="bp-bank"
-            type="text"
-            placeholder="e.g. HDFC Bank"
-            maxlength="50">
+          <input class="inp" id="bp-bank" type="text" placeholder="e.g. HDFC Bank" maxlength="50">
 
         </div>
 
@@ -794,13 +670,7 @@
             Account Last 4 Digits
           </label>
 
-          <input
-            class="inp"
-            id="bp-last4"
-            type="tel"
-            placeholder="4821"
-            maxlength="4"
-            inputmode="numeric">
+          <input class="inp" id="bp-last4" type="tel" placeholder="4821" maxlength="4" inputmode="numeric">
 
         </div>
 
@@ -830,20 +700,14 @@
         gap:10px;
       ">
 
-        <button
-          class="btn btn-outline"
-          style="flex:1"
-          onclick="closeModal('m-editbarber')">
+        <button class="btn btn-outline" style="flex:1" onclick="closeModal('m-editbarber')">
 
           Cancel
 
         </button>
 
 
-        <button
-          class="btn btn-gold"
-          style="flex:1"
-          onclick="saveBarberProfile()">
+        <button class="btn btn-gold" style="flex:1" onclick="saveBarberProfile()">
 
           Save Changes
 
@@ -855,6 +719,57 @@
 
   </div>
 
+  <!-- WALK-IN CUSTOMER MODAL -->
+  <div class="overlay" id="m-walkin">
+
+    <div class="modal">
+
+      <div style="
+      font-size:20px;
+      font-weight:800;
+      font-family:'Syne',sans-serif;
+      margin-bottom:18px;
+    ">
+        Add Walk-in Customer
+      </div>
+
+      <!-- CUSTOMER NAME -->
+      <div style="margin-bottom:14px">
+
+        <label>Customer Name</label>
+
+        <input class="inp" id="walkin-name" type="text" placeholder="Enter customer name" maxlength="50">
+
+      </div>
+
+      <!-- SERVICE -->
+      <div style="margin-bottom:20px">
+
+        <label>Service</label>
+
+        <select class="inp" id="walkin-service">
+        </select>
+
+      </div>
+
+      <div style="
+      display:flex;
+      gap:10px;
+    ">
+
+        <button class="btn btn-outline" style="flex:1" onclick="closeModal('m-walkin')">
+          Cancel
+        </button>
+
+        <button class="btn btn-gold" style="flex:1" onclick="addWalkinCustomer()">
+          Add Customer
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
 
   <script src="script.js"></script>
 
