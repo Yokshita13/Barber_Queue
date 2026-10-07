@@ -12,7 +12,7 @@
 </head>
 
 <body>
-    <!-- Add Service -->
+
     <div class="overlay" id="m-svc">
 
         <div class="modal">
@@ -40,7 +40,42 @@
 
                 <div>
                     <label>Emoji Icon</label>
-                    <input class="inp" id="se" placeholder="💇" maxlength="2" value="💇">
+
+                    <div style="position:relative;">
+
+                        <button type="button" id="emoji-selected" class="inp" style="width:100%; text-align:left; font-size:24px; cursor:pointer; min-height:48px; " onclick="toggleEmojiPicker()">
+                            💇
+                        </button>
+
+                        <div id="emoji-picker" style="
+        display:none;
+        position:absolute;
+        left:0;
+        right:0;
+        bottom:55px;
+        background:var(--s2);
+        border:1px solid var(--border);
+        border-radius:12px;
+        padding:10px;
+        z-index:9999;
+        box-shadow:0 10px 30px rgba(0,0,0,.4);
+      ">
+
+                            <div id="emoji-grid" style="
+          display:grid;
+          grid-template-columns:repeat(8,1fr);
+          gap:6px;
+          max-height:220px;
+          overflow-y:auto;
+        ">
+                            </div>
+
+                        </div>
+
+                        <!-- Hidden value actually used by JavaScript -->
+                        <input type="hidden" id="svc-ico" value="💇">
+
+                    </div>
                 </div>
 
             </div>
@@ -61,8 +96,8 @@
 
     </div>
 
-
     <script src="script.js"></script>
+
 </body>
 
 </html>
