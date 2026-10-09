@@ -23,14 +23,6 @@
 
       <div class="nav-brand">
         Barber<span> - Q</span>
-
-        <span style="
-          font-size:12px;
-          font-weight:400;
-          color:var(--txt2);
-        ">
-          Pro
-        </span>
       </div>
 
       <div style="
@@ -43,15 +35,19 @@
           ● Open
         </span>
 
-        <div class="av" style="
-            width:36px;
-            height:36px;
-            background:var(--cdim);
-            border:2px solid var(--cyan);
-            color:var(--cyan);
-            font-size:14px;
-            cursor:pointer;
-          " onclick="bTab('profile',document.querySelector('#b-tabs .tab:last-child'))">
+        <div id="barber-top-avatar" class="av" style="
+    width:36px;
+    height:36px;
+    background:var(--cdim);
+    border:2px solid var(--cyan);
+    color:var(--cyan);
+    font-size:14px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+  " onclick="bTab('profile',document.querySelector('#b-tabs .tab:last-child'))">
           B
         </div>
 
@@ -184,25 +180,22 @@
 
     </div>
 
-
-    <!-- ANALYTICS TAB-->
-
+    <!-- ANALYTICS TAB -->
     <div class="scroll pad pad-b" id="b-analytics-tab" style="display:none">
 
       <div style="
-        font-size:20px;
-        font-weight:800;
-        font-family:'Syne',sans-serif;
-        margin-bottom:18px;
-      ">
+    font-size:20px;
+    font-weight:800;
+    font-family:'Syne',sans-serif;
+    margin-bottom:18px;
+  ">
         Analytics
       </div>
-
-
       <div id="b-analytics"></div>
 
-    </div>
+      <div style="height:20px"></div>
 
+    </div>
 
     <!-- PROFILE TAB -->
 
@@ -592,7 +585,7 @@
             Phone Number
           </label>
 
-          <input class="inp" id="bp-phone" type="tel"  maxlength="10" inputmode="numeric">
+          <input class="inp" id="bp-phone" type="tel" maxlength="10" inputmode="numeric">
 
         </div>
 
@@ -618,7 +611,7 @@
             Shop Address
           </label>
 
-          <input class="inp" id="bp-address" type="text"  maxlength="120">
+          <input class="inp" id="bp-address" type="text" maxlength="120">
 
         </div>
 
@@ -670,7 +663,7 @@
             Account Last 4 Digits
           </label>
 
-          <input class="inp" id="bp-last4" type="tel"  maxlength="4" inputmode="numeric">
+          <input class="inp" id="bp-last4" type="tel" maxlength="4" inputmode="numeric">
 
         </div>
 
