@@ -74,6 +74,248 @@ barber:{
   onlineCollected:0
 
 };
+
+
+
+
+
+
+
+const PUBLIC_SHOP_KEY = 'barberShopPublic';
+
+function publishBarberShop(){
+  try{
+    const shop = S.shops.find(s => s.isBarberProfile);
+
+    if(!shop){
+      localStorage.removeItem(PUBLIC_SHOP_KEY);
+      localStorage.removeItem(PUBLIC_SHOP_KEY + 'Photo');
+      return;
+    }
+
+    const { photo, ...rest } = shop;
+
+    localStorage.setItem(PUBLIC_SHOP_KEY, JSON.stringify(rest));
+
+    if(photo) localStorage.setItem(PUBLIC_SHOP_KEY + 'Photo', photo);
+    else      localStorage.removeItem(PUBLIC_SHOP_KEY + 'Photo');
+
+  }catch(e){
+    console.warn('Could not publish barber shop:', e);
+  }
+}
+
+// Customer side: read the published shop into S.shops.
+function loadPublishedShop(){
+  try{
+    const raw = localStorage.getItem(PUBLIC_SHOP_KEY);
+
+    if(!raw){
+      S.shops = S.shops.filter(s => !s.isBarberProfile);
+      return false;
+    }
+
+    const data = JSON.parse(raw);
+
+    data.photo = localStorage.getItem(PUBLIC_SHOP_KEY + 'Photo') || '';
+    data.isBarberProfile = true;
+
+    const i = S.shops.findIndex(s => s.isBarberProfile);
+
+    if(i >= 0){
+      data.id = S.shops[i].id;
+      S.shops[i] = data;
+    }else{
+      data.id = S.shops.length;     // ids are indexes into S.shops
+      S.shops.push(data);
+    }
+
+    return true;
+
+  }catch(e){
+    console.warn('Could not load published shop:', e);
+    return false;
+  }
+}
+
+function unpublishBarberShop(){
+  S.shops = S.shops.filter(s => !s.isBarberProfile);
+  try{
+    localStorage.removeItem(PUBLIC_SHOP_KEY);
+    localStorage.removeItem(PUBLIC_SHOP_KEY + 'Photo');
+  }catch(e){}
+}
+
+// function syncBarberToCustomerShop(){
+
+//   const b = S.barber;
+
+//   if(!b || !b.name || !b.shopName) return;
+
+//   let shop = S.shops.find(s => s.isBarberProfile);
+
+//   if(!shop){
+//     shop = { id: S.shops.length, isBarberProfile: true, cur: 0, q: 0, wait: 0 };
+//     S.shops.push(shop);
+//   }
+
+//   Object.assign(shop, {
+//     name:        b.shopName,
+//     owner:       b.name,
+//     rating:      Number(b.rating) || 0,
+//     rev:         Number(b.ratingCount) || 0,
+//     addr:        b.address || 'Address not set',
+//     open:        S.shopOpen,
+//     clr:         '#00d4aa',
+//     ico:         '✂️',
+//     svcs:        S.services.map((_, i) => i),
+//     photo:       b.photo || '',
+//     phone:       b.phone || '',
+//     openingTime: b.openingTime || '',
+//     closingTime: b.closingTime || ''
+//   });
+
+//   syncShopStats();      // fills in q / cur / wait and publishes
+// }
+
+// function syncBarberToCustomerShop() {
+
+//   const b = S.barber;
+
+//   if (!b || !b.name || !b.shopName) {
+//     return;
+//   }
+
+//   const existing = S.shops.find(s => s.isBarberProfile === true);
+
+//   const shopData = {
+//     id: existing ? existing.id : S.shops.length,
+//     name: b.shopName,
+//     owner: b.name,
+//     rating: Number(b.rating) || 0,
+//     rev: Number(b.ratingCount) || 0,
+//     addr: b.address || 'Address not set',
+//     cur: 0,
+//     q: 0,
+//     wait: 0,
+//     open: S.shopOpen,
+//     clr: '#00d4aa',
+//     ico: '✂️',
+//     svcs: [0,1,2,3,4],
+//     isBarberProfile: true,
+//     photo: b.photo || '',
+//     phone: b.phone || '',
+//     openingTime: b.openingTime || '',
+//     closingTime: b.closingTime || ''
+//   };
+
+//   if (existing) {
+
+//     const index = S.shops.findIndex(
+//       s => s.isBarberProfile === true
+//     );
+
+//     S.shops[index] = shopData;
+
+//   } else {
+
+//     S.shops.push(shopData);
+
+//   }
+// }
+function syncBarberToCustomerShop(){
+
+  const b = S.barber;
+
+  if(!b || !b.name || !b.shopName) return;
+
+  let shop = S.shops.find(s => s.isBarberProfile);
+
+  if(!shop){
+    shop = { id: S.shops.length, isBarberProfile: true, cur: 0, q: 0, wait: 0 };
+    S.shops.push(shop);
+  }
+
+  Object.assign(shop, {
+    name:        b.shopName,
+    owner:       b.name,
+    rating:      Number(b.rating) || 0,
+    rev:         Number(b.ratingCount) || 0,
+    addr:        b.address || 'Address not set',
+    open:        S.shopOpen,
+    clr:         '#00d4aa',
+    ico:         '✂️',
+    svcs:        S.services.map((_, i) => i),
+    photo:       b.photo || '',
+    phone:       b.phone || '',
+    openingTime: b.openingTime || '',
+    closingTime: b.closingTime || ''
+  });
+
+  syncShopStats();      // ← this is what publishes it to the customer side
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function syncShopStats(){
+
+  const shop = S.shops.find(s => s.isBarberProfile);
+  if(!shop) return;
+
+  shop.q    = S.bq.length;
+  shop.cur  = S.bq[0] ? S.bq[0].tok : 0;
+  shop.wait = S.bq.reduce((t, q) => t + (Number(q.dur) || 0), 0);
+  shop.open = S.shopOpen;
+
+  publishBarberShop();
+}
+
+// A customer tab that is already open picks up changes live.
+window.addEventListener('storage', e => {
+
+  if(e.key !== PUBLIC_SHOP_KEY && e.key !== PUBLIC_SHOP_KEY + 'Photo') return;
+  if(S.role === 'barber') return;           // the barber tab owns this data
+
+  loadPublishedShop();
+
+  const cust = document.getElementById('s-cust');
+  if(cust && cust.classList.contains('active')) renderShops();
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // Load saved barber services
 const savedServices = localStorage.getItem('barberServices');
 
@@ -94,6 +336,7 @@ function go(id){
   document.getElementById(id).classList.add('active');
 
   if(id==='s-cust'){
+    if(S.role !== 'barber') loadPublishedShop(); 
     renderShops();
     renderMyQ();
     updateUserAvatar();
@@ -290,9 +533,32 @@ function renderShops(){
 
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
 
-        <div style="width:48px;height:48px;border-radius:12px;background:${s.clr}20;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">
-          ${s.ico}
-        </div>
+<div style="
+  width:48px;
+  height:48px;
+  border-radius:12px;
+  background:${s.clr}20;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:24px;
+  flex-shrink:0;
+  overflow:hidden;
+">
+  ${
+    s.photo
+      ? `<img
+          src="${s.photo}"
+          alt="${s.name}"
+          style="
+            width:100%;
+            height:100%;
+            object-fit:cover;
+          "
+        >`
+      : s.ico
+  }
+</div>
 
         <div style="flex:1;min-width:0">
 
@@ -839,15 +1105,42 @@ function finalizeJoin(p, s, paidOnline) {
 
     if (!Array.isArray(S.payments)) S.payments = [];
 
-    S.payments.unshift({
-        id: 'PAY' + Date.now().toString().slice(-8),
-        shop: s.name,
-        svc: p.svcName,
-        amount: p.price,
-        method: paidOnline ? 'Online' : 'Pay at Shop',
-        status: paidOnline ? 'Paid' : 'Pending',
-        date: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })
-    });
+    // S.payments.unshift({
+    //     id: 'PAY' + Date.now().toString().slice(-8),
+    //     shop: s.name,
+    //     svc: p.svcName,
+    //     amount: p.price,
+    //     method: paidOnline ? 'Online' : 'Pay at Shop',
+    //     status: paidOnline ? 'Paid' : 'Pending',
+    //     date: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })
+    // });
+
+S.payments.unshift({
+  id: 'PAY' + Date.now().toString().slice(-8),
+  shop: s.name,
+  shopId: p.shopId,
+  token: p.tok,
+  svc: p.svcName,
+  amount: p.price,
+  method: paidOnline ? 'Online' : 'Pay at Shop',
+  status: paidOnline ? 'Paid' : 'Pending',
+  date: new Date().toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short'
+  }),
+  createdAt: new Date().toISOString(),
+  timestamp: Date.now()
+});
+
+
+
+
+
+
+
+
+
+
 
     if (paidOnline) {
         if (typeof S.onlineCollected !== 'number') S.onlineCollected = 0;
@@ -1209,11 +1502,52 @@ function doneToken(){
     s=>s.name===done.svc
   );
 
-  if(sv)
-    S.earn+=sv.price;
+  // if(sv)
+  //   S.earn+=sv.price; 
 
-  // Record a customer visit ONLY when the customer's own queue token
-  // is actually completed. Joining a queue does not count as a visit.
+if (sv) {
+  S.earn += sv.price;
+}
+
+// Record every completed customer for barber analytics
+if (!Array.isArray(S.barberVisits)) {
+  S.barberVisits = [];
+}
+
+const completedAt = new Date();
+
+S.barberVisits.unshift({
+  token: done.tok,
+  service: done.svc,
+  price: sv ? sv.price : 0,
+  createdAt: completedAt.toISOString(),
+  timestamp: completedAt.getTime()
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   if(S.inQueue && S.myTok===done.tok){
 
     const shopId=S.myShopId;
@@ -1228,7 +1562,31 @@ function doneToken(){
         day:'2-digit',
         month:'short',
         year:'numeric'
-      })
+      }),
+
+
+
+
+
+
+
+
+
+
+
+
+createdAt: new Date().toISOString(),
+timestamp: Date.now()
+
+
+
+
+
+
+
+
+
+
     };
 
     S.queueHistory.unshift(visit);
@@ -1585,19 +1943,19 @@ function delSvc(i){
 
 const serviceEmojis = [
 // Hair
-  '💇','💇‍♂️','💇‍♀️','💈','✂️','🪮','🧴',
+  '💇','💇‍♂️','💇‍♀️','💈','✂️','🧴',
   
   // Beard / Shaving
   '🧔','🪒','👨‍🦰','👨‍🦱',
   
   // Beauty / Skin
-  '💆','🧖','🧖‍♂️','🧖‍♀️','✨','🧴','🫧',
+  '💆','🧖','🧖‍♂️','🧖‍♀️','✨',
   
   // Nails
   '💅',
   
   // Hair styling / Coloring
-  '🎨','🖌️','🌈','✨',
+  '🎨','🖌️','🌈',,
   
   // Makeup / Beauty
   '💄','👄','👁️','💋',
@@ -1612,7 +1970,7 @@ const serviceEmojis = [
   '🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣',
   '😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬',
   '🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗',
-  '🤔','🫣','🤭','🫢','🫡','🤫','🫠','🤥','😶','🫥',
+  '🤔','🤭','🤫','🤥','😶',
   '😐','😑','😬','🙄','😯','😦','😧','😮','😲','🥱',
   '😴','🤤','😪','😵','🤐','🥴','🤢','🤮','🤧','😷',
 
@@ -1622,14 +1980,20 @@ const serviceEmojis = [
   '🙋','🧏','🙇','🤦','🤷','👮','👷','💂',
   '🕵️','👩‍⚕️','👨‍⚕️','👩‍🏫','👨‍🏫',
   '👩‍💻','👨‍💻','👩‍🍳','👨‍🍳','👩‍🎨','👨‍🎨',
-  '👩‍🚀','👨‍🚀','🤵','👰','🫅',
+  '👩‍🚀','👨‍🚀','🤵','👰',,
+
+  // 👍 Gestures
+  '👍','👎','👌','✌️','🤞','🤟','🤘','🤙',
+  '👈','👉','👆','👇','☝️','✋','🤚','🖐️',
+  '🖖','👏','🙌','👐','🤲','🙏','💪','🤝',
+  '👋','💅',
 
   // 💇 Salon / Beauty / Grooming
   '💇','💇‍♂️','💇‍♀️','💈','✂️','🪮','🪒',
   '🧔','🧴','💆','💆‍♂️','💆‍♀️',
   '🧖','🧖‍♂️','🧖‍♀️','💅','💄',
-  '👄','👁️','👀','🪞','🧼','🫧',
-  '🛁','🧽','🎨','🖌️','✨','💎',
+  '👄','👁️','👀','🪞',
+  '🛁','🧽','🎨','🖌️','💎',
   '👑','⭐','🌟','🔥','💫',
 
   // 🐶 Animals
@@ -1645,7 +2009,7 @@ const serviceEmojis = [
   '☘️','🍀','🌳','🌴','🌵','🌾','🍃','🍂',
   '🍁','🍄','🌍','🌎','🌏','🌙','🌞','☀️',
   '🌤️','⛅','🌧️','⛈️','🌩️','❄️','☃️',
-  '🌈','⚡','🔥','💧','🌊','⭐','🌟','✨',
+  '🌈','⚡','🔥','💧','🌊','⭐','🌟',
 
   // 🍎 Food & Drinks
   '🍎','🍐','🍊','🍋','🍌','🍉','🍇','🍓',
@@ -1656,52 +2020,10 @@ const serviceEmojis = [
   '🍩','🍪','🎂','🍰','🧁','🍫','🍭','🍬',
   '☕','🍵','🧋','🥤','🧃','🍹','🍸','🍺',
 
-  // ⚽ Sports & Activities
-  '⚽','🏀','🏈','⚾','🥎','🎾','🏐','🏉',
-  '🥏','🎱','🏓','🏸','🏒','🏑','🥊','🥋',
-  '⛳','🏹','🎣','🤿','🏋️','🤸','🤾','🏃',
-  '🚴','🏊','🧘','🧗','🎯','🎮','🕹️','🎲',
-  '♟️','🎨','🎭','🎬','🎤','🎧','🎼','🎹',
-  '🥇','🥈','🥉','🏆','🏅','🎖️','🎟️',
-
-  // 🚗 Travel & Places
-  '🚗','🚕','🚙','🚌','🚎','🏎️','🚓','🚑',
-  '🚒','🚐','🛻','🚚','🚛','🚜','🏍️','🛵',
-  '🚲','✈️','🛫','🛬','🚁','🚀','🛸','🚢',
-  '⛵','🚤','🚂','🚆','🚇','🚉','🏠','🏡',
-  '🏢','🏥','🏫','🏨','🏪','🏬','🏰','🗽',
-  '🗼','⛩️','🕌','⛪','🛕','🏖️','🏝️','🏔️',
-
-  // 💻 Objects / Technology
-  '📱','💻','🖥️','🖨️','⌨️','🖱️','💾','💿',
-  '📷','📸','📹','🎥','📺','📻','☎️','📞',
-  '🔋','🔌','💡','🔦','🕯️','📚','📖','📝',
-  '✏️','🖊️','📌','📍','📎','🔑','🔒','🔓',
-  '🛠️','🔧','🔨','⚙️','🧰','🧲','🔍','🔎',
-
-  // 💰 Money / Shopping
-  '💰','💵','💴','💶','💷','🪙','💳','💎',
-  '🛍️','🛒','🎁','🏷️','💸','💲','🧾','📦',
-
   // ❤️ Symbols
   '❤️','🧡','💛','💚','💙','💜','🖤','🤍',
   '🤎','💔','❣️','💕','💞','💓','💗','💖',
-  '💘','💝','💟','☮️','✝️','☪️','🕉️','☯️',
-  '♈','♉','♊','♋','♌','♍','♎','♏',
-  '♐','♑','♒','♓','✅','❌','⭕','❗',
-  '❓','‼️','⁉️','⚠️','🚫','🔴','🟠','🟡',
-  '🟢','🔵','🟣','⚫','⚪','🟤',
-
-  // 👍 Gestures
-  '👍','👎','👌','✌️','🤞','🤟','🤘','🤙',
-  '👈','👉','👆','👇','☝️','✋','🤚','🖐️',
-  '🖖','👏','🙌','👐','🤲','🙏','💪','🤝',
-  '👋','💅','🫶','🫰',
-
-  // 🇮🇳 Flags
-  '🇮🇳','🇺🇸','🇬🇧','🇨🇦','🇦🇺','🇯🇵','🇰🇷',
-  '🇨🇳','🇫🇷','🇩🇪','🇮🇹','🇪🇸','🇦🇪','🇸🇬',
-  '🇮🇩','🇧🇷','🇲🇾','🇹🇭','🇿🇦','🇷🇺'
+  '💘','💝',
 ];
 function loadEmojiPicker(){
 
@@ -1751,185 +2073,165 @@ function selectServiceEmoji(emoji){
   if(picker) picker.style.display = 'none';
 }
 
-function renderAnalytics(){
+function renderAnalytics() {
+  const container = document.getElementById('b-analytics');
+  if (!container) return;
 
-  const el=
-    document.getElementById('b-analytics');
+  if (!Array.isArray(S.barberVisits)) {
+    S.barberVisits = [];
+  }
 
-  if(!el)return;
+  const now = new Date();
+  const todayStart = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate()
+  );
 
-  const days=[
-    'Mon',
-    'Tue',
-    'Wed',
-    'Thu',
-    'Fri',
-    'Sat',
-    'Sun'
-  ];
+  const startOfWeek = new Date(todayStart);
+  const day = startOfWeek.getDay();
+  startOfWeek.setDate(
+    startOfWeek.getDate() - ((day + 6) % 7)
+  );
 
-  const vals=[
-    12,
-    18,
-    9,
-    22,
-    28,
-    35,
-    16
-  ];
+  const endOfWeek = new Date(startOfWeek);
+  endOfWeek.setDate(endOfWeek.getDate() + 7);
 
-  const mx=Math.max(...vals);
+  const visits = S.barberVisits.filter(v => {
+    const date = new Date(v.createdAt);
+    return !isNaN(date.getTime());
+  });
 
-  el.innerHTML=`
+  const thisWeek = visits.filter(v => {
+    const date = new Date(v.createdAt);
+    return date >= startOfWeek && date < endOfWeek;
+  });
 
-    <div class="card card-p"
-    style="margin-bottom:14px">
+  const todayVisits = visits.filter(v => {
+    return new Date(v.createdAt) >= todayStart;
+  });
 
-      <div style="font-size:12px;color:var(--txt2);margin-bottom:4px">
-        Total Revenue (This Week)
+  const revenueThisWeek = thisWeek.reduce(
+    (total, v) => total + Number(v.price || 0),
+    0
+  );
+
+  // Only successful online payments count here.
+  const onlineToday = (S.payments || []).filter(p => {
+    if (p.method !== 'Online' || p.status !== 'Paid') {
+      return false;
+    }
+
+    const date = new Date(
+      p.createdAt || p.timestamp || ''
+    );
+
+    return !isNaN(date.getTime()) &&
+      date >= todayStart &&
+      date <= now;
+  }).reduce((total, p) => total + Number(p.amount || 0), 0);
+
+  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  const dailyCounts = days.map((_, index) => {
+    const date = new Date(startOfWeek);
+    date.setDate(startOfWeek.getDate() + index);
+
+    return thisWeek.filter(v => {
+      const visitDate = new Date(v.createdAt);
+      return visitDate.toDateString() === date.toDateString();
+    }).length;
+  });
+
+  const maxCount = Math.max(1, ...dailyCounts);
+
+  const services = {};
+
+  thisWeek.forEach(v => {
+    services[v.service] = (services[v.service] || 0) + 1;
+  });
+
+  const topServices = Object.entries(services)
+    .sort((a, b) => b[1] - a[1]);
+
+  const ratings = Array.isArray(S.ratings)
+    ? S.ratings.map(r => Number(r.rating))
+        .filter(r => Number.isFinite(r) && r >= 1 && r <= 5)
+    : [];
+
+  const averageRating = ratings.length
+    ? (ratings.reduce((sum, rating) => sum + rating, 0) /
+       ratings.length).toFixed(1) + ' ★'
+    : '—';
+
+  container.innerHTML = `
+    <div class="card pad" style="margin-bottom:12px">
+      <div class="muted">Total Revenue (This Week)</div>
+      <div style="font-size:30px;font-weight:800;color:var(--gold)">
+        ₹${revenueThisWeek.toLocaleString('en-IN')}
       </div>
-
-      <div style="font-size:34px;font-weight:800;font-family:'Syne',sans-serif;color:var(--gold)">
-        ₹12,840
+      <div class="muted">
+        Based on completed services recorded this week
       </div>
-
-      <div style="font-size:13px;color:var(--green);margin-top:4px">
-        ↑ 18% from last week
-      </div>
-
     </div>
 
-    <div class="card card-p"
-    style="margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">
-
-      <div>
-        <div style="font-size:12px;color:var(--txt2);margin-bottom:4px">
-          Collected Online (Today)
-        </div>
-        <div style="font-size:22px;font-weight:800;font-family:'Syne',sans-serif;color:var(--cyan)">
-          ₹${S.onlineCollected.toLocaleString('en-IN')}
-        </div>
+    <div class="card pad" style="margin-bottom:12px">
+      <div class="muted">Collected Online (Today)</div>
+      <div style="font-size:28px;font-weight:800;color:var(--green)">
+        ₹${onlineToday.toLocaleString('en-IN')}
       </div>
-
-      <span style="font-size:30px">📲</span>
-
     </div>
 
-
-    <div class="card card-p"
-    style="margin-bottom:14px">
-
-      <div style="font-size:15px;font-weight:700;font-family:'Syne',sans-serif;margin-bottom:16px">
-        Customers This Week
+    <div class="card pad" style="margin-bottom:12px">
+      <div style="font-weight:700;margin-bottom:20px">
+        Completed Customers This Week
       </div>
 
-      <div class="abar-wrap">
-
-        ${vals.map((v,i)=>`
-
-          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
-
-            <div class="abar ${i===4?'hi':''}"
-            style="height:${Math.round(v/mx*68)}px">
+      <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;align-items:end">
+        ${days.map((name, i) => `
+          <div style="text-align:center;font-size:11px">
+            <div style="height:100px;display:flex;align-items:flex-end;justify-content:center">
+              <div style="width:70%;max-width:35px;height:${dailyCounts[i] ? Math.max(8, dailyCounts[i] / maxCount * 100) : 0}px;background:var(--gold);border-radius:5px 5px 0 0"></div>
             </div>
-
-            <div class="abar-label">
-              ${days[i]}
-            </div>
-
+            <div class="muted">${name}</div>
+            <div>${dailyCounts[i]}</div>
           </div>
-
         `).join('')}
-
       </div>
-
     </div>
 
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
-
-      <div class="stat"
-      style="text-align:center">
-
-        <div class="stat-n"
-        style="color:var(--green)">
-          140
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px">
+      <div class="card pad">
+        <div style="font-size:28px;font-weight:800;color:var(--green)">
+          ${thisWeek.length}
         </div>
-
-        <div class="stat-l">
-          Total Clients
-        </div>
-
+        <div class="muted">Completed Visits This Week</div>
       </div>
 
-
-      <div class="stat"
-      style="text-align:center">
-
-        <div class="stat-n"
-        style="color:var(--gold)">
-          4.8★
+      <div class="card pad">
+        <div style="font-size:28px;font-weight:800;color:var(--gold)">
+          ${averageRating}
         </div>
-
-        <div class="stat-l">
-          Avg Rating
-        </div>
-
+        <div class="muted">Average Rating</div>
       </div>
-
     </div>
 
-
-    <div class="card card-p">
-
-      <div style="font-size:15px;font-weight:700;font-family:'Syne',sans-serif;margin-bottom:14px">
-        Top Services
+    <div class="card pad">
+      <div style="font-weight:700;margin-bottom:16px">
+        Top Services This Week
       </div>
 
-      ${S.services.map((s,i)=>{
-
-        const pct=[
-          52,
-          31,
-          8,
-          6,
-          3
-        ][i]||2;
-
-        return`
-
-          <div style="margin-bottom:12px">
-
-            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px">
-
-              <span>
-                ${s.ico} ${s.name}
-              </span>
-
-              <span style="color:var(--gold);font-weight:500">
-                ${pct}%
-              </span>
-
-            </div>
-
-            <div class="pbar">
-
-              <div class="pfill"
-              style="width:${pct}%">
+      ${
+        topServices.length
+          ? topServices.map(([name, count]) => `
+              <div style="display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--s3)">
+                <span>${name}</span>
+                <strong>${count}</strong>
               </div>
-
-            </div>
-
-          </div>
-
-        `
-
-      }).join('')}
-
+            `).join('')
+          : '<div class="muted">No completed services recorded this week yet.</div>'
+      }
     </div>
-
-    <div style="height:20px"></div>
-
   `;
 }
 
@@ -2057,7 +2359,6 @@ function requestRefund(paymentId){
 }
 
 function renderBarberProfile(){
-
   const b = S.barber || {};
 
   const setText = (id, value) => {
@@ -2129,6 +2430,36 @@ function renderBarberProfile(){
     'barber-profile-bank',
     bank
   );
+
+ // Update top-right barber avatar
+  const topAvatar = document.getElementById('barber-top-avatar');
+
+  if (topAvatar) {
+
+    if (b.photo) {
+
+      topAvatar.innerHTML = `
+        <img
+          src="${b.photo}"
+          alt="Barber"
+          style="
+            width:100%;
+            height:100%;
+            object-fit:cover;
+            border-radius:50%;
+          "
+        >
+      `;
+
+    } else {
+
+      topAvatar.textContent =
+        b.name
+          ? b.name.charAt(0).toUpperCase()
+          : 'B';
+
+    }
+  }
 
   setText(
     'barber-profile-online',
@@ -2272,21 +2603,40 @@ function saveBarberProfile(){
   }
 
 
-  S.barber.name = name;
-  S.barber.phone = '+91 ' + phone;
-  S.barber.shopName = shop;
-  S.barber.address = address;
-  S.barber.openingTime = opening;
-  S.barber.closingTime = closing;
-  S.barber.payoutBank = bank;
-  S.barber.payoutLast4 = last4;
+  
+  // S.barber.name = name;
+  // S.barber.phone = '+91 ' + phone;
+  // S.barber.shopName = shop;
+  // S.barber.address = address;
+  // S.barber.openingTime = opening;
+  // S.barber.closingTime = closing;
+  // S.barber.payoutBank = bank;
+  // S.barber.payoutLast4 = last4;
 
 
-  closeModal('m-editbarber');
+  // closeModal('m-editbarber');
+  // renderBarberProfile();
 
-  renderBarberProfile();
+  // toast('✅','Barber profile updated successfully');
 
-  toast('✅','Barber profile updated successfully');
+S.barber.name = name;
+S.barber.phone = '+91 ' + phone;
+S.barber.shopName = shop;
+S.barber.address = address;
+S.barber.openingTime = opening;
+S.barber.closingTime = closing;
+S.barber.payoutBank = bank;
+S.barber.payoutLast4 = last4;
+
+// NEW
+syncBarberToCustomerShop();
+
+closeModal('m-editbarber');
+
+renderBarberProfile();
+
+toast('✅','Barber profile updated successfully');
+
 }
 
 function updateShopPhoto(){
@@ -2316,7 +2666,7 @@ function updateShopPhoto(){
     reader.onload = function(e){
 
       S.barber.photo = e.target.result;
-
+      syncBarberToCustomerShop();
       renderBarberProfile();
 
       toast('📷','Shop photo updated successfully');
