@@ -1,26 +1,16 @@
 from flask import Flask
 from flask_cors import CORS
-
 from config import Config
 from .extensions import db
-
-
 def create_app():
-    # Create Flask application
     app = Flask(__name__)
-
-    # Load configuration
     app.config.from_object(Config)
-
-    # Initialize extensions
     db.init_app(app)
     CORS(app)
-
-    # Register blueprints
     from .payments import payments_bp
+    from .queue import queue_bp
     app.register_blueprint(payments_bp)
-
-    # Import models
+    app.register_blueprint(queue_bp)
     from .models import (
         User,
         Shop,
@@ -29,15 +19,9 @@ def create_app():
         Queue,
         Appointment
     )
-
-    # Create database tables
     with app.app_context():
         db.create_all()
-
-    # Home route
     @app.route("/")
     def home():
         return "TrimQ Backend is Running!"
-
-
     return app
