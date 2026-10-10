@@ -1,11 +1,9 @@
 import hmac
 import hashlib
 import razorpay
-
 from flask import Blueprint, request, jsonify, current_app
 
 payments_bp = Blueprint("payments", __name__)
-
 
 def get_razorpay_client():
     return razorpay.Client(
@@ -14,7 +12,6 @@ def get_razorpay_client():
             current_app.config["RAZORPAY_KEY_SECRET"]
         )
     )
-
 
 @payments_bp.route("/api/payments/create-order", methods=["POST"])
 def create_order():
