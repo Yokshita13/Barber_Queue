@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>BarberQ: A Smart Digital Queue Management System</title>
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,400&display=swap"
+    rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <div class="screen" id="s-barb">
+    <!-- NAVBAR -->
+    <div class="nav">
+      <div class="nav-brand">
+        Barber<span> - Q</span>
+      </div>
+      <div style="
+        display:flex;
+        align-items:center;
+        gap:10px;
+      ">
+        <span id="shop-status" class="tag tgreen pulse" style="cursor:pointer" onclick="toggleShop()">
+          ● Open
+        </span>
+        <div id="barber-top-avatar" class="av" style="
+    width:36px;
+    height:36px;
+    background:var(--cdim);
+    border:2px solid var(--cyan);
+    color:var(--cyan);
+    font-size:14px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+  " onclick="bTab('profile',document.querySelector('#b-tabs .tab:last-child'))">
+          B
+        </div>
+      </div>
+    </div>
+    <!-- QUEUE TAB -->
+    <div class="scroll pad pad-b" id="b-queue-tab">
+      <div style="
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        gap:10px;
+        margin-bottom:20px;
+      ">
+        <div class="stat">
+          <div style="font-size:20px;margin-bottom:4px">👥</div>
+          <div class="stat-n" style="color:var(--gold)" id="b-inq">
+            0
+          </div>
+          <div class="stat-l">
+            In Queue
+          </div>
+        </div>
+        <div class="stat">
+          <div style="font-size:20px;margin-bottom:4px">
+            ✅
+          </div>
+          <div class="stat-n" style="color:var(--green)" id="b-done">
+            0
+          </div>
+          <div class="stat-l">
+            Done Today
+          </div>
+        </div>
+        <div class="stat">
+          <div style="font-size:20px;margin-bottom:4px">
+            💰
+          </div>
+          <div class="stat-n" style="font-size:20px;color:var(--gold)" id="b-earn">
+            ₹0
+          </div>
+          <div class="stat-l">
+            Today's Earnings
+          </div>
+          <div class="pbar">
+            <div class="pfill" style="width:61%">
+            </div>
+          </div>
+        </div>
+        <div class="stat">
+          <div style="font-size:20px;margin-bottom:4px">
+            ⏱️
+          </div>
+          <div class="stat-n" id="b-wait">
+            28
+          </div>
+          <div class="stat-l">
+            Avg Wait (min)
+          </div>
+        </div>
+      </div>
+      <div style="
+        font-size:18px;
+        font-weight:700;
+        font-family:'Syne',sans-serif;
+        margin-bottom:14px;
+      ">
+        Live Queue
+      </div>
+
+
+      <div id="b-qlist"></div>
+
+
+      <button class="btn btn-outline btn-full" style="margin-top:4px" onclick="openWalkinModal()">
+        + Add Walk-in Customer
+      </button>
+
+    </div>
+
+
+    <!--SERVICES TAB-->
+
+    <div class="scroll pad pad-b" id="b-svc-tab" style="display:none">
+
+      <div style="
+        font-size:20px;
+        font-weight:800;
+        font-family:'Syne',sans-serif;
+        margin-bottom:18px;
+      ">
+        Services
+      </div>
+
+
+      <div id="b-svclist"></div>
+
+
+      <button class="btn btn-outline btn-full" style="margin-top:12px" onclick="openModal('m-svc')">
+        + Add Service
+      </button>
+
+    </div>
+
+    <!-- ANALYTICS TAB -->
+    <div class="scroll pad pad-b" id="b-analytics-tab" style="display:none">
+
+      <div style="
+    font-size:20px;
+    font-weight:800;
+    font-family:'Syne',sans-serif;
+    margin-bottom:18px;
+  ">
+        Analytics
+      </div>
+      <div id="b-analytics"></div>
+
+      <div style="height:20px"></div>
+
+    </div>
+
+    <!-- PROFILE TAB -->
+
+    <div class="scroll pad pad-b" id="b-profile-tab" style="display:none">
+      <div style="margin-bottom:20px;">
+        <button onclick="bTab('queue', document.querySelector('#b-tabs .tab:first-child'))" style="
+      background:none;
+      border:none;
+      color:var(--txt2);
+      font-size:14px;
+      cursor:pointer;
+      padding:0;
+    ">
+          ← Back
+        </button>
+      </div>
+
+      <!-- PROFILE HEADER -->
+
+      <div style="
+        text-align:center;
+        margin-bottom:24px;
+      ">
+
+        <div id="barber-profile-photo" class="av" style="
+            width:82px;
+            height:82px;
+            margin:0 auto 12px;
+            background:var(--cdim);
+            border:2px solid var(--cyan);
+            color:var(--cyan);
+            font-size:28px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+          ">
+          B
+        </div>
+
+
+        <div id="barber-profile-name" style="
+            font-size:22px;
+            font-weight:800;
+            font-family:'Syne',sans-serif;
+          ">
+          Not set
+        </div>
+
+
+        <div id="barber-profile-shop" style="
+            color:var(--txt2);
+            margin-top:5px;
+          ">
+          Shop name not set
+        </div>
+
+      </div>
+
+
+      <!-- PERSONAL INFORMATION -->
+
+      <div style="
+        font-size:17px;
+        font-weight:700;
+        font-family:'Syne',sans-serif;
+        margin-bottom:12px;
+      ">
+        Personal Information
+      </div>
+
+
+      <div class="card" style="margin-bottom:20px">
+
+        <div style="margin-bottom:16px">
+
+          <div class="stat-l">
+            Full Name
+          </div>
+
+          <div id="barber-profile-fullname" style="
+              margin-top:4px;
+              font-weight:600;
+            ">
+            Not set
+          </div>
+
+        </div>
+
+
+        <div>
+
+          <div class="stat-l">
+            Phone Number
+          </div>
+
+          <div id="barber-profile-phone" style="
+              margin-top:4px;
+              font-weight:600;
+            ">
+            Not set
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- SHOP INFORMATION -->
+
+      <div style="
+        font-size:17px;
+        font-weight:700;
+        font-family:'Syne',sans-serif;
+        margin-bottom:12px;
+      ">
+        Shop Information
+      </div>
+
+
+      <div class="card" style="margin-bottom:20px">
+
+        <div style="margin-bottom:16px">
+
+          <div class="stat-l">
+            Shop Name
+          </div>
+
+          <div id="barber-profile-shopname" style="
+              margin-top:4px;
+              font-weight:600;
+            ">
+            Not set
+          </div>
+
+        </div>
+
+
+        <div style="margin-bottom:16px">
+
+          <div class="stat-l">
+            Address
+          </div>
+
+          <div id="barber-profile-address" style="
+              margin-top:4px;
+              font-weight:600;
+            ">
+            Not set
+          </div>
+
+        </div>
+
+
+        <div>
+
+          <div class="stat-l">
+            Opening Hours
+          </div>
+
+          <div id="barber-profile-hours" style="
+              margin-top:4px;
+              font-weight:600;
+            ">
+            Not set
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- CUSTOMER RATING -->
+
+      <div style="
+        font-size:17px;
+        font-weight:700;
+        font-family:'Syne',sans-serif;
+        margin-bottom:12px;
+      ">
+        Customer Rating
+      </div>
+
+
+      <div class="card" style="margin-bottom:20px">
+
+        <div id="barber-profile-rating" style="
+            font-size:20px;
+            font-weight:800;
+          ">
+          No ratings yet
+        </div>
+
+
+        <div id="barber-profile-rating-count" style="
+            color:var(--txt2);
+            margin-top:5px;
+          ">
+          0 reviews
+        </div>
+
+
+        <div style="
+          font-size:12px;
+          color:var(--txt2);
+          margin-top:10px;
+        ">
+          Rating is calculated automatically from customer reviews.
+        </div>
+
+      </div>
+
+
+      <!-- PAYOUT INFORMATION -->
+
+      <div style="
+        font-size:17px;
+        font-weight:700;
+        font-family:'Syne',sans-serif;
+        margin-bottom:12px;
+      ">
+        Payout Information
+      </div>
+
+
+      <div class="card" style="margin-bottom:20px">
+
+        <div style="margin-bottom:16px">
+
+          <div class="stat-l">
+            Bank Account
+          </div>
+
+          <div id="barber-profile-bank" style="
+              margin-top:4px;
+              font-weight:600;
+            ">
+            Not set
+          </div>
+
+        </div>
+
+
+        <div>
+
+          <div class="stat-l">
+            Online Payments Collected
+          </div>
+
+          <div id="barber-profile-online" style="
+              margin-top:4px;
+              font-size:20px;
+              font-weight:800;
+              color:var(--gold);
+            ">
+            ₹0
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- ACCOUNT -->
+
+      <div style="
+        font-size:17px;
+        font-weight:700;
+        font-family:'Syne',sans-serif;
+        margin-bottom:12px;
+      ">
+        Account
+      </div>
+
+      <button class="btn btn-outline btn-full" style="margin-bottom:10px" onclick="editBarberProfile()">
+        ✏️ Edit Profile
+      </button>
+
+      <button class="btn btn-outline btn-full" style="margin-bottom:10px" onclick="updateShopPhoto()">
+        📷 Update Shop Photo
+      </button>
+
+      <button class="btn btn-outline btn-full" style="margin-bottom:10px" onclick="logoutBarber()">
+        🚪 Logout
+      </button>
+
+      <button class="btn btn-outline btn-full" style="color:#ff6b6b;border-color:#ff6b6b"
+        onclick="deleteBarberAccount()">
+        🗑️ Delete Account
+      </button>
+
+    </div>
+
+
+    <!--BOTTOM TABS-->
+
+    <div class="tabs" id="b-tabs">
+
+      <button class="tab on" onclick="bTab('queue',this)">
+
+        <span class="tab-ico">
+          📋
+        </span>
+
+        Queue
+
+      </button>
+
+
+      <button class="tab" onclick="bTab('svc',this)">
+
+        <span class="tab-ico">
+          ✂️
+        </span>
+
+        Services
+
+      </button>
+
+
+      <button class="tab" onclick="bTab('analytics',this)">
+
+        <span class="tab-ico">
+          📊
+        </span>
+
+        Analytics
+
+      </button>
+
+
+      <button class="tab" onclick="bTab('profile',this)">
+
+        <span class="tab-ico">
+          👤
+        </span>
+
+        Profile
+
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <!--BARBER EDIT PROFILE MODAL-->
+
+  <div class="overlay" id="m-editbarber">
+
+    <div class="modal">
+
+      <div style="
+        font-size:20px;
+        font-weight:800;
+        font-family:'Syne',sans-serif;
+        margin-bottom:18px;
+      ">
+        Edit Barber Profile
+      </div>
+
+
+      <div style="
+        display:flex;
+        flex-direction:column;
+        gap:14px;
+        margin-bottom:20px;
+      ">
+
+        <!-- NAME -->
+
+        <div>
+
+          <label>
+            Full Name
+          </label>
+
+          <input class="inp" id="bp-name" type="text" placeholder="Your full name" maxlength="50">
+
+        </div>
+
+
+        <!-- PHONE -->
+
+        <div>
+
+          <label>
+            Phone Number
+          </label>
+
+          <input class="inp" id="bp-phone" type="tel" maxlength="10" inputmode="numeric">
+
+        </div>
+
+
+        <!-- SHOP NAME -->
+
+        <div>
+
+          <label>
+            Shop Name
+          </label>
+
+          <input class="inp" id="bp-shop" type="text" placeholder="Your shop name" maxlength="60">
+
+        </div>
+
+
+        <!-- ADDRESS -->
+
+        <div>
+
+          <label>
+            Shop Address
+          </label>
+
+          <input class="inp" id="bp-address" type="text" maxlength="120">
+
+        </div>
+
+
+        <!-- OPENING TIME -->
+
+        <div>
+
+          <label>
+            Opening Time
+          </label>
+
+          <input class="inp" id="bp-open" type="time">
+
+        </div>
+
+
+        <!-- CLOSING TIME -->
+
+        <div>
+
+          <label>
+            Closing Time
+          </label>
+
+          <input class="inp" id="bp-close" type="time">
+
+        </div>
+
+
+        <!-- BANK -->
+
+        <div>
+
+          <label>
+            Bank Name
+          </label>
+
+          <input class="inp" id="bp-bank" type="text" placeholder="e.g. HDFC Bank" maxlength="50">
+
+        </div>
+
+
+        <!-- ACCOUNT LAST 4 -->
+
+        <div>
+
+          <label>
+            Account Last 4 Digits
+          </label>
+
+          <input class="inp" id="bp-last4" type="tel" maxlength="4" inputmode="numeric">
+
+        </div>
+
+      </div>
+
+
+      <!-- RATING NOTE -->
+
+      <div style="
+        padding:10px 12px;
+        margin-bottom:18px;
+        border-radius:var(--r);
+        background:var(--s2);
+        color:var(--txt2);
+        font-size:12px;
+        line-height:1.5;
+      ">
+        ⭐ Your rating is calculated from customer reviews and cannot
+        be edited manually.
+      </div>
+
+
+      <!-- MODAL BUTTONS -->
+
+      <div style="
+        display:flex;
+        gap:10px;
+      ">
+
+        <button class="btn btn-outline" style="flex:1" onclick="closeModal('m-editbarber')">
+
+          Cancel
+
+        </button>
+
+
+        <button class="btn btn-gold" style="flex:1" onclick="saveBarberProfile()">
+
+          Save Changes
+
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- WALK-IN CUSTOMER MODAL -->
+  <div class="overlay" id="m-walkin">
+
+    <div class="modal">
+
+      <div style="
+      font-size:20px;
+      font-weight:800;
+      font-family:'Syne',sans-serif;
+      margin-bottom:18px;
+    ">
+        Add Walk-in Customer
+      </div>
+
+      <!-- CUSTOMER NAME -->
+      <div style="margin-bottom:14px">
+
+        <label>Customer Name</label>
+
+        <input class="inp" id="walkin-name" type="text" placeholder="Enter customer name" maxlength="50">
+
+      </div>
+
+      <!-- SERVICE -->
+      <div style="margin-bottom:20px">
+
+        <label>Service</label>
+
+        <select class="inp" id="walkin-service">
+        </select>
+
+      </div>
+
+      <div style="
+      display:flex;
+      gap:10px;
+    ">
+
+        <button class="btn btn-outline" style="flex:1" onclick="closeModal('m-walkin')">
+          Cancel
+        </button>
+
+        <button class="btn btn-gold" style="flex:1" onclick="addWalkinCustomer()">
+          Add Customer
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <script src="script.js"></script>
+
+</body>
+
+</html>

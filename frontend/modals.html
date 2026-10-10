@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BarberQ: A Smart Digital Queue Management System</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,400&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <!-- Join Queue -->
+     
+    <div class="overlay" id="m-join">
+
+        <div class="modal">
+
+            <div style="font-size:20px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:18px">
+                Join Queue
+            </div>
+
+            <label style="margin-bottom:10px">
+                Select a Service
+            </label>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px" id="m-svcs"></div>
+
+            <div style="background:var(--s2);border-radius:var(--r);padding:16px;margin-bottom:18px">
+
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+
+                    <span style="color:var(--txt2);font-size:14px">
+                        Your token number
+                    </span>
+
+                    <span class="tag tg" id="m-tok">
+                        #7
+                    </span>
+
+                </div>
+
+                <div style="display:flex;justify-content:space-between;align-items:center">
+
+                    <span style="color:var(--txt2);font-size:14px">
+                        Est. waiting time
+                    </span>
+
+                    <span style="color:var(--gold);font-weight:600" id="m-wait">
+                        ~28 min
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <div style="display:flex;gap:10px">
+
+                <button class="btn btn-outline" style="flex:1" onclick="closeModal('m-join')">
+                    Cancel
+                </button>
+
+                <button class="btn btn-gold" style="flex:1" onclick="confirmJoin()">
+                    Continue to Payment →
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <script src="script.js"></script>
+    
+</body>
+
+</html>
