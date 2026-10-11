@@ -1,4 +1,3 @@
-
 from uuid import uuid4
 from datetime import datetime
 
@@ -42,7 +41,7 @@ def error_response(message, status=400):
 
 def get_or_create_customer(customer_name):
     """Create a unique customer record."""
-    customer_name = clean_text(customer_name) or "Demo Customer"
+    customer_name = safe_text(customer_name, 100) or "Demo Customer"
 
     customer = User(
         name=customer_name,
@@ -55,6 +54,87 @@ def get_or_create_customer(customer_name):
     db.session.flush()
 
     return customer
+
+
+def safe_text(value, limit=150):
+    """Remove characters that could inject HTML into other users' screens."""
+    return clean_text(value).replace("<", "").replace(">", "").replace('"', "")[:limit]
+
+
+def register_shop(shop_name, address=None, barber_name=None,
+                  email=None, is_open=None):
+    """Find the shop, or create it together with one barber.
+    The barber's e-mail is optional - a placeholder is generated."""
+    shop_name = safe_text(shop_name)
+    address = safe_text(address, 255)
+    barber_name = safe_text(barber_name, 100)
+    email = clean_text(email).lower()
+
+    shop = find_by_name(Shop, shop_name)
+
+    if shop is None:
+        shop = Shop(
+            name=shop_name,
+            address=address or "Address not provided",
+            status="open",
+        )
+        db.session.add(shop)
+        db.session.flush()
+    elif address:
+        shop.address = address
+
+    if is_open is not None:
+        shop.status = "open" if is_open else "closed"
+
+    barber = Barber.query.filter_by(shop_id=shop.id).first()
+
+    if barber is None:
+        barber_user = User.query.filter_by(email=email).first() if email else None
+
+        if barber_user is None:
+            barber_user = User(
+                name=barber_name or "Shop Barber",
+                email=email or f"barber.{uuid4().hex}@trimq.local",
+                password="demo-only-change-before-production",
+                role="barber",
+            )
+            db.session.add(barber_user)
+            db.session.flush()
+
+        db.session.add(Barber(
+            user_id=barber_user.id,
+            shop_id=shop.id,
+            specialization="General Barber",
+            status="available",
+        ))
+        db.session.flush()
+    elif barber_name and barber.user:
+        barber.user.name = barber_name
+
+    return shop
+
+
+def register_service(name, price, duration):
+    """Create a barber's own service so it can be booked."""
+    name = safe_text(name, 100)
+    try:
+        price = float(price)
+        duration = int(duration)
+    except (TypeError, ValueError):
+        price, duration = 0, 30
+
+    if price < 0:
+        price = 0
+    if duration <= 0:
+        duration = 30
+
+    service = find_by_name(Service, name)
+    if service is None:
+        service = Service(name=name, price=price,
+                          duration=duration, status="active")
+        db.session.add(service)
+        db.session.flush()
+    return service
 
 
 # --------------------------------------------------
@@ -267,54 +347,18 @@ def sync_shop():
     shop_name = clean_text(
         data.get("shop_name") or data.get("name")
     )
-    address = clean_text(data.get("address")) or "Address not provided"
-    email = clean_text(data.get("email")).lower()
-    barber_name = clean_text(data.get("barber_name")) or "Shop Barber"
 
     if not shop_name:
         return error_response("Shop name is required.")
 
-    if not email:
-        return error_response(
-            "Barber email is required to register a custom shop."
-        )
-
     try:
-        shop = find_by_name(Shop, shop_name)
-
-        if shop is None:
-            shop = Shop(
-                name=shop_name,
-                address=address,
-                status="open",
-            )
-            db.session.add(shop)
-            db.session.flush()
-        else:
-            shop.address = address
-
-        barber_user = User.query.filter_by(email=email).first()
-
-        if barber_user is None:
-            barber_user = User(
-                name=barber_name,
-                email=email,
-                password="demo-only-change-before-production",
-                role="barber",
-            )
-            db.session.add(barber_user)
-            db.session.flush()
-
-        barber = Barber.query.filter_by(shop_id=shop.id).first()
-
-        if barber is None:
-            db.session.add(Barber(
-                user_id=barber_user.id,
-                shop_id=shop.id,
-                specialization="General Barber",
-                status="available",
-            ))
-
+        shop = register_shop(
+            shop_name,
+            data.get("address"),
+            data.get("barber_name"),
+            data.get("email"),
+            data.get("open"),
+        )
         db.session.commit()
 
         return jsonify({
@@ -414,11 +458,13 @@ def get_queue():
         shop = find_by_name(Shop, shop_name)
 
         if shop is None:
-            return error_response(
-                f"Shop '{shop_name}' was not found in the database. "
-                "Register the shop first.",
-                404
-            )
+            # A brand-new shop simply has nobody in it yet.
+            return jsonify({
+                "success": True,
+                "shop_id": None,
+                "shop_name": shop_name,
+                "queue": [],
+            })
 
         active_statuses = ["waiting", "serving", "cur", "nxt", "wait"]
 
@@ -470,21 +516,22 @@ def create_queue_entry():
         # Ensure the predefined demo shops/services exist.
         ensure_demo_data()
 
+        # A shop / service the barber created in the app may not be in
+        # the database yet - register it now instead of failing.
         shop = find_by_name(Shop, shop_name)
-        service = find_by_name(Service, service_name)
-
         if shop is None:
-            return error_response(
-                f"Shop '{shop_name}' is not registered. "
-                "Save/sync the shop profile first.",
-                404
+            shop = register_shop(
+                shop_name,
+                data.get("shop_address"),
+                data.get("shop_owner"),
             )
 
+        service = find_by_name(Service, service_name)
         if service is None:
-            return error_response(
-                f"Service '{service_name}' is not registered. "
-                "Save/sync the service first.",
-                404
+            service = register_service(
+                service_name,
+                data.get("service_price"),
+                data.get("service_duration"),
             )
 
         if clean_text(shop.status).lower() != "open":
