@@ -1,5 +1,5 @@
 from uuid import uuid4
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from flask import Blueprint, request, jsonify
 from sqlalchemy import func
@@ -8,6 +8,19 @@ from .extensions import db
 from .models import User, Shop, Barber, Service, Queue
 
 queue_bp = Blueprint("queue", __name__)
+
+
+class Rating(db.Model):
+    """Customer ratings. This is a NEW table, so db.create_all() adds it
+    without touching your existing tables."""
+    __tablename__ = "ratings"
+
+    id = db.Column(db.Integer, primary_key=True)
+    shop_id = db.Column(db.Integer, db.ForeignKey("shops.id"), nullable=False)
+    queue_id = db.Column(db.Integer, nullable=True)
+    stars = db.Column(db.Integer, nullable=False)
+    review = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
 # --------------------------------------------------
@@ -526,13 +539,30 @@ def create_queue_entry():
                 data.get("shop_owner"),
             )
 
-        service = find_by_name(Service, service_name)
-        if service is None:
-            service = register_service(
-                service_name,
-                data.get("service_price"),
-                data.get("service_duration"),
-            )
+        # A barber's own price/duration for a service wins over a demo
+        # service that merely has the same name.
+        service = None
+        try:
+            want_price = float(data.get("service_price"))
+            want_duration = int(data.get("service_duration"))
+            service = Service.query.filter(
+                func.lower(func.trim(Service.name)) == service_name.lower(),
+                Service.price == want_price,
+                Service.duration == want_duration,
+            ).first()
+            if service is None:
+                service = Service(
+                    name=safe_text(service_name, 100),
+                    price=max(0, want_price),
+                    duration=want_duration if want_duration > 0 else 30,
+                    status="active",
+                )
+                db.session.add(service)
+                db.session.flush()
+        except (TypeError, ValueError):
+            service = find_by_name(Service, service_name)
+            if service is None:
+                service = register_service(service_name, None, None)
 
         if clean_text(shop.status).lower() != "open":
             return error_response(
@@ -622,6 +652,7 @@ def advance_queue(shop_id):
 
     if next_entry is not None:
         next_entry.status = "serving"
+        next_entry.started_at = datetime.utcnow()
 
 
 # --------------------------------------------------
@@ -705,3 +736,153 @@ def skip_queue_entry(entry_id):
             "Could not skip token.",
             500
         )
+
+
+# --------------------------------------------------
+# STATUS OF ONE BOOKING (customer polls this)
+# --------------------------------------------------
+
+@queue_bp.route("/api/queue/<int:entry_id>/status", methods=["GET"])
+def queue_entry_status(entry_id):
+    entry = db.session.get(Queue, entry_id)
+    if entry is None:
+        return error_response("Queue entry not found.", 404)
+
+    return jsonify({
+        "success": True,
+        "id": entry.id,
+        "token": entry.token_number,
+        "status": entry.status,   # waiting / serving / completed / skipped
+    })
+
+
+# --------------------------------------------------
+# RATINGS
+# --------------------------------------------------
+
+@queue_bp.route("/api/ratings", methods=["POST"])
+def add_rating():
+    data = request.get_json(silent=True) or {}
+
+    shop = find_by_name(Shop, data.get("shop_name"))
+    if shop is None:
+        return error_response("Shop not found.", 404)
+
+    try:
+        stars = int(data.get("stars"))
+    except (TypeError, ValueError):
+        return error_response("Stars must be a number from 1 to 5.")
+
+    if stars < 1 or stars > 5:
+        return error_response("Stars must be a number from 1 to 5.")
+
+    queue_id = data.get("queue_id")
+    try:
+        queue_id = int(queue_id) if queue_id is not None else None
+    except (TypeError, ValueError):
+        queue_id = None
+
+    try:
+        if queue_id is not None and Rating.query.filter_by(
+                shop_id=shop.id, queue_id=queue_id).first():
+            return error_response("This visit was already rated.")
+
+        db.session.add(Rating(
+            shop_id=shop.id,
+            queue_id=queue_id,
+            stars=stars,
+            review=safe_text(data.get("review"), 500),
+        ))
+        db.session.commit()
+        return jsonify({"success": True, "message": "Thanks for rating!"})
+
+    except Exception:
+        db.session.rollback()
+        import logging
+        logging.exception("Rating failed")
+        return error_response("Could not save rating.", 500)
+
+
+# --------------------------------------------------
+# BARBER ANALYTICS (computed from completed visits)
+# --------------------------------------------------
+
+@queue_bp.route("/api/analytics", methods=["GET"])
+def shop_analytics():
+    shop_name = clean_text(request.args.get("shop_name"))
+
+    try:
+        tz = int(request.args.get("tz", 0))      # minutes ahead of UTC (IST = 330)
+    except ValueError:
+        tz = 0
+
+    result = {
+        "success": True,
+        "today": {"done": 0, "earnings": 0, "avg_wait": None},
+        "week": {"daily": [0] * 7, "done": 0, "revenue": 0, "services": []},
+        "rating": {"average": 0, "count": 0},
+    }
+
+    shop = find_by_name(Shop, shop_name)
+    if shop is None:
+        return jsonify(result)
+
+    try:
+        offset = timedelta(minutes=tz)
+        today = (datetime.utcnow() + offset).date()
+        week_start = today - timedelta(days=today.weekday())   # Monday
+        week_end = week_start + timedelta(days=7)
+
+        done = (
+            Queue.query
+            .filter(
+                Queue.shop_id == shop.id,
+                Queue.status == "completed",
+                Queue.completed_at.isnot(None),
+            )
+            .all()
+        )
+
+        waits = []
+        service_counts = {}
+
+        for e in done:
+            day = (e.completed_at + offset).date()
+            price = float(e.service.price or 0)
+
+            if day == today:
+                result["today"]["done"] += 1
+                result["today"]["earnings"] += price
+                if e.started_at and e.joined_at:
+                    waits.append(
+                        max(0, (e.started_at - e.joined_at).total_seconds() / 60)
+                    )
+
+            if week_start <= day < week_end:
+                result["week"]["daily"][day.weekday()] += 1
+                result["week"]["done"] += 1
+                result["week"]["revenue"] += price
+                name = e.service.name
+                service_counts[name] = service_counts.get(name, 0) + 1
+
+        if waits:
+            result["today"]["avg_wait"] = round(sum(waits) / len(waits))
+
+        result["week"]["services"] = sorted(
+            service_counts.items(), key=lambda kv: kv[1], reverse=True
+        )
+
+        ratings = Rating.query.filter_by(shop_id=shop.id).all()
+        if ratings:
+            result["rating"]["count"] = len(ratings)
+            result["rating"]["average"] = round(
+                sum(r.stars for r in ratings) / len(ratings), 1
+            )
+
+        return jsonify(result)
+
+    except Exception:
+        db.session.rollback()
+        import logging
+        logging.exception("Analytics failed")
+        return error_response("Could not load analytics.", 500)
