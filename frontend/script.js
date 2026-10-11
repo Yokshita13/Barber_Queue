@@ -263,7 +263,7 @@ async function registerShopInBackend(){
   if(sig === _shopSyncSig) return;
 
   try{
-    const r = await fetch('http://127.0.0.1:5000/api/shops/sync', {
+    const r = await fetch('http://192.168.29.67:5500/api/shops/sync', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -326,42 +326,6 @@ function go(id){
     renderSupport();
 }
 
-// async function loadBarberQueue(shopName = "Royal Cuts") {
-//   try {
-//     const response = await fetch(
-//       "http://127.0.0.1:5000/api/queue?shop_name=" +
-//       encodeURIComponent(shopName)
-//     );
-
-//     const result = await response.json();
-
-//     if (!response.ok || !result.success) {
-//       throw new Error(result.error || "Could not load queue");
-//     }
-
-//     S.bq = result.queue.map((q, index) => ({
-//   id: q.id,
-//   tok: q.token,
-//   name: q.name,
-//   svc: q.service,
-//   dur: q.duration,
-//   st:
-//     q.status === "serving" || q.status === "cur"
-//       ? "cur"
-//       : index === 1
-//         ? "nxt"
-//         : "wait",
-//   eta: 0
-// }));
-
-//     renderBQ();
-
-//   } catch (error) {
-//     console.error("Queue loading error:", error);
-//     toast("⚠️", "Could not load the queue from the backend");
-//   }
-// }
-
 async function loadBarberQueue(shopName) {
   if (!shopName) {
     console.error("Shop name is missing.");
@@ -371,7 +335,7 @@ async function loadBarberQueue(shopName) {
 
   try {
     const response = await fetch(
-      "http://127.0.0.1:5000/api/queue?shop_name=" +
+      "http://192.168.29.67:5500/api/queue?shop_name=" +
       encodeURIComponent(shopName)
     );
 
@@ -1111,7 +1075,7 @@ async function processPayment() {
     if (button) button.innerHTML = '<span class="spinner"></span> Creating order…';
 
     try {
-        const orderRes = await fetch('http://127.0.0.1:5000/api/payments/create-order', {
+        const orderRes = await fetch('http://192.168.29.67:5500/api/payments/create-order', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ amount: p.price })
@@ -1129,7 +1093,7 @@ async function processPayment() {
             description: p.svcName + ' · Token #' + p.tok,
             handler: async function (response) {
 
-                const verifyRes = await fetch('http://127.0.0.1:5000/api/payments/verify', {
+                const verifyRes = await fetch('http://192.168.29.67:5500/api/payments/verify', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -1167,121 +1131,6 @@ async function processPayment() {
     }
 }
 
-
-// async function finalizeJoin(p, s, paidOnline) {
-// //     S.inQueue = true;
-// //     S.myTok = p.tok;
-// //     S.mySvc = p.svcName;
-// //     S.myShopId = p.shopId;
-// //     s.q++;
-// //     if (!Array.isArray(S.payments)) S.payments = [];
-
-// // S.payments.unshift({
-// //   id: 'PAY' + Date.now().toString().slice(-8),
-// //   shop: s.name,
-// //   shopId: p.shopId,
-// //   token: p.tok,
-// //   svc: p.svcName,
-// //   amount: p.price,
-// //   method: paidOnline ? 'Online' : 'Pay at Shop',
-// //   status: paidOnline ? 'Paid' : 'Pending',
-// //   date: new Date().toLocaleDateString('en-IN', {
-// //     day: '2-digit',
-// //     month: 'short'
-// //   }),
-// //   createdAt: new Date().toISOString(),
-// //   timestamp: Date.now()
-// // });
-
-
-// //     if (paidOnline) {
-// //         if (typeof S.onlineCollected !== 'number') S.onlineCollected = 0;
-// //         S.onlineCollected += p.price;
-
-// //         if (!S.paymentMethods.includes('Online Payment')) {
-// //             S.paymentMethods.push('Online Payment');
-// //         }
-// //     } else {
-// //         if (!S.paymentMethods.includes('Pay at Shop')) {
-// //             S.paymentMethods.push('Pay at Shop');
-// //         }
-// //     }
-
-// //     closeModal('m-pay');
-
-// //     const tokenEl = document.getElementById('ok-tok');
-// //     const subEl = document.getElementById('ok-sub');
-// //     const serviceEl = document.getElementById('ok-svc');
-
-// //     if (tokenEl) tokenEl.textContent = S.myTok;
-// //     if (subEl) subEl.textContent = 'Token #' + S.myTok + ' · ~' + s.wait + ' min wait';
-// //     if (serviceEl) serviceEl.textContent = S.mySvc;
-
-// //     const note = document.getElementById('ok-pay-note');
-// //     if (note) {
-// //         note.style.color = paidOnline ? 'var(--green)' : 'var(--txt2)';
-// //         note.textContent = paidOnline
-// //             ? '✅ Payment of ₹' + p.price + ' received'
-// //             : '💵 Pay ₹' + p.price + ' at the shop';
-// //     }
-
-// //     openModal('m-ok');
-
-// //     toast(
-// //         paidOnline ? '✅' : '🎫',
-// //         paidOnline ? 'Payment successful!' : 'Added to queue — pay at shop'
-// //     );
-
-// //     setTimeout(() => {
-// //         toast('🔔', 'Heads up! 2 people ahead of you in queue');
-// //     }, 12000);
-// // }
-
-// // function leaveQ(){
-
-// //   S.inQueue=false;
-
-// //   toast('👋','You left the queue');
-
-// //   if(S.selectedShop!==null)
-// //     openShop(S.selectedShop);
-//   let savedBooking;
-
-//   try {
-//     const response = await fetch(
-//       "http://127.0.0.1:5000/api/queue",
-//       {
-//         method: "POST",
-//         headers: {
-//           "Content-Type": "application/json"
-//         },
-//         body: JSON.stringify({
-//           shop_name: s.name,
-//           service_name: p.svcName,
-//           customer_name: S.user.name || "Demo Customer"
-//         })
-//       }
-//     );
-
-//     const result = await response.json();
-
-//     if (!response.ok || !result.success) {
-//       throw new Error(result.error || "Booking could not be saved");
-//     }
-
-//     savedBooking = result.booking;
-
-//     // Use the token generated by the database.
-//     p.tok = savedBooking.token;
-//     S.myQueueEntryId = savedBooking.id;
-
-//   } catch (error) {
-//     console.error("Booking error:", error);
-//     toast("⚠️", error.message || "Could not connect to the backend");
-//     return;
-//   }
-// }
-
 async function finalizeJoin(p, s, paidOnline) {
   if (!s || !p) {
     toast("⚠️", "Booking information is missing");
@@ -1290,7 +1139,7 @@ async function finalizeJoin(p, s, paidOnline) {
 
   try {
     const response = await fetch(
-      "http://127.0.0.1:5000/api/queue",
+      "http://192.168.29.67:5500/api/queue",
       {
         method: "POST",
         headers: {
@@ -1603,7 +1452,7 @@ function cTab(name,el){
 // ── Ask the backend for a shop's active queue (same data the barber sees) ──
 async function cqFetchQueue(shopName){
   const res = await fetch(
-    "http://127.0.0.1:5000/api/queue?shop_name=" + encodeURIComponent(shopName)
+    "http://192.168.29.67:5500/api/queue?shop_name=" + encodeURIComponent(shopName)
   );
   const result = await res.json();
 
@@ -2116,7 +1965,7 @@ async function doneToken() {
 
   try {
     const response = await fetch(
-      `http://127.0.0.1:5000/api/queue/${current.id}/complete`,
+      `http://192.168.29.67:5500/api/queue/${current.id}/complete`,
       { method: "POST" }
     );
 
@@ -2263,7 +2112,7 @@ async function skipToken() {
 
   try {
     const response = await fetch(
-      `http://127.0.0.1:5000/api/queue/${current.id}/skip`,
+      `http://192.168.29.67:5500/api/queue/${current.id}/skip`,
       { method: "POST" }
     );
 
@@ -2384,7 +2233,7 @@ async function addWalkinCustomer() {
       return;
   }
   try {
-    const response = await fetch("http://127.0.0.1:5000/api/queue", {
+    const response = await fetch("http://192.168.29.67:5500/api/queue", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -4326,25 +4175,6 @@ function sendChatMsg(){
   },900);
 }
 
-
-// ═══════ REAL-TIME SIM ═══════
-// setInterval(()=>{
-//   const barberScreen = document.getElementById('s-barb');
-//   const queueTab = document.getElementById('b-queue-tab');
-
-//   if(
-//     barberScreen &&
-//     queueTab &&
-//     barberScreen.classList.contains('active') &&
-//     queueTab.style.display !== 'none' &&
-//     S.bq.length < 9 &&
-//     Math.random() < 0.35
-//   ){
-//     addDemoCustomer();
-//   }
-// },9000);
-
-
 // ═══════ LOAD HTML COMPONENTS ═══════
 
 async function loadComponent(containerId, fileName) {
@@ -4441,4 +4271,397 @@ componentsReady = loadComponents();
       cTab('queue', tabs[1] || null);
     }
   })();
+})();
+
+// ═══════ RATE AFTER THE SERVICE · LIVE ANALYTICS · REAL RATING ═══════
+const BQ_BASE = 'http://192.168.29.67:5500';
+
+// ── 1. Customer: work out what happened to my token, then offer the rating ──
+completeMyVisit = async function(){
+
+  if(S._finishing || !S.myQueueEntryId) return;
+  S._finishing = true;
+
+  const entryId = S.myQueueEntryId;
+  let status = null;
+
+  try{
+    const r = await fetch(BQ_BASE + '/api/queue/' + entryId + '/status');
+    if(r.status === 404){
+      status = 'gone';
+    }else{
+      const j = await r.json();
+      if(r.ok && j.success) status = j.status;
+    }
+  }catch(e){ /* server unreachable */ }
+
+  // Cannot tell, or still waiting / being served: keep the booking as it is.
+  if(!status || ['waiting', 'serving', 'cur', 'nxt', 'wait'].includes(status)){
+    S._cqMiss = 0;
+    S._finishing = false;
+    return;
+  }
+
+  const shop = S.shops[S.myShopId];
+
+  if(status === 'completed'){
+
+    const visit = {
+      token:   S.myTok,
+      shopId:  S.myShopId,
+      shop:    shop ? shop.name : 'Barber Shop',
+      entryId: entryId,
+      service: S.mySvc,
+      date: new Date().toLocaleDateString('en-IN', {
+        day: '2-digit', month: 'short', year: 'numeric'
+      }),
+      createdAt: new Date().toISOString(),
+      timestamp: Date.now()
+    };
+
+    S.queueHistory.unshift(visit);
+    S.lastCompletedVisit = visit;
+
+    const payment = S.payments.find(p =>
+      p.token === S.myTok && p.shopId === S.myShopId && p.status === 'Pending'
+    );
+    if(payment) payment.status = 'Paid';
+
+    toast('✅', 'Your service is complete! Please rate your visit.');
+  }else{
+    toast('⏭️', status === 'skipped'
+      ? 'Your token was skipped. Please speak to the barber.'
+      : 'This booking is no longer active.');
+  }
+
+  S.inQueue = false;
+  S.myTok = '';
+  S.mySvc = '';
+  S.myQueueEntryId = null;
+  S.myQueueList = null;
+  S._cqMiss = 0;
+  S._cqHeadId = null;
+  S._finishing = false;
+
+  renderMyQ();
+
+  // The rating window opens only now, after the service.
+  if(status === 'completed'){
+    const nameEl = document.getElementById('rate-shop-name');
+    if(nameEl) nameEl.textContent = S.lastCompletedVisit.shop;
+    openModal('m-rate');
+  }
+};
+
+// "Rate Shop" is hidden while the customer is still waiting; after the
+// service it is offered on the empty My Queue screen.
+const _renderMyQBase = renderMyQ;
+renderMyQ = function(){
+  _renderMyQBase();
+
+  const el = document.getElementById('my-q');
+  if(!el) return;
+
+  if(S.inQueue){
+    el.querySelectorAll('button').forEach(b => {
+      if(/Rate Shop/.test(b.textContent)) b.remove();
+    });
+    return;
+  }
+
+  const v = S.lastCompletedVisit;
+  if(v && !S.ratedShops.some(r => r.shopId === v.shopId)){
+    el.insertAdjacentHTML('beforeend', `
+      <div style="text-align:center;padding-bottom:30px;margin-top:-30px">
+        <button class="btn btn-outline" onclick="rateLastVisit()">
+          Rate your last visit ⭐
+        </button>
+      </div>`);
+  }
+};
+
+function rateLastVisit(){
+  const v = S.lastCompletedVisit;
+  if(!v) return;
+  const nameEl = document.getElementById('rate-shop-name');
+  if(nameEl) nameEl.textContent = v.shop;
+  openModal('m-rate');
+}
+
+// Send the rating to the database so the barber sees it.
+const _submitRatingBase = submitRating;
+submitRating = function(){
+  const stars  = S.rating;
+  const review = (document.getElementById('rate-txt') || {}).value || '';
+  const visit  = S.lastCompletedVisit;
+  const before = S.ratedShops.length;
+
+  _submitRatingBase();
+
+  if(visit && S.ratedShops.length > before){
+    fetch(BQ_BASE + '/api/ratings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        shop_name: visit.shop,
+        stars: stars,
+        review: review,
+        queue_id: visit.entryId
+      })
+    }).catch(e => console.warn('Could not send rating:', e));
+    renderMyQ();
+  }
+};
+
+// ── 2. Barber: real numbers from the database ──
+let _statsSig = '';
+
+async function refreshBarberStats(){
+
+  if(S.role !== 'barber' || !S.barber.shopName) return;
+
+  try{
+    const tz = -new Date().getTimezoneOffset();      // IST = 330
+    const r = await fetch(
+      BQ_BASE + '/api/analytics?shop_name=' +
+      encodeURIComponent(S.barber.shopName) + '&tz=' + tz
+    );
+    const j = await r.json();
+    if(!r.ok || !j.success) return;
+
+    S.barberStats = j;
+    S.doneCnt = j.today.done;
+    S.earn    = j.today.earnings;
+
+    const set = (id, text) => {
+      const el = document.getElementById(id);
+      if(el) el.textContent = text;
+    };
+    set('b-done', S.doneCnt);
+    set('b-earn', '₹' + Math.round(S.earn).toLocaleString('en-IN'));
+    set('b-wait', j.today.avg_wait == null ? '—' : j.today.avg_wait);
+
+    const ratingChanged =
+      S.barber.rating !== j.rating.average ||
+      S.barber.ratingCount !== j.rating.count;
+
+    S.barber.rating      = j.rating.average;
+    S.barber.ratingCount = j.rating.count;
+    if(ratingChanged) syncBarberToCustomerShop();
+
+    const sig = JSON.stringify(j);
+    if(sig !== _statsSig){
+      _statsSig = sig;
+
+      const shown = id => {
+        const el = document.getElementById(id);
+        return el && el.style.display !== 'none' && el.offsetParent !== null;
+      };
+      if(shown('b-analytics-tab')) renderAnalytics();
+      if(shown('b-profile-tab'))   renderBarberProfile();
+    }
+  }catch(e){ /* server unreachable: keep what is on screen */ }
+}
+
+renderAnalytics = function(){
+
+  const container = document.getElementById('b-analytics');
+  if(!container) return;
+
+  refreshBarberStats();
+
+  const st = S.barberStats || {
+    today: { done: 0, earnings: 0, avg_wait: null },
+    week:  { daily: [0,0,0,0,0,0,0], done: 0, revenue: 0, services: [] },
+    rating: { average: 0, count: 0 }
+  };
+
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  // Online payments are only known on the device that took them.
+  const onlineToday = (S.payments || []).filter(p => {
+    if(p.method !== 'Online' || p.status !== 'Paid') return false;
+    const d = new Date(p.createdAt || p.timestamp || '');
+    return !isNaN(d.getTime()) && d >= todayStart && d <= now;
+  }).reduce((t, p) => t + Number(p.amount || 0), 0);
+
+  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const daily = st.week.daily;
+  const maxCount = Math.max(1, ...daily);
+
+  const averageRating = st.rating.count
+    ? st.rating.average.toFixed(1) + ' ★ (' + st.rating.count + ')'
+    : '—';
+
+  container.innerHTML = `
+    <div class="card pad" style="margin-bottom:12px">
+      <div class="muted">Total Revenue (This Week)</div>
+      <div style="font-size:30px;font-weight:800;color:var(--gold)">
+        ₹${Math.round(st.week.revenue).toLocaleString('en-IN')}
+      </div>
+      <div class="muted">Based on completed services this week</div>
+    </div>
+
+    <div class="card pad" style="margin-bottom:12px">
+      <div class="muted">Collected Online (Today)</div>
+      <div style="font-size:28px;font-weight:800;color:var(--green)">
+        ₹${onlineToday.toLocaleString('en-IN')}
+      </div>
+    </div>
+
+    <div class="card pad" style="margin-bottom:12px">
+      <div style="font-weight:700;margin-bottom:20px">Completed Customers This Week</div>
+      <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;align-items:end">
+        ${days.map((name, i) => `
+          <div style="text-align:center;font-size:11px">
+            <div style="height:100px;display:flex;align-items:flex-end;justify-content:center">
+              <div style="width:70%;max-width:35px;height:${daily[i] ? Math.max(8, daily[i] / maxCount * 100) : 0}px;background:var(--gold);border-radius:5px 5px 0 0"></div>
+            </div>
+            <div class="muted">${name}</div>
+            <div>${daily[i]}</div>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px">
+      <div class="card pad">
+        <div style="font-size:28px;font-weight:800;color:var(--green)">${st.week.done}</div>
+        <div class="muted">Completed Visits This Week</div>
+      </div>
+      <div class="card pad">
+        <div style="font-size:28px;font-weight:800;color:var(--gold)">${averageRating}</div>
+        <div class="muted">Average Rating</div>
+      </div>
+    </div>
+
+    <div class="card pad">
+      <div style="font-weight:700;margin-bottom:16px">Top Services This Week</div>
+      ${st.week.services.length
+        ? st.week.services.map(([name, count]) => `
+            <div style="display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--s3)">
+              <span>${esc2(name)}</span><strong>${count}</strong>
+            </div>`).join('')
+        : '<div class="muted">No completed services recorded this week yet.</div>'}
+    </div>`;
+};
+
+function esc2(v){
+  return String(v == null ? '' : v).replace(/[&<>"']/g, c => (
+    {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]
+  ));
+}
+
+// Refresh the numbers right after "Done", and every few seconds.
+const _doneTokenBase = doneToken;
+doneToken = async function(){
+  await _doneTokenBase();
+  refreshBarberStats();
+};
+
+setInterval(refreshBarberStats, 6000);
+setTimeout(refreshBarberStats, 1500);
+
+// ═══════ SHOP SEARCH + FILTER CHIPS (All / Top Rated / Nearby / Open Now) ═══════
+S.shopFilter = 'all';
+S.shopQuery  = '';
+
+function bqVisibleShops(){
+
+  let list = S.shops.slice();                 // same objects, ids untouched
+  const q = (S.shopQuery || '').trim().toLowerCase();
+
+  if(q){
+    list = list.filter(s =>
+      [s.name, s.addr, s.owner].some(v => String(v || '').toLowerCase().includes(q))
+    );
+  }
+
+  if(S.shopFilter === 'top'){
+    list = list
+      .filter(s => Number(s.rating) >= 4.5)
+      .sort((a, b) => Number(b.rating) - Number(a.rating));
+  }
+
+  if(S.shopFilter === 'open'){
+    list = list.filter(s => s.open);
+  }
+
+  if(S.shopFilter === 'near'){
+    const loc = String((S.user && S.user.location) || '').toLowerCase();
+    const words = loc.split(/[,\s\-–]+/).filter(w => w.length >= 3 && w !== 'not' && w !== 'set');
+
+    if(words.length){
+      const score = s => words.filter(w => String(s.addr || '').toLowerCase().includes(w)).length;
+      list = list.filter(s => score(s) > 0).sort((a, b) => score(b) - score(a));
+    }
+  }
+
+  return list;
+}
+
+const _renderShopsBase = renderShops;
+renderShops = function(){
+
+  const all = S.shops;
+  const shown = bqVisibleShops();
+
+  S.shops = shown;
+  try{ _renderShopsBase(); }
+  finally{ S.shops = all; }
+
+  const box = document.getElementById('shop-list');
+  if(box && shown.length === 0){
+    const msg = S.shopFilter === 'near' && !/\w{3,}/.test(((S.user && S.user.location) || '').replace(/not set/i, ''))
+      ? 'Set your location in Profile to see nearby shops.'
+      : S.shopFilter === 'top'
+        ? 'No shops with a 4.5★+ rating yet.'
+        : 'No shops match your search.';
+    box.innerHTML = `<div style="text-align:center;padding:40px 10px;color:var(--txt2)">${msg}</div>`;
+  }
+};
+
+(async function wireShopFilters(){
+
+  try{ await componentsReady; }catch(e){ return; }
+
+  const home = document.getElementById('cust-home');
+  if(!home) return;
+
+  const input = home.querySelector('input.inp');
+  const chips = [...home.querySelectorAll('span.tag')].filter(el =>
+    /All|Top Rated|Nearby|Open Now/.test(el.textContent)
+  );
+
+  const keyOf = el => {
+    const t = el.textContent;
+    return /Top Rated/.test(t) ? 'top'
+         : /Nearby/.test(t)    ? 'near'
+         : /Open Now/.test(t)  ? 'open'
+         : 'all';
+  };
+
+  const paint = () => chips.forEach(el => {
+    el.className = 'tag ' + (keyOf(el) === S.shopFilter ? 'tg' : 'tgray');
+  });
+
+  chips.forEach(el => {
+    el.style.cursor = 'pointer';
+    el.addEventListener('click', () => {
+      const key = keyOf(el);
+      // tapping the active chip again goes back to "All"
+      S.shopFilter = (S.shopFilter === key && key !== 'all') ? 'all' : key;
+      paint();
+      renderShops();
+    });
+  });
+
+  if(input){
+    input.addEventListener('input', () => {
+      S.shopQuery = input.value;
+      renderShops();
+    });
+  }
+
+  paint();
 })();
