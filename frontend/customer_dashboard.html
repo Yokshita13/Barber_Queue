@@ -12,95 +12,44 @@
 </head>
 
 <body>
-
   <div class="screen" id="s-cust">
-
     <div class="nav">
-
-      <div class="nav-brand">
-        Barber <span>- Q</span>
-      </div>
-
+      <div class="nav-brand">Barber<span>- Q</span></div>
       <div style="display:flex;align-items:center;gap:10px">
-
-        <span style="font-size:13px;color:var(--txt2)">
-          📍 Lucknow
-        </span>
-
+        <!-- <span style="font-size:13px;color:var(--txt2)">📍 Lucknow </span> -->
         <div class="av" id="top-avatar"
           style="width:36px;height:36px;background:var(--gdim);border:2px solid var(--gold);color:var(--gold);font-size:14px;cursor:pointer"
-          onclick="openProfile()">
-          C
-        </div>
-
+          onclick="openProfile()">C</div>
       </div>
-
     </div>
-
-
     <div class="scroll pad pad-b" id="cust-home">
-
       <div style="padding:8px 0 18px">
-
-        <div style="font-size:22px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:2px">
-          Find a Barber 🔍
-        </div>
-
-        <div style="color:var(--txt2);font-size:13px">
-          Showing shops near Hazratganj
-        </div>
-
+        <div style="font-size:22px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:2px">Find a Barber </div>
+        <div style="color:var(--txt2);font-size:13px">Showing shops near your location</div>
       </div>
-
-      <input class="inp" placeholder="Search barber shops..." style="margin-bottom:16px">
-
+      <input class="inp" placeholder="🔍Search barber shops..." style="margin-bottom:16px">
       <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:18px">
-
         <span class="tag tg" style="cursor:pointer">All</span>
         <span class="tag tgray" style="cursor:pointer">⭐ Top Rated</span>
         <span class="tag tgray" style="cursor:pointer">📍 Nearby</span>
         <span class="tag tgray" style="cursor:pointer">⚡ Open Now</span>
-
       </div>
-
       <div id="shop-list"></div>
-
     </div>
-
-
     <div class="scroll pad pad-b fadein" id="cust-queue" style="display:none">
-
       <div style="font-size:22px;font-weight:800;font-family:'Syne',sans-serif;padding:8px 0 18px">
         My Queue Status
       </div>
-
       <div id="my-q"></div>
-
     </div>
-
-
     <div class="tabs" id="c-tabs">
-
       <button class="tab on" onclick="cTab('home',this)">
         <span class="tab-ico">🏠</span>
         Home
       </button>
-
-      <!-- <button class="tab" onclick="cTab('queue',this)"> -->
-      <button class="tab" onclick="cTab('queue',this);pollCustomer()"></button>
-      <span class="tab-ico">🎫</span>
-      My Queue
-      </button>
-
-      <button class="tab" onclick="openProfile()">
-        <span class="tab-ico">👤</span>
-        Profile
-      </button>
-
+      <button class="tab" onclick="openProfile()"><span class="tab-ico">👤</span>Profile</button>
     </div>
-
   </div>
-
   <script src="script.js"></script>
 
 </body>
