@@ -242,6 +242,37 @@ function syncShopStats(){
   shop.open = S.shopOpen;
 
   publishBarberShop();
+  registerShopInBackend();
+}
+
+// Tell the database about the barber's shop (name, address, open/closed)
+// so customers can book it. Only sends when something changed.
+let _shopSyncSig = '';
+async function registerShopInBackend(){
+  const b = S.barber;
+  if(!b || !b.shopName) return;
+
+  const payload = {
+    shop_name:   b.shopName,
+    address:     b.address || '',
+    barber_name: b.name || '',
+    open:        S.shopOpen
+  };
+
+  const sig = JSON.stringify(payload);
+  if(sig === _shopSyncSig) return;
+
+  try{
+    const r = await fetch('http://127.0.0.1:5000/api/shops/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const j = await r.json();
+    if(r.ok && j.success) _shopSyncSig = sig;
+  }catch(e){
+    console.warn('Could not register shop in backend:', e);
+  }
 }
 
 // A customer tab that is already open picks up changes live.
@@ -366,6 +397,7 @@ async function loadBarberQueue(shopName) {
     }));
 
     renderBQ();
+    syncShopStats();
   } catch (error) {
     console.error("Queue loading error:", error);
     toast("⚠️", error.message || "Could not load the queue");
@@ -1267,7 +1299,11 @@ async function finalizeJoin(p, s, paidOnline) {
         body: JSON.stringify({
           shop_name: s.name,
           service_name: p.svcName,
-          customer_name: S.user.name || "Demo Customer"
+          customer_name: S.user.name || "Demo Customer",
+          shop_address: s.addr,
+          shop_owner: s.owner,
+          service_price: p.price,
+          service_duration: (S.services.find(x => x.name === p.svcName) || {}).dur
         })
       }
     );
@@ -2436,6 +2472,7 @@ function calculateWalkinETA() {
 function toggleShop(){
 
   S.shopOpen=!S.shopOpen;
+  syncShopStats();
 
   const el=
     document.getElementById('shop-status');
@@ -4359,3 +4396,49 @@ async function loadComponents() {
 }
 
 componentsReady = loadComponents();
+
+// ═══════ STAY ON THE SAME SCREEN AFTER A PAGE RELOAD ═══════
+(function(){
+  const VIEW_KEY = 'barberqView';
+  const RESTORABLE = ['s-cust', 's-shop', 's-barb', 's-prof', 's-support'];
+
+  const baseGo = go;
+  go = function(id){
+    baseGo(id);
+    try{
+      if(RESTORABLE.includes(id) && S.role){
+        sessionStorage.setItem(VIEW_KEY, JSON.stringify({
+          role: S.role, screen: id, user: S.user
+        }));
+      }else if(id === 's-land' || id === 's-role'){
+        sessionStorage.removeItem(VIEW_KEY);
+      }
+    }catch(e){}
+  };
+
+  (async function restoreView(){
+    let v = null;
+    try{ v = JSON.parse(sessionStorage.getItem(VIEW_KEY) || 'null'); }catch(e){}
+    if(!v || !v.role) return;
+
+    try{ await componentsReady; }catch(e){ return; }
+
+    S.role = v.role;
+    if(v.user) Object.assign(S.user, v.user);
+
+    if(v.role === 'barber'){
+      restoreBarberProfile();
+      go('s-barb');
+      if(S.barber.shopName) loadBarberQueue(S.barber.shopName);
+      return;
+    }
+
+    go(v.screen === 's-prof' ? 's-prof' : 's-cust');
+
+    // A customer who is in a queue goes straight back to "My Queue".
+    if(S.inQueue && v.screen !== 's-prof'){
+      const tabs = document.querySelectorAll('#c-tabs .tab');
+      cTab('queue', tabs[1] || null);
+    }
+  })();
+})();
