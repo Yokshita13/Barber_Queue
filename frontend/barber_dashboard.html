@@ -4,279 +4,277 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>BarberQ: A Smart Digital Queue Management System</title>
+
   <link
     href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,400&display=swap"
     rel="stylesheet">
+
   <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-  <div class="screen" id="s-auth">
+  <div class="screen" id="s-barb">
+
+    <!-- NAVBAR -->
     <div class="nav">
-      <button class="nav-back" onclick="go('s-land')">← Back</button>
-      <span></span>
-      <span></span>
+      <div class="nav-brand">
+        Barber<span> - Q</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span id="shop-status" class="tag tgreen pulse" style="cursor:pointer" onclick="toggleShop()">● Open</span>
+        <div id="barber-top-avatar" class="av"
+          style="width:36px; height:36px; background:var(--cdim); border:2px solid var(--cyan); color:var(--cyan); font-size:14px; cursor:pointer;display:flex; align-items:center; justify-content:center; overflow:hidden;"
+          onclick="bTab('profile',document.querySelector('#b-tabs .tab:last-child'))">B</div>
+      </div>
     </div>
-    <div class="scroll" style="display:flex;flex-direction:column;justify-content:center;padding:32px 24px">
-      <div style="max-width:360px;width:100%;margin:0 auto">
-        <div id="auth-p1">
-          <div style="font-size:28px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:8px">
-            Enter your Details
+
+    <!-- QUEUE TAB -->
+    <div class="scroll pad pad-b" id="b-queue-tab">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px;">
+        <div class="stat">
+          <div style="font-size:20px;margin-bottom:4px">👥</div>
+          <div class="stat-n" style="color:var(--gold)" id="b-inq">0</div>
+          <div class="stat-l">In Queue</div>
+        </div>
+        <div class="stat">
+          <div style="font-size:20px;margin-bottom:4px">✅</div>
+          <div class="stat-n" style="color:var(--green)" id="b-done">0</div>
+          <div class="stat-l">Done Today</div>
+        </div>
+        <div class="stat">
+          <div style="font-size:20px;margin-bottom:4px">💰</div>
+          <div class="stat-n" style="font-size:20px;color:var(--gold)" id="b-earn">₹0</div>
+          <div class="stat-l">Today's Earnings</div>
+          <div class="pbar">
+            <div class="pfill" style="width:0%"></div>
           </div>
-          <p style="color:var(--txt2);margin-bottom:32px;font-size:14px">
-            We'll send a one-time verification code
-          </p>
-          <label>Your Name</label>
-          <input class="inp" id="pname" type="text" placeholder="Enter your Name" style="margin-bottom:20px">
-          <label>Location</label>
-          <div style="display:flex;gap:8px;margin-bottom:20px">
-            <input class="inp" id="ploc" type="text" placeholder="Enter your Location" style="flex:1">
-            <button type="button" class="btn btn-outline" style="white-space:nowrap"
-              onclick="useMyLocation('ploc', this)">
-              📍 Use Current
-            </button>
+        </div>
+        <div class="stat">
+          <div style="font-size:20px;margin-bottom:4px">⏱️</div>
+          <div class="stat-n" id="b-wait">28</div>
+          <div class="stat-l">Avg Wait (min)</div>
+        </div>
+      </div>
+      <div style="font-size:18px; font-weight:700; font-family:'Syne',sans-serif; margin-bottom:14px;">Live Queue</div>
+      <div id="b-qlist"></div>
+      <button class="btn btn-outline btn-full" style="margin-top:4px" onclick="openWalkinModal()">Add Walk-in
+        Customer</button>
+    </div>
+
+    <!--SERVICES TAB-->
+    <div class="scroll pad pad-b" id="b-svc-tab" style="display:none">
+      <div style="font-size:20px; font-weight:800; font-family:'Syne',sans-serif; margin-bottom:18px;">Services</div>
+      <div id="b-svclist"></div>
+      <button class="btn btn-outline btn-full" style="margin-top:12px" onclick="openModal('m-svc')">Add Service</button>
+    </div>
+
+    <!-- ANALYTICS TAB -->
+    <div class="scroll pad pad-b" id="b-analytics-tab" style="display:none">
+      <div style="font-size:20px; font-weight:800; font-family:'Syne',sans-serif; margin-bottom:18px;">Analytics</div>
+      <div id="b-analytics"></div>
+      <div style="height:20px"></div>
+    </div>
+
+    <!-- PROFILE TAB -->
+    <div class="scroll pad pad-b" id="b-profile-tab" style="display:none">
+      <div style="margin-bottom:20px;">
+        <button onclick="bTab('queue', document.querySelector('#b-tabs .tab:first-child'))"
+          style="background:none; border:none; color:var(--txt2); font-size:14px; cursor:pointer; padding:0;">←
+          Back</button>
+      </div>
+
+      <!-- PROFILE HEADER -->
+      <div style="text-align:center;margin-bottom:24px;">
+        <div id="barber-profile-photo" class="av"
+          style="width:82px; height:82px; margin:0 auto 12px; background:var(--cdim); border:2px solid var(--cyan); color:var(--cyan); font-size:28px;display:flex; align-items:center; justify-content:center;">
+          B</div>
+        <div id="barber-profile-name" style="font-size:22px; font-weight:800; font-family:'Syne',sans-serif;">Not set
+        </div>
+        <div id="barber-profile-shop" style="color:var(--txt2);margin-top:5px;">Shop name not set</div>
+      </div>
+
+      <!-- PERSONAL INFORMATION -->
+      <div style="font-size:17px; font-weight:700; font-family:'Syne',sans-serif; margin-bottom:12px;">Personal
+        Information</div>
+      <div class="card" style="margin-bottom:20px">
+        <div style="margin-bottom:16px">
+          <div class="stat-l">Full Name</div>
+          <div id="barber-profile-fullname" style="margin-top:4px; font-weight:600;">Not set</div>
+        </div>
+        <div>
+          <div class="stat-l">Phone Number</div>
+          <div id="barber-profile-phone" style="margin-top:4px; font-weight:600;">Not set</div>
+        </div>
+      </div>
+
+      <!-- SHOP INFORMATION -->
+      <div style="font-size:17px; font-weight:700;font-family:'Syne',sans-serif; margin-bottom:12px;">Shop Information
+      </div>
+      <div class="card" style="margin-bottom:20px">
+        <div style="margin-bottom:16px">
+          <div class="stat-l">Shop Name</div>
+          <div id="barber-profile-shopname" style="margin-top:4px; font-weight:600;">Not set</div>
+        </div>
+        <div style="margin-bottom:16px">
+          <div class="stat-l">Address</div>
+          <div id="barber-profile-address" style="margin-top:4px;font-weight:600;">Not set</div>
+        </div>
+        <div>
+          <div class="stat-l">Opening Hours</div>
+          <div id="barber-profile-hours" style="margin-top:4px;font-weight:600;">Not set</div>
+        </div>
+      </div>
+
+      <!-- CUSTOMER RATING -->
+      <div style="font-size:17px;font-weight:700;font-family:'Syne',sans-serif;margin-bottom:12px;">Customer Rating
+      </div>
+      <div class="card" style="margin-bottom:20px">
+        <div id="barber-profile-rating" style="font-size:20px;font-weight:800;">No ratings yet</div>
+        <div id="barber-profile-rating-count" style="color:var(--txt2);margin-top:5px;">0 reviews</div>
+        <div style="font-size:12px;color:var(--txt2);margin-top:10px;">Rating is calculated automatically from customer
+          reviews.</div>
+      </div>
+
+      <!-- PAYOUT INFORMATION -->
+      <div style="font-size:17px;font-weight:700;font-family:'Syne',sans-serif;margin-bottom:12px;">Payout Information
+      </div>
+      <div class="card" style="margin-bottom:20px">
+        <div style="margin-bottom:16px">
+          <div class="stat-l">Bank Account</div>
+          <div id="barber-profile-bank" style="margin-top:4px;font-weight:600;">Not set</div>
+        </div>
+        <div>
+          <div class="stat-l">Online Payments Collected</div>
+          <div id="barber-profile-online" style="margin-top:4px;font-size:20px;font-weight:800;color:var(--gold);">₹0
           </div>
+        </div>
+      </div>
+
+      <!-- ACCOUNT -->
+      <div style="font-size:17px;font-weight:700;font-family:'Syne',sans-serif;margin-bottom:12px;">Account</div>
+      <button class="btn btn-outline btn-full" style="margin-bottom:10px" onclick="editBarberProfile()">Edit
+        Profile</button>
+      <button class="btn btn-outline btn-full" style="margin-bottom:10px" onclick="updateShopPhoto()">Update Shop
+        Photo</button>
+      <button class="btn btn-outline btn-full" style="margin-bottom:10px" onclick="logoutBarber()">Logout</button>
+      <button class="btn btn-outline btn-full" style="color:#ff6b6b;border-color:#ff6b6b"
+        onclick="deleteBarberAccount()">Delete Account</button>
+    </div>
+
+    <!--BOTTOM TABS-->
+    <div class="tabs" id="b-tabs">
+      <button class="tab on" onclick="bTab('queue',this)">
+        <span class="tab-ico">📋</span>Queue
+      </button>
+      <button class="tab" onclick="bTab('svc',this)">
+        <span class="tab-ico">✂️</span>Services
+      </button>
+      <button class="tab" onclick="bTab('analytics',this)">
+        <span class="tab-ico">📊</span>Analytics
+      </button>
+      <button class="tab" onclick="bTab('profile',this)">
+        <span class="tab-ico">👤</span>Profile
+      </button>
+    </div>
+  </div>
+
+  <!--BARBER EDIT PROFILE MODAL-->
+  <div class="overlay" id="m-editbarber">
+    <div class="modal">
+      <div style="font-size:20px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:18px;">Edit Barber Profile
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:20px;">
+
+        <!-- NAME -->
+        <div>
+          <label>Full Name</label>
+          <input class="inp" id="bp-name" type="text" placeholder="Your full name" maxlength="50">
+        </div>
+
+        <!-- PHONE -->
+        <div>
           <label>Phone Number</label>
-          <div style="display:flex;gap:8px;margin-bottom:24px">
-            <select class="inp" style="width:88px">
-              <option>+91</option>
-              <option>+374</option>
-              <option>+994</option>
-              <option>+973</option>
-              <option>+880</option>
-              <option>+975</option>
-              <option>+673</option>
-              <option>+855</option>
-              <option>+86</option>
-              <option>+357</option>
-              <option>+995</option>
-              <option>+93</option>
-              <option>+62</option>
-              <option>+98</option>
-              <option>+964</option>
-              <option>+972</option>
-              <option>+81</option>
-              <option>+962</option>
-              <option>+7</option>
-              <option>+965</option>
-              <option>+996</option>
-              <option>+856</option>
-              <option>+961</option>
-              <option>+60</option>
-              <option>+960</option>
-              <option>+976</option>
-              <option>+95</option>
-              <option>+977</option>
-              <option>+850</option>
-              <option>+968</option>
-              <option>+92</option>
-              <option>+970</option>
-              <option>+63</option>
-              <option>+974</option>
-              <option>+966</option>
-              <option>+65</option>
-              <option>+82</option>
-              <option>+94</option>
-              <option>+963</option>
-              <option>+992</option>
-              <option>+66</option>
-              <option>+670</option>
-              <option>+90</option>
-              <option>+993</option>
-              <option>+971</option>
-              <option>+998</option>
-              <option>+84</option>
-              <option>+967</option>
-              <option>+355</option>
-              <option>+376</option>
-              <option>+43</option>
-              <option>+375</option>
-              <option>+32</option>
-              <option>+387</option>
-              <option>+359</option>
-              <option>+385</option>
-              <option>+420</option>
-              <option>+45</option>
-              <option>+372</option>
-              <option>+358</option>
-              <option>+33</option>
-              <option>+49</option>
-              <option>+30</option>
-              <option>+36</option>
-              <option>+354</option>
-              <option>+353</option>
-              <option>+39</option>
-              <option>+383</option>
-              <option>+371</option>
-              <option>+423</option>
-              <option>+370</option>
-              <option>+352</option>
-              <option>+356</option>
-              <option>+373</option>
-              <option>+377</option>
-              <option>+382</option>
-              <option>+31</option>
-              <option>+389</option>
-              <option>+47</option>
-              <option>+48</option>
-              <option>+351</option>
-              <option>+40</option>
-              <option>+7</option>
-              <option>+378</option>
-              <option>+381</option>
-              <option>+421</option>
-              <option>+386</option>
-              <option>+34</option>
-              <option>+46</option>
-              <option>+41</option>
-              <option>+380</option>
-              <option>+44</option>
-              <option>+39</option>
-              <option>+213</option>
-              <option>+244</option>
-              <option>+229</option>
-              <option>+267</option>
-              <option>+226</option>
-              <option>+257</option>
-              <option>+238</option>
-              <option>+237</option>
-              <option>+236</option>
-              <option>+235</option>
-              <option>+269</option>
-              <option>+243</option>
-              <option>+242</option>
-              <option>+225</option>
-              <option>+253</option>
-              <option>+20</option>
-              <option>+240</option>
-              <option>+291</option>
-              <option>+268</option>
-              <option>+251</option>
-              <option>+241</option>
-              <option>+220</option>
-              <option>+233</option>
-              <option>+224</option>
-              <option>+245</option>
-              <option>+254</option>
-              <option>+266</option>
-              <option>+231</option>
-              <option>+218</option>
-              <option>+261</option>
-              <option>+265</option>
-              <option>+223</option>
-              <option>+222</option>
-              <option>+230</option>
-              <option>+212</option>
-              <option>+258</option>
-              <option>+264</option>
-              <option>+227</option>
-              <option>+234</option>
-              <option>+250</option>
-              <option>+239</option>
-              <option>+221</option>
-              <option>+248</option>
-              <option>+232</option>
-              <option>+252</option>
-              <option>+27</option>
-              <option>+211</option>
-              <option>+249</option>
-              <option>+255</option>
-              <option>+228</option>
-              <option>+216</option>
-              <option>+256</option>
-              <option>+260</option>
-              <option>+263</option>
-              <option>+1-268</option>
-              <option>+1-242</option>
-              <option>+1-246</option>
-              <option>+501</option>
-              <option>+1</option>
-              <option>+506</option>
-              <option>+53</option>
-              <option>+1-767</option>
-              <option>+1-809</option>
-              <option>+503</option>
-              <option>+1-473</option>
-              <option>+502</option>
-              <option>+509</option>
-              <option>+504</option>
-              <option>+1-876</option>
-              <option>+52</option>
-              <option>+505</option>
-              <option>+507</option>
-              <option>+1-869</option>
-              <option>+1-758</option>
-              <option>+1-784</option>
-              <option>+1-868</option>
-              <option>+1</option>
-              <option>+54</option>
-              <option>+591</option>
-              <option>+55</option>
-              <option>+56</option>
-              <option>+57</option>
-              <option>+593</option>
-              <option>+592</option>
-              <option>+595</option>
-              <option>+51</option>
-              <option>+597</option>
-              <option>+598</option>
-              <option>+58</option>
-              <option>+61</option>
-              <option>+679</option>
-              <option>+686</option>
-              <option>+692</option>
-              <option>+691</option>
-              <option>+674</option>
-              <option>+64</option>
-              <option>+680</option>
-              <option>+675</option>
-              <option>+685</option>
-              <option>+677</option>
-              <option>+676</option>
-              <option>+688</option>
-              <option>+678</option>
-            </select>
-            <input class="inp" id="ph" type="tel" placeholder="98765 43210" style="flex:1">
-          </div>
-          <button class="btn btn-gold btn-full" style="height:52px" onclick="sendOtp()">
-            Send OTP
-          </button>
+          <input class="inp" id="bp-phone" type="tel" maxlength="10" inputmode="numeric">
         </div>
-        <div id="auth-p2" style="display:none">
-          <div style="font-size:28px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:8px">
-            Verify OTP
-          </div>
-          <p style="color:var(--txt2);margin-bottom:8px;font-size:14px">
-            Code sent to
-            <strong id="ph-show" style="color:var(--txt)"></strong>
-          </p>
-          <div id="otp-message" style="background:var(--gdim);
-            border:1px solid var(--gold);
-            border-radius:var(--r);
-            padding:10px 14px;
-            font-size:13px;
-            color:var(--gold);
-            margin-bottom:24px;">
-            Your OTP is being generated...
-          </div>
-          <div class="otp-wrap" id="otp-row">
-            <input class="otp-box" maxlength="1" id="o0" oninput="otpFwd(this,0)" onkeydown="otpBack(this,0,event)">
-            <input class="otp-box" maxlength="1" id="o1" oninput="otpFwd(this,1)" onkeydown="otpBack(this,1,event)">
-            <input class="otp-box" maxlength="1" id="o2" oninput="otpFwd(this,2)" onkeydown="otpBack(this,2,event)">
-            <input class="otp-box" maxlength="1" id="o3" oninput="otpFwd(this,3)" onkeydown="otpBack(this,3,event)">
-          </div>
-          <button class="btn btn-gold btn-full" style="height:52px;margin-top:24px" onclick="verifyOtp()">
-            Verify &amp; Continue
-          </button>
-          <button class="btn btn-ghost btn-full" style="margin-top:8px" onclick="showEl('auth-p1');hideEl('auth-p2')">
-            ← Change Number
-          </button>
+
+        <!-- SHOP NAME -->
+        <div>
+          <label>Shop Name</label>
+          <input class="inp" id="bp-shop" type="text" placeholder="Your shop name" maxlength="60">
         </div>
+
+        <!-- ADDRESS -->
+        <div>
+          <label>Shop Address</label>
+          <input class="inp" id="bp-address" type="text" maxlength="120">
+        </div>
+
+        <!-- OPENING TIME -->
+        <div>
+          <label>Opening Time</label>
+          <input class="inp" id="bp-open" type="time">
+        </div>
+
+        <!-- CLOSING TIME -->
+        <div>
+          <label>Closing Time</label>
+          <input class="inp" id="bp-close" type="time">
+        </div>
+
+        <!-- BANK -->
+        <div>
+          <label>Bank Name</label>
+          <input class="inp" id="bp-bank" type="text" placeholder="e.g. HDFC Bank" maxlength="50">
+        </div>
+
+        <!-- ACCOUNT LAST 4 -->
+        <div>
+          <label>Account Last 4 Digits</label>
+          <input class="inp" id="bp-last4" type="tel" maxlength="4" inputmode="numeric">
+        </div>
+      </div>
+
+      <!-- RATING NOTE -->
+      <div
+        style="padding:10px 12px;margin-bottom:18px;border-radius:var(--r);background:var(--s2);color:var(--txt2);font-size:12px;line-height:1.5;">
+        ⭐ Your rating is calculated from customer reviews and cannot be edited manually.
+      </div>
+
+      <!-- MODAL BUTTONS -->
+      <div style="display:flex; gap:10px;">
+        <button class="btn btn-outline" style="flex:1" onclick="closeModal('m-editbarber')">Cancel</button>
+        <button class="btn btn-gold" style="flex:1" onclick="saveBarberProfile()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- WALK-IN CUSTOMER MODAL -->
+  <div class="overlay" id="m-walkin">
+    <div class="modal">
+      <div style="font-size:20px;font-weight:800; font-family:'Syne',sans-serif; margin-bottom:18px;">Add Walk-in
+        Customer</div>
+
+      <!-- CUSTOMER NAME -->
+      <div style="margin-bottom:14px">
+        <label>Customer Name</label>
+        <input class="inp" id="walkin-name" type="text" placeholder="Enter customer name" maxlength="50">
+      </div>
+
+      <!-- SERVICE -->
+      <div style="margin-bottom:20px">
+        <label>Service</label>
+        <select class="inp" id="walkin-service"></select>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-outline" style="flex:1" onclick="closeModal('m-walkin')">Cancel</button>
+        <button class="btn btn-gold" style="flex:1" onclick="addWalkinCustomer()">Add Customer</button>
       </div>
     </div>
   </div>
   <script src="script.js"></script>
+
 </body>
 
 </html>
