@@ -285,7 +285,7 @@ async function registerShopInBackend(){
   if(sig === _shopSyncSig) return;
 
   try{
-    const r = await fetch('http://192.168.29.67:5000/api/shops/sync', {
+    const r = await fetch('https://barber-queue-backend-9z52.onrender.com/api/shops/sync', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -357,7 +357,7 @@ async function loadBarberQueue(shopName) {
 
   try {
     const response = await fetch(
-      "http://192.168.29.67:5000/api/queue?shop_name=" +
+      "https://barber-queue-backend-9z52.onrender.com/api/queue?shop_name=" +
       encodeURIComponent(shopName)
     );
 
@@ -1090,7 +1090,7 @@ async function processPayment() {
     if (button) button.innerHTML = '<span class="spinner"></span> Creating order…';
 
     try {
-        const orderRes = await fetch('http://192.168.29.67:5000/api/payments/create-order', {
+        const orderRes = await fetch('https://barber-queue-backend-9z52.onrender.com/api/payments/create-order', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ amount: p.price })
@@ -1108,7 +1108,7 @@ async function processPayment() {
             description: p.svcName + ' · Token #' + p.tok,
             handler: async function (response) {
 
-                const verifyRes = await fetch('http://192.168.29.67:5000/api/payments/verify', {
+                const verifyRes = await fetch('https://barber-queue-backend-9z52.onrender.com/api/payments/verify', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -1154,7 +1154,7 @@ async function finalizeJoin(p, s, paidOnline) {
 
   try {
     const response = await fetch(
-      "http://192.168.29.67:5000/api/queue",
+      "https://barber-queue-backend-9z52.onrender.com/api/queue",
       {
         method: "POST",
         headers: {
@@ -1467,7 +1467,7 @@ function cTab(name,el){
 // ── Ask the backend for a shop's active queue (same data the barber sees) ──
 async function cqFetchQueue(shopName){
   const res = await fetch(
-    "http://192.168.29.67:5000/api/queue?shop_name=" + encodeURIComponent(shopName)
+    "https://barber-queue-backend-9z52.onrender.com/api/queue?shop_name=" + encodeURIComponent(shopName)
   );
   const result = await res.json();
 
@@ -1980,7 +1980,7 @@ async function doneToken() {
 
   try {
     const response = await fetch(
-      `http://192.168.29.67:5000/api/queue/${current.id}/complete`,
+      `https://barber-queue-backend-9z52.onrender.com/api/queue/${current.id}/complete`,
       { method: "POST" }
     );
 
@@ -2127,7 +2127,7 @@ async function skipToken() {
 
   try {
     const response = await fetch(
-      `http://192.168.29.67:5000/api/queue/${current.id}/skip`,
+      `https://barber-queue-backend-9z52.onrender.com/api/queue/${current.id}/skip`,
       { method: "POST" }
     );
 
@@ -2214,7 +2214,7 @@ async function addWalkinCustomer() {
       return;
   }
   try {
-    const response = await fetch("http://192.168.29.67:5000/api/queue", {
+    const response = await fetch("https://barber-queue-backend-9z52.onrender.com/api/queue", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -4286,7 +4286,7 @@ componentsReady = loadComponents();
 })();
 
 // ═══════ RATE AFTER THE SERVICE · LIVE ANALYTICS · REAL RATING ═══════
-const BQ_BASE = 'http://192.168.29.67:5000';
+const BQ_BASE = 'https://barber-queue-backend-9z52.onrender.com';
 
 // ── 1. Customer: work out what happened to my token, then offer the rating ──
 completeMyVisit = async function(){
