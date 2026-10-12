@@ -277,4 +277,4 @@ class Appointment(db.Model):
         back_populates="appointments"
     )
     def __repr__(self):
-        return f"<Appointment {self.id}>" 
+        return f"<Appointment {self.id}>"
