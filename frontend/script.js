@@ -49,13 +49,112 @@ const S={
     {id:0,name:'Royal Cuts',owner:'Rahul Sharma',rating:4.8,rev:234,addr:'Hazratganj, Lucknow',cur:3,q:6,wait:28,open:true,clr:'#f5c842',ico:'👑',svcs:[0,1,2,3]},
     {id:1,name:'The Blade Room',owner:'Amit Singh',rating:4.6,rev:189,addr:'Gomtinagar, Lucknow',cur:7,q:4,wait:18,open:true,clr:'#00d4aa',ico:'⚔️',svcs:[0,1,4]},
     {id:2,name:'Style Studio',owner:'Priya Verma',rating:4.9,rev:312,addr:'Alambagh, Lucknow',cur:12,q:2,wait:8,open:true,clr:'#ff6b9d',ico:'💎',svcs:[0,1,2,3,4]},
-    {id:3,name:'Classic Barber',owner:'Suresh Kumar',rating:4.4,rev:98,addr:'Chowk, Lucknow',cur:5,q:8,wait:36,open:false,clr:'#a29bfe',ico:'🪒',svcs:[0,1]},
+    {id:3,name:'Classic Barber',owner:'Suresh Kumar',rating:3.4,rev:98,addr:'Chowk, Lucknow',cur:0,q:8,wait:36,open:false,clr:'#a29bfe',ico:'🪒',svcs:[0,1]},
   ],
   bq:[],
   earn:0,
   doneCnt:0,
   onlineCollected:0
 };
+
+// CUSTOMER DATA: separate profile and history for each phone number
+const CUSTOMER_STORAGE_KEY = "barberQCustomers";
+const ACTIVE_CUSTOMER_KEY = "barberQActiveCustomer";
+
+function getCustomerKey(phone) {
+    return String(phone || "").replace(/\D/g, "").slice(-10);
+}
+
+function getAllCustomers() {
+    try {
+        return JSON.parse(
+            localStorage.getItem(CUSTOMER_STORAGE_KEY) || "{}"
+        );
+    } catch (error) {
+        console.error("Could not load customer records:", error);
+        return {};
+    }
+}
+
+function saveCurrentCustomer() {
+    const phone = getCustomerKey(S.user.phone);
+    if (!phone) return false;
+
+    const customers = getAllCustomers();
+
+    customers[phone] = {
+        name: S.user.name || "Customer",
+        phone: S.user.phone,
+        location: S.user.location || "Not set",
+        queueHistory: S.queueHistory || [],
+        ratedShops: S.ratedShops || [],
+        payments: S.payments || [],
+        paymentMethods: S.paymentMethods || [],
+        lastCompletedVisit: S.lastCompletedVisit || null
+    };
+
+    try {
+        localStorage.setItem(
+            CUSTOMER_STORAGE_KEY,
+            JSON.stringify(customers)
+        );
+
+        localStorage.setItem(ACTIVE_CUSTOMER_KEY, phone);
+        return true;
+    } catch (error) {
+        console.error("Could not save customer:", error);
+        toast("⚠️", "Could not save customer data");
+        return false;
+    }
+}
+
+function loadCustomer(phone, enteredName = "") {
+    const key = getCustomerKey(phone);
+    if (!key) return false;
+
+    const customers = getAllCustomers();
+    const saved = customers[key];
+
+    // Load existing customer or initialize a separate new customer.
+    S.user = saved ? {
+        name: saved.name || enteredName || "Customer",
+        phone: saved.phone || "+91 " + key,
+        location: saved.location || "Not set"
+    } : {
+        name: enteredName || "Customer",
+        phone: "+91 " + key,
+        location: "Not set"
+    };
+
+    S.queueHistory = saved?.queueHistory || [];
+    S.ratedShops = saved?.ratedShops || [];
+    S.payments = saved?.payments || [];
+    S.paymentMethods = saved?.paymentMethods || [];
+    S.lastCompletedVisit = saved?.lastCompletedVisit || null;
+
+    // Active queue details should be restored from the backend
+    // when backend support for customer queue lookup is implemented.
+    S.inQueue = false;
+    S.myTok = "";
+    S.mySvc = "";
+    S.myShopId = 0;
+
+    localStorage.setItem(ACTIVE_CUSTOMER_KEY, key);
+
+    saveCurrentCustomer();
+    updateUserAvatar();
+
+    return true;
+}
+
+
+
+
+
+
+
+
+
 
 const PUBLIC_SHOP_KEY = 'barberShopPublic';
 
@@ -122,83 +221,6 @@ function unpublishBarberShop(){
   }catch(e){}
 }
 
-// function syncBarberToCustomerShop(){
-
-//   const b = S.barber;
-
-//   if(!b || !b.name || !b.shopName) return;
-
-//   let shop = S.shops.find(s => s.isBarberProfile);
-
-//   if(!shop){
-//     shop = { id: S.shops.length, isBarberProfile: true, cur: 0, q: 0, wait: 0 };
-//     S.shops.push(shop);
-//   }
-
-//   Object.assign(shop, {
-//     name:        b.shopName,
-//     owner:       b.name,
-//     rating:      Number(b.rating) || 0,
-//     rev:         Number(b.ratingCount) || 0,
-//     addr:        b.address || 'Address not set',
-//     open:        S.shopOpen,
-//     clr:         '#00d4aa',
-//     ico:         '✂️',
-//     svcs:        S.services.map((_, i) => i),
-//     photo:       b.photo || '',
-//     phone:       b.phone || '',
-//     openingTime: b.openingTime || '',
-//     closingTime: b.closingTime || ''
-//   });
-
-//   syncShopStats();      // fills in q / cur / wait and publishes
-// }
-
-// function syncBarberToCustomerShop() {
-
-//   const b = S.barber;
-
-//   if (!b || !b.name || !b.shopName) {
-//     return;
-//   }
-
-//   const existing = S.shops.find(s => s.isBarberProfile === true);
-
-//   const shopData = {
-//     id: existing ? existing.id : S.shops.length,
-//     name: b.shopName,
-//     owner: b.name,
-//     rating: Number(b.rating) || 0,
-//     rev: Number(b.ratingCount) || 0,
-//     addr: b.address || 'Address not set',
-//     cur: 0,
-//     q: 0,
-//     wait: 0,
-//     open: S.shopOpen,
-//     clr: '#00d4aa',
-//     ico: '✂️',
-//     svcs: [0,1,2,3,4],
-//     isBarberProfile: true,
-//     photo: b.photo || '',
-//     phone: b.phone || '',
-//     openingTime: b.openingTime || '',
-//     closingTime: b.closingTime || ''
-//   };
-
-//   if (existing) {
-
-//     const index = S.shops.findIndex(
-//       s => s.isBarberProfile === true
-//     );
-
-//     S.shops[index] = shopData;
-
-//   } else {
-
-//     S.shops.push(shopData);
-
-//   }
-// }
 function syncBarberToCustomerShop(){
 
   const b = S.barber;
@@ -263,7 +285,7 @@ async function registerShopInBackend(){
   if(sig === _shopSyncSig) return;
 
   try{
-    const r = await fetch('http://192.168.29.67:5500/api/shops/sync', {
+    const r = await fetch('http://192.168.29.67:5000/api/shops/sync', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -335,7 +357,7 @@ async function loadBarberQueue(shopName) {
 
   try {
     const response = await fetch(
-      "http://192.168.29.67:5500/api/queue?shop_name=" +
+      "http://192.168.29.67:5000/api/queue?shop_name=" +
       encodeURIComponent(shopName)
     );
 
@@ -480,58 +502,51 @@ function toast(ico,msg){
         document.getElementById("o0").focus();
     }
 
+async function verifyOtp() {
+    const fields = [
+        document.getElementById("o0"),
+        document.getElementById("o1"),
+        document.getElementById("o2"),
+        document.getElementById("o3")
+    ];
 
-    async function verifyOtp() {
-
-        const fields = [
-            document.getElementById("o0"),
-            document.getElementById("o1"),
-            document.getElementById("o2"),
-            document.getElementById("o3")
-        ];
-
-        if (fields.some(el => !el)) {
-            console.error("OTP input fields are missing.");
-            return;
-        }
-
-        const enteredOTP = fields.map(el => el.value.trim()).join("");
-
-        console.log("Entered OTP:", enteredOTP);
-        console.log("Generated OTP:", generatedOTP);
-
-        if (enteredOTP !== generatedOTP || generatedOTP === "") {
-            toast("⚠️", "Invalid OTP — please try again");
-
-            fields.forEach(el => el.value = "");
-            fields[0].focus();
-            return;
-        }
-
-        // Wait for all split HTML files to finish loading.
-        try {
-            await componentsReady;
-        } catch (error) {
-            console.error("BarberQ components failed to load:", error);
-            toast("⚠️", "Please wait for BarberQ to finish loading.");
-            return;
-        }
-
-        const roleScreen = document.getElementById("s-role");
-
-        if (!roleScreen) {
-            console.error("s-role was not loaded. Check role.html and index.html.");
-            toast("⚠️", "Role screen could not be loaded.");
-            return;
-        }
-
-        // Navigate only after the target screen definitely exists.
-        go("s-role");
-
-        setTimeout(() => {
-            toast("✅", "OTP verified successfully!");
-        }, 100);
+    if (fields.some(el => !el)) {
+        toast("⚠️", "OTP fields are missing");
+        return;
     }
+
+    const enteredOTP = fields.map(el => el.value.trim()).join("");
+
+    if (!generatedOTP || enteredOTP !== generatedOTP) {
+        toast("⚠️", "Invalid OTP — please try again");
+        fields.forEach(el => el.value = "");
+        fields[0].focus();
+        return;
+    }
+
+    try {
+        await componentsReady;
+    } catch (error) {
+        console.error(error);
+        toast("⚠️", "Please wait for the app to load");
+        return;
+    }
+
+    const phone = document.getElementById("ph").value.trim();
+    const name = document.getElementById("pname").value.trim();
+
+    if (!loadCustomer(phone, name)) {
+        toast("⚠️", "Could not load customer profile");
+        return;
+    }
+
+    generatedOTP = "";
+
+    go("s-role");
+
+    toast("✅", "Profile loaded successfully");
+}
+
     function otpFwd(input, index) {
 
         input.value = input.value.replace(/\D/g, "");
@@ -1075,7 +1090,7 @@ async function processPayment() {
     if (button) button.innerHTML = '<span class="spinner"></span> Creating order…';
 
     try {
-        const orderRes = await fetch('http://192.168.29.67:5500/api/payments/create-order', {
+        const orderRes = await fetch('http://192.168.29.67:5000/api/payments/create-order', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ amount: p.price })
@@ -1093,7 +1108,7 @@ async function processPayment() {
             description: p.svcName + ' · Token #' + p.tok,
             handler: async function (response) {
 
-                const verifyRes = await fetch('http://192.168.29.67:5500/api/payments/verify', {
+                const verifyRes = await fetch('http://192.168.29.67:5000/api/payments/verify', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -1139,7 +1154,7 @@ async function finalizeJoin(p, s, paidOnline) {
 
   try {
     const response = await fetch(
-      "http://192.168.29.67:5500/api/queue",
+      "http://192.168.29.67:5000/api/queue",
       {
         method: "POST",
         headers: {
@@ -1452,7 +1467,7 @@ function cTab(name,el){
 // ── Ask the backend for a shop's active queue (same data the barber sees) ──
 async function cqFetchQueue(shopName){
   const res = await fetch(
-    "http://192.168.29.67:5500/api/queue?shop_name=" + encodeURIComponent(shopName)
+    "http://192.168.29.67:5000/api/queue?shop_name=" + encodeURIComponent(shopName)
   );
   const result = await res.json();
 
@@ -1965,7 +1980,7 @@ async function doneToken() {
 
   try {
     const response = await fetch(
-      `http://192.168.29.67:5500/api/queue/${current.id}/complete`,
+      `http://192.168.29.67:5000/api/queue/${current.id}/complete`,
       { method: "POST" }
     );
 
@@ -2112,7 +2127,7 @@ async function skipToken() {
 
   try {
     const response = await fetch(
-      `http://192.168.29.67:5500/api/queue/${current.id}/skip`,
+      `http://192.168.29.67:5000/api/queue/${current.id}/skip`,
       { method: "POST" }
     );
 
@@ -2130,40 +2145,6 @@ async function skipToken() {
     toast("⚠️", error.message || "Could not skip token");
   }
 }
-// function skipToken(){
-
-//   if(S.bq.length<2){
-
-//     toast(
-//       '⚠️',
-//       'Only one customer in queue'
-//     );
-
-//     return;
-//   }
-
-//   const sk=S.bq.shift();
-
-//   sk.st='wait';
-
-//   const last=S.bq[S.bq.length-1];
-
-//   sk.eta=(last?.eta||10)+sk.dur;
-
-//   S.bq.push(sk);
-
-//   S.bq[0].st='cur';
-
-//   if(S.bq.length>1)
-//     S.bq[1].st='nxt';
-
-//   renderBQ();
-
-//   toast(
-//     '⏭️',
-//     'Token skipped to end of queue.'
-//   );
-// }
 
 let nextTok = 1;
 
@@ -2233,7 +2214,7 @@ async function addWalkinCustomer() {
       return;
   }
   try {
-    const response = await fetch("http://192.168.29.67:5500/api/queue", {
+    const response = await fetch("http://192.168.29.67:5000/api/queue", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -2261,50 +2242,6 @@ async function addWalkinCustomer() {
     toast("⚠️", error.message || "Could not save walk-in customer");
   }
 }
-// function addWalkinCustomer() {
-
-//   const nameInput = document.getElementById('walkin-name');
-//   const serviceSelect = document.getElementById('walkin-service');
-
-//   const name = nameInput.value.trim();
-
-//   if (!name) {
-//     toast('⚠️', 'Please enter customer name');
-//     nameInput.focus();
-//     return;
-//   }
-
-//   const serviceId = Number(serviceSelect.value);
-
-//   const service = S.services.find(
-//     s => s.id === serviceId
-//   );
-
-//   if (!service) {
-//     toast('⚠️', 'Please select a service');
-//     return;
-//   }
-
-//   const customer = {
-//     tok: nextTok++,
-//     name: name,
-//     svc: service.name,
-//     dur: service.dur,
-//     st: S.bq.length === 0 ? 'cur' : 'wait',
-//     eta: calculateWalkinETA()
-//   };
-
-//   S.bq.push(customer);
-
-//   closeModal('m-walkin');
-
-//   renderBQ();
-
-//   toast(
-//     '✅',
-//     `${name} added to the queue`
-//   );
-// }
 
 function calculateWalkinETA() {
 
@@ -3846,30 +3783,65 @@ function editProfile() {
     openModal('m-editprof');
 }
 
-function saveProfileEdit() {
-    const name = document.getElementById('ep-name').value.trim();
-    const phone = document.getElementById('ep-phone').value.trim();
-    const locEl = document.getElementById('ep-location');
-    const location = locEl ? locEl.value.trim() : '';
 
-    if (name === '') {
-        toast('⚠️', 'Please enter a valid name');
+function saveProfileEdit() {
+    const name = document.getElementById("ep-name").value.trim();
+    const phoneInput = document.getElementById("ep-phone").value.trim();
+    const locationInput = document.getElementById("ep-location");
+
+    const location = locationInput
+        ? locationInput.value.trim()
+        : "";
+
+    const phoneDigits = phoneInput.replace(/\D/g, "").slice(-10);
+
+    if (!name) {
+        toast("⚠️", "Please enter your name");
         return;
     }
 
-    if (!/^\d{10}$/.test(phone)) {
-        toast('⚠️', 'Please enter a valid 10-digit phone number');
+    if (!/^\d{10}$/.test(phoneDigits)) {
+        toast("⚠️", "Enter a valid 10-digit phone number");
+        return;
+    }
+
+    const customers = getAllCustomers();
+    const oldPhone = String(S.user.phone || "")
+        .replace(/\D/g, "")
+        .slice(-10);
+
+    // If the current profile has no phone number,
+    // check whether this number already has saved data.
+    if (!oldPhone) {
+        const existingCustomer = customers[phoneDigits];
+
+        if (existingCustomer) {
+            loadCustomer(phoneDigits);
+        } else {
+            S.user.phone = phoneDigits;
+        }
+    } else if (oldPhone !== phoneDigits) {
+        toast(
+            "⚠️",
+            "To change your number, verify the new number first."
+        );
         return;
     }
 
     S.user.name = name;
-    S.user.phone = '+91 ' + phone;
-    S.user.location = location || 'Not set';
+    S.user.location = location || "Not set";
+    S.user.phone = phoneDigits;
 
-    closeModal('m-editprof');
+    if (!saveCurrentCustomer()) {
+        toast("⚠️", "Could not save your profile");
+        return;
+    }
+
+    closeModal("m-editprof");
     updateUserAvatar();
     renderProfile();
-    toast('✅', 'Profile updated successfully');
+
+    toast("✅", "Profile saved successfully");
 }
 
 function useMyLocation(inputId, btn) {
@@ -4007,16 +3979,17 @@ function submitRating(){
   const review=document.getElementById('rate-txt')?.value.trim() || '';
 
   S.ratedShops.push({
-    shopId:visit.shopId,
-    shop:visit.shop,
-    rating:S.rating,
-    review:review,
-    date:new Date().toLocaleDateString('en-IN',{
-      day:'2-digit',
-      month:'short',
-      year:'numeric'
+    shopId: visit.shopId,
+    shop: visit.shop,
+    rating: S.rating,
+    review: review,
+    date: new Date().toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric"
     })
-  });
+});
+if (!saveCurrentCustomer()) return;
 
   closeModal('m-rate');
 
@@ -4093,13 +4066,11 @@ function renderSupport(){
         <div style="font-size:11px;color:var(--txt2);margin-top:2px">+91 12345 67890</div>
       </a>
 
-      <button class="card card-p"
-      style="text-align:center;border:none;cursor:pointer"
-      onclick="openModal('m-chat')">
-        <div style="font-size:26px;margin-bottom:6px">💬</div>
-        <div style="font-size:13px;font-weight:600">Live Chat</div>
-        <div style="font-size:11px;color:var(--txt2);margin-top:2px">Avg reply: 2 min</div>
-      </button>
+    <button class="card card-p" style="text-align:center;border:none;cursor:pointer" onclick="toast('ℹ️','Live Chat is currently unavailable. Please email support.')">
+      <div style="font-size:26px;margin-bottom:6px">💬</div>
+      <div style="font-size:13px;font-weight:600">Live Chat</div>
+      <div style="font-size:11px;color:var(--txt2);margin-top:2px">Currently unavailable</div>
+    </button>
 
       <a href="mailto:support@barberq.app"
       class="card card-p"
@@ -4109,12 +4080,10 @@ function renderSupport(){
         <div style="font-size:11px;color:var(--txt2);margin-top:2px">support@barberq.app</div>
       </a>
 
-      <button class="card card-p"
-      style="text-align:center;border:none;cursor:pointer"
-      onclick="toast('📄','Redirecting to raise a ticket...')">
+      <button class="card card-p" style="text-align:center;border:none;cursor:pointer" onclick="openTicketForm()">
         <div style="font-size:26px;margin-bottom:6px">📄</div>
         <div style="font-size:13px;font-weight:600">Raise a Ticket</div>
-        <div style="font-size:11px;color:var(--txt2);margin-top:2px">For payment issues</div>
+        <div style="font-size:11px;color:var(--txt2);margin-top:2px">Submit a support request</div>
       </button>
 
     </div>
@@ -4139,16 +4108,59 @@ function renderSupport(){
 
   `;
 }
+function openTicketForm() {
+    const subject = prompt("Enter the ticket subject:");
+    if (subject === null) return;
 
-function toggleFaq(i){
+    if (!subject.trim()) {
+        toast("⚠️", "Ticket subject is required");
+        return;
+    }
 
-  const el=document.getElementById('faq-a-'+i);
-  const arrow=document.getElementById('faq-arrow-'+i);
+    const description = prompt("Describe your issue:");
+    if (description === null) return;
 
-  const open = el.style.display==='block';
+    if (!description.trim()) {
+        toast("⚠️", "Please describe your issue");
+        return;
+    }
 
-  el.style.display = open?'none':'block';
-  arrow.textContent = open?'＋':'－';
+    const ticket = {
+        id: "BQ-" + Date.now(),
+        phone: S.user.phone || "",
+        subject: subject.trim(),
+        description: description.trim(),
+        status: "Open",
+        createdAt: new Date().toISOString()
+    };
+
+    try {
+        const key = "barberQTickets";
+        const tickets = JSON.parse(localStorage.getItem(key) || "[]");
+
+        tickets.push(ticket);
+        localStorage.setItem(key, JSON.stringify(tickets));
+
+        toast("✅", "Ticket created: " + ticket.id);
+    } catch (error) {
+        console.error("Ticket creation failed:", error);
+        toast("⚠️", "Could not save your ticket");
+    }
+}
+
+function toggleFaq(i) {
+    const answer = document.getElementById("faq-a-" + i);
+    const arrow = document.getElementById("faq-arrow-" + i);
+
+    if (!answer || !arrow) {
+        console.error("FAQ elements not found:", i);
+        return;
+    }
+
+    const isOpen = answer.style.display === "block";
+
+    answer.style.display = isOpen ? "none" : "block";
+    arrow.textContent = isOpen ? "＋" : "−";
 }
 
 function sendChatMsg(){
@@ -4274,7 +4286,7 @@ componentsReady = loadComponents();
 })();
 
 // ═══════ RATE AFTER THE SERVICE · LIVE ANALYTICS · REAL RATING ═══════
-const BQ_BASE = 'http://192.168.29.67:5500';
+const BQ_BASE = 'http://192.168.29.67:5000';
 
 // ── 1. Customer: work out what happened to my token, then offer the rating ──
 completeMyVisit = async function(){
@@ -4321,19 +4333,20 @@ completeMyVisit = async function(){
 
     S.queueHistory.unshift(visit);
     S.lastCompletedVisit = visit;
-
+    saveCurrentCustomer();
     const payment = S.payments.find(p =>
       p.token === S.myTok && p.shopId === S.myShopId && p.status === 'Pending'
     );
     if(payment) payment.status = 'Paid';
 
     toast('✅', 'Your service is complete! Please rate your visit.');
-  }else{
+  }
+  else{
     toast('⏭️', status === 'skipped'
       ? 'Your token was skipped. Please speak to the barber.'
       : 'This booking is no longer active.');
-  }
-
+    }
+  saveCurrentCustomer();
   S.inQueue = false;
   S.myTok = '';
   S.mySvc = '';
@@ -4664,4 +4677,568 @@ renderShops = function(){
   }
 
   paint();
+})();
+
+// ═══════════════════════════════════════════════════════════════
+// FIXES: leaveQ · restore active queue & history from the backend ·
+//        working Help & Support (FAQ, assistant chat, tickets)
+// Paste at the very END of script.js (after everything else).
+// ═══════════════════════════════════════════════════════════════
+(function(){
+
+  const digits10 = p => String(p || '').replace(/\D/g, '').slice(-10);
+
+  // ── 1. Every booking is stored against the customer's phone number ──
+  const _fetchBase = window.fetch.bind(window);
+  window.fetch = function(url, opts){
+    try{
+      if(typeof url === 'string' && /\/api\/queue$/.test(url) &&
+         opts && opts.method === 'POST' && typeof opts.body === 'string'){
+        const body = JSON.parse(opts.body);
+        if(!body.customer_phone){
+          body.customer_phone = digits10(S.user && S.user.phone);
+          opts = Object.assign({}, opts, { body: JSON.stringify(body) });
+        }
+      }
+    }catch(e){}
+    return _fetchBase(url, opts);
+  };
+
+  // ── 2. Leave Queue (was missing) ──
+  window.leaveQ = async function(){
+    if(!S.inQueue || !S.myQueueEntryId){
+      toast('ℹ️', 'You are not in a queue');
+      return;
+    }
+    if(!confirm('Leave the queue? You will lose your token.')) return;
+
+    const entryId = S.myQueueEntryId;
+    try{
+      const r = await fetch(BQ_BASE + '/api/queue/' + entryId + '/cancel', { method: 'POST' });
+      const j = await r.json().catch(() => ({}));
+      // 404 / "already closed" also means the booking is gone: just clear it here.
+      if(!r.ok && r.status !== 404 && r.status !== 400){
+        throw new Error(j.error || 'Could not leave the queue');
+      }
+    }catch(e){
+      toast('⚠️', e.message || 'Could not reach the server — try again');
+      return;
+    }
+
+    S.inQueue = false; S.myTok = ''; S.mySvc = '';
+    S.myQueueEntryId = null; S.myQueueList = null;
+    S._cqMiss = 0; S._cqHeadId = null;
+
+    // an unpaid pay-at-shop booking is no longer owed
+    const pay = (S.payments || []).find(p => p.status === 'Pending' && p.shopId === S.myShopId);
+    if(pay) pay.status = 'Cancelled';
+
+    saveCurrentCustomer();
+    toast('👋', 'You left the queue');
+
+    if(document.getElementById('s-shop')?.classList.contains('active')) go('s-cust');
+    renderMyQ();
+    if(typeof pollCustomer === 'function') pollCustomer();
+  };
+
+  // ── 3. Restore active queue + visit history for this phone number ──
+  function shopIndexFor(a){
+    let i = S.shops.findIndex(s => s.name.toLowerCase() === String(a.shop_name).toLowerCase());
+    if(i >= 0) return i;
+    S.shops.push({ id: S.shops.length, name: a.shop_name, owner: '', rating: 0, rev: 0,
+      addr: a.shop_address || '', cur: 0, q: 0, wait: 0, open: true,
+      clr: '#00d4aa', ico: '✂️', svcs: [] });
+    return S.shops.length - 1;
+  }
+
+  async function restoreFromBackend(phone, afterReload){
+    const key = digits10(phone);
+    if(key.length !== 10) return;
+    const same = () => digits10(S.user && S.user.phone) === key;   // user may have switched number
+
+    try{
+      const r = await fetch(BQ_BASE + '/api/customers/' + key + '/active');
+      const j = await r.json();
+      if(same() && r.ok && j.success && j.active && !S.inQueue){
+        const a = j.active;
+        S.myShopId = shopIndexFor(a);
+        S.inQueue = true; S.myTok = a.token; S.mySvc = a.service;
+        S.myQueueEntryId = a.id; S.myQueueList = null; S._cqMiss = 0;
+      }
+    }catch(e){ console.warn('Active queue lookup failed:', e.message); }
+
+    try{
+      const r = await fetch(BQ_BASE + '/api/customers/' + key + '/history');
+      const j = await r.json();
+      if(same() && r.ok && j.success){
+        S.queueHistory = S.queueHistory || [];
+        const have = new Set(S.queueHistory.map(v => String(v.entryId)));
+        j.visits.forEach(v => {
+          if(have.has(String(v.id))) return;
+          const d = new Date(v.completed_at);
+          let shopId = S.shops.findIndex(s => s.name.toLowerCase() === v.shop_name.toLowerCase());
+          S.queueHistory.push({
+            token: v.token, shopId: shopId, shop: v.shop_name, entryId: v.id,
+            service: v.service,
+            date: d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
+            createdAt: d.toISOString(), timestamp: d.getTime()
+          });
+        });
+        S.queueHistory.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+      }
+    }catch(e){ console.warn('History lookup failed:', e.message); }
+
+    if(!same()) return;
+    saveCurrentCustomer();
+
+    if(document.getElementById('s-prof')?.classList.contains('active')) renderProfile();
+    if(document.getElementById('s-cust')?.classList.contains('active')){
+      renderShops(); renderMyQ();
+      if(afterReload && S.inQueue){
+        const tabs = document.querySelectorAll('#c-tabs .tab');
+        cTab('queue', tabs[1] || null);
+      }
+    }
+  }
+
+  const _loadCustomerBase = loadCustomer;
+  loadCustomer = function(phone, enteredName){
+    const ok = _loadCustomerBase(phone, enteredName);
+    if(ok) restoreFromBackend(phone, false);
+    return ok;
+  };
+
+  // After a page reload only S.user came back — reload this number's saved
+  // data too, otherwise the next save would overwrite it with an empty history.
+  try{
+    const v = JSON.parse(sessionStorage.getItem('barberqView') || 'null');
+    if(v && v.role !== 'barber' && v.user && digits10(v.user.phone).length === 10){
+      _loadCustomerBase(v.user.phone, v.user.name);
+      Object.assign(S.user, v.user);
+      componentsReady.then(() => restoreFromBackend(v.user.phone, true)).catch(() => {});
+    }
+  }catch(e){}
+
+  // ── 4. Help & Support ──
+  const esc = s => String(s).replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const LOCAL_TK = 'barberQTickets';
+
+  function ensureSupportUI(){
+    if(document.getElementById('bq-chat')) return;
+
+    const css = document.createElement('style');
+    css.textContent = `
+      .bq-ov{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:none;align-items:flex-end;justify-content:center}
+      .bq-ov.on{display:flex}
+      .bq-sheet{background:var(--s2,#1a1a24);color:var(--txt,#fff);width:100%;max-width:480px;border-radius:20px 20px 0 0;padding:18px;max-height:88vh;overflow:auto;box-sizing:border-box}
+      .bq-sheet h3{margin:0 0 4px;font-family:'Syne',sans-serif}
+      .bq-sub{font-size:12px;color:var(--txt2,#aaa);margin-bottom:10px}
+      .bq-msgs{height:240px;overflow:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+      .bq-m{max-width:82%;padding:9px 12px;border-radius:14px;font-size:13px;line-height:1.4}
+      .bq-m.me{align-self:flex-end;background:var(--cyan,#00d4aa);color:#000}
+      .bq-m.them{align-self:flex-start;background:rgba(255,255,255,.08)}
+      .bq-f{width:100%;box-sizing:border-box;padding:11px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:inherit;font:inherit;margin-bottom:10px}
+      .bq-btn{padding:11px 16px;border-radius:10px;border:none;font-weight:700;cursor:pointer;background:var(--cyan,#00d4aa);color:#000;font:inherit;font-weight:700}
+      .bq-btn.g{background:rgba(255,255,255,.1);color:inherit}
+      .bq-faq{border:1px solid rgba(255,255,255,.1);border-radius:12px;margin-bottom:8px;overflow:hidden}
+      .bq-faq-q{display:flex;justify-content:space-between;gap:10px;padding:13px 14px;cursor:pointer;font-size:14px;font-weight:600;width:100%;background:none;border:none;color:inherit;text-align:left;font-family:inherit}
+      .bq-faq-a{display:none;padding:0 14px 14px;font-size:13px;color:var(--txt2,#aaa);line-height:1.5}
+      .bq-faq.open .bq-faq-a{display:block}`;
+    document.head.appendChild(css);
+
+    const wrap = document.createElement('div');
+    wrap.innerHTML = `
+      <div class="bq-ov" id="bq-chat"><div class="bq-sheet">
+        <h3>💬 Help Assistant</h3>
+        <div class="bq-sub">Automated answers to common questions. For anything about your money or token, raise a ticket.</div>
+        <div class="bq-msgs" id="bq-msgs"></div>
+        <div style="display:flex;gap:8px">
+          <input class="bq-f" id="bq-chat-in" placeholder="Type your question..." autocomplete="off" style="flex:1">
+          <button class="bq-btn" type="button" id="bq-chat-send" style="margin-bottom:10px">Send</button></div>
+        <div style="display:flex;gap:8px">
+          <button class="bq-btn" type="button" data-bq="ticket" style="flex:1">Raise a ticket</button>
+          <button class="bq-btn g" type="button" data-bq="close" style="flex:1">Close</button></div>
+      </div></div>
+      <div class="bq-ov" id="bq-ticket"><div class="bq-sheet">
+        <h3>📄 Raise a Ticket</h3>
+        <div class="bq-sub">We reply on the number you logged in with.</div>
+        <select class="bq-f" id="bq-tk-cat"><option>Payment issue</option><option>Wrong token / queue problem</option>
+          <option>Shop marked me Done by mistake</option><option>Refund request</option><option>Other</option></select>
+        <input class="bq-f" id="bq-tk-sub" placeholder="Subject" maxlength="150">
+        <textarea class="bq-f" id="bq-tk-msg" rows="4" placeholder="Describe the problem (include payment ID or token no. if you have it)"></textarea>
+        <button class="bq-btn" type="button" id="bq-tk-send" style="width:100%;margin-bottom:8px">Submit Ticket</button>
+        <button class="bq-btn g" type="button" data-bq="close" style="width:100%">Cancel</button>
+      </div></div>`;
+    document.body.appendChild(wrap);
+
+    document.addEventListener('click', e => {
+      const t = e.target;
+      if(!t || !t.closest) return;
+
+      if(t.classList.contains('bq-ov') || t.closest('[data-bq="close"]')){ closeSheets(); return; }
+
+      const q = t.closest('.bq-faq-q');
+      if(q){
+        e.preventDefault(); e.stopPropagation();
+        const item = q.parentElement;
+        item.classList.toggle('open');
+        q.lastElementChild.textContent = item.classList.contains('open') ? '－' : '＋';
+        return;
+      }
+      if(t.closest('#bq-chat-send'))        { chatSend(); return; }
+      if(t.closest('#bq-tk-send'))          { ticketSend(); return; }
+      if(t.closest('[data-bq="chat"]'))     { openChat(); return; }
+      if(t.closest('[data-bq="ticket"]'))   { openTicket(); return; }
+    }, true);
+
+    document.getElementById('bq-chat-in').addEventListener('keydown', e => {
+      if(e.key === 'Enter'){ e.preventDefault(); chatSend(); }
+    });
+  }
+
+  function closeSheets(){ document.querySelectorAll('.bq-ov').forEach(o => o.classList.remove('on')); }
+
+  function addMsg(text, who){
+    const box = document.getElementById('bq-msgs');
+    const d = document.createElement('div');
+    d.className = 'bq-m ' + who; d.textContent = text;
+    box.appendChild(d); box.scrollTop = box.scrollHeight;
+  }
+
+  function botReply(msg){
+    const m = msg.toLowerCase();
+    if(/refund|paid|payment|money|charged/.test(m)) return FAQS[3].a + ' If it is not sorted, please raise a ticket.';
+    if(/safe|secure|card/.test(m))                  return FAQS[4].a;
+    if(/cancel|leave/.test(m))                      return FAQS[1].a;
+    if(/wait|time|long|eta/.test(m))                return FAQS[2].a;
+    if(/join|token|book|queue/.test(m))             return FAQS[0].a;
+    if(/done|mistake|wrong/.test(m))                return FAQS[5].a + ' Raising a ticket is the fastest way.';
+    if(/^(hi|hello|hey)\b/.test(m.trim()))          return 'Hello! 👋 What would you like help with?';
+    return "I couldn't find an answer to that. Please tap “Raise a ticket” and our team will follow up.";
+  }
+
+  function chatSend(){
+    const inp = document.getElementById('bq-chat-in');
+    const msg = inp.value.trim();
+    if(!msg) return;
+    addMsg(msg, 'me'); inp.value = '';
+    setTimeout(() => addMsg(botReply(msg), 'them'), 500);
+  }
+
+  function openChat(){
+    ensureSupportUI();
+    const box = document.getElementById('bq-msgs');
+    if(!box.children.length) addMsg("Hi! 👋 I'm the Barber-Q help assistant. Ask me about queues, wait times or payments.", 'them');
+    document.getElementById('bq-chat').classList.add('on');
+    setTimeout(() => document.getElementById('bq-chat-in').focus(), 50);
+  }
+
+  function openTicket(){
+    ensureSupportUI();
+    closeSheets();
+    ['bq-tk-sub', 'bq-tk-msg'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('bq-ticket').classList.add('on');
+  }
+
+  async function ticketSend(){
+    const sub = document.getElementById('bq-tk-sub').value.trim();
+    const msg = document.getElementById('bq-tk-msg').value.trim();
+    const cat = document.getElementById('bq-tk-cat').value;
+    if(sub.length < 3){ toast('⚠️', 'Please add a subject'); return; }
+    if(msg.length < 5){ toast('⚠️', 'Please describe the problem'); return; }
+
+    const btn = document.getElementById('bq-tk-send');
+    btn.disabled = true;
+    try{
+      const r = await fetch(BQ_BASE + '/api/tickets', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: digits10(S.user.phone), category: cat, subject: sub, description: msg })
+      });
+      const j = await r.json();
+      if(!r.ok || !j.success) throw new Error(j.error || 'Could not save the ticket');
+      toast('✅', 'Ticket ' + j.ticket.ref + ' raised');
+    }catch(e){
+      // server unreachable: keep it on this device so nothing is lost
+      try{
+        const list = JSON.parse(localStorage.getItem(LOCAL_TK) || '[]');
+        list.push({ id: 'BQ-' + Date.now(), phone: S.user.phone || '', subject: sub, description: msg,
+                    category: cat, status: 'Saved on this device', createdAt: new Date().toISOString() });
+        localStorage.setItem(LOCAL_TK, JSON.stringify(list));
+        toast('⚠️', 'Server unreachable — ticket saved on this device only');
+      }catch(_){ toast('⚠️', e.message || 'Could not save the ticket'); }
+    }
+    btn.disabled = false;
+    closeSheets();
+    if(document.getElementById('s-support')?.classList.contains('active')) renderSupport();
+  }
+
+  async function myTicketsHtml(){
+    const key = digits10(S.user && S.user.phone);
+    if(key.length !== 10) return '';
+    let list = [];
+    try{
+      const r = await fetch(BQ_BASE + '/api/tickets?phone=' + key);
+      const j = await r.json();
+      if(r.ok && j.success) list = j.tickets;
+    }catch(e){}
+    if(!list.length) return '';
+    return `
+      <div style="font-size:16px;font-weight:700;font-family:'Syne',sans-serif;margin:22px 0 10px">My Tickets</div>
+      ${list.slice(0, 5).map(t => `
+        <div class="card card-p" style="margin-bottom:8px">
+          <div style="display:flex;justify-content:space-between;gap:8px;font-size:13px;font-weight:700">
+            <span>${esc(t.ref)} · ${esc(t.subject)}</span><span style="color:var(--cyan)">${esc(t.status)}</span></div>
+          <div style="font-size:12px;color:var(--txt2);margin-top:4px">${esc(t.description)}</div>
+        </div>`).join('')}`;
+  }
+
+  renderSupport = function(){
+    ensureSupportUI();
+    document.getElementById('support-body').innerHTML = `
+      <div style="text-align:center;padding:20px 0 24px">
+        <div style="font-size:44px;margin-bottom:8px">🎧</div>
+        <div style="font-size:20px;font-weight:800;font-family:'Syne',sans-serif">How can we help?</div>
+        <p style="color:var(--txt2);font-size:13px;margin-top:4px">We're here every day, 9 AM – 9 PM</p>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:24px">
+        <a href="tel:+911234567890" class="card card-p" style="text-decoration:none;color:var(--txt);text-align:center;display:block">
+          <div style="font-size:26px;margin-bottom:6px">📞</div><div style="font-size:13px;font-weight:600">Call Us</div>
+          <div style="font-size:11px;color:var(--txt2);margin-top:2px">+91 12345 67890</div></a>
+        <button type="button" class="card card-p" data-bq="chat" style="text-align:center;border:none;cursor:pointer">
+          <div style="font-size:26px;margin-bottom:6px">💬</div><div style="font-size:13px;font-weight:600">Help Assistant</div>
+          <div style="font-size:11px;color:var(--txt2);margin-top:2px">Instant answers</div></button>
+        <a href="mailto:support@barberq.app" class="card card-p" style="text-decoration:none;color:var(--txt);text-align:center;display:block">
+          <div style="font-size:26px;margin-bottom:6px">✉️</div><div style="font-size:13px;font-weight:600">Email Us</div>
+          <div style="font-size:11px;color:var(--txt2);margin-top:2px">support@barberq.app</div></a>
+        <button type="button" class="card card-p" data-bq="ticket" style="text-align:center;border:none;cursor:pointer">
+          <div style="font-size:26px;margin-bottom:6px">📄</div><div style="font-size:13px;font-weight:600">Raise a Ticket</div>
+          <div style="font-size:11px;color:var(--txt2);margin-top:2px">Submit a support request</div></button>
+      </div>
+      <div style="font-size:16px;font-weight:700;font-family:'Syne',sans-serif;margin-bottom:12px">Frequently Asked Questions</div>
+      ${FAQS.map(f => `
+        <div class="bq-faq">
+          <button type="button" class="bq-faq-q"><span>${esc(f.q)}</span><span>＋</span></button>
+          <div class="bq-faq-a">${esc(f.a)}</div>
+        </div>`).join('')}
+      <div id="bq-my-tickets"></div>
+      <div style="height:24px"></div>`;
+
+    myTicketsHtml().then(h => {
+      const el = document.getElementById('bq-my-tickets');
+      if(el) el.innerHTML = h;
+    });
+  };
+
+  // close sheets when leaving the screen
+  const _goBase = go;
+  go = function(id){ closeSheets(); _goBase(id); };
+
+  componentsReady.then(ensureSupportUI).catch(() => {});
+})();
+
+(function(){
+  const MAX_IMG = 3, MAX_VID = 1;
+  const MAX_IMG_BYTES = 5 * 1024 * 1024, MAX_VID_BYTES = 25 * 1024 * 1024, MAX_VID_SECONDS = 30;
+
+  let picked = [];                       // [{file, kind, url}]
+  const esc = s => String(s).replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  // ── pictures are shrunk in the browser before upload ──
+  function shrink(file){
+    return new Promise(resolve => {
+      if(file.type === 'image/gif') return resolve(file);
+      const img = new Image(), u = URL.createObjectURL(file);
+      img.onload = () => {
+        const k = Math.min(1, 1280 / Math.max(img.width, img.height));
+        const c = document.createElement('canvas');
+        c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(u);
+        c.toBlob(b => resolve(b ? new File([b], 'photo.jpg', { type: 'image/jpeg' }) : file), 'image/jpeg', 0.82);
+      };
+      img.onerror = () => { URL.revokeObjectURL(u); resolve(file); };
+      img.src = u;
+    });
+  }
+
+  function videoSeconds(file){
+    return new Promise(resolve => {
+      const v = document.createElement('video'), u = URL.createObjectURL(file);
+      v.preload = 'metadata';
+      v.onloadedmetadata = () => { URL.revokeObjectURL(u); resolve(v.duration); };
+      v.onerror = () => { URL.revokeObjectURL(u); resolve(0); };
+      v.src = u;
+    });
+  }
+
+  function paintPreviews(){
+    const box = document.getElementById('bq-previews');
+    if(!box) return;
+    box.innerHTML = picked.map((p, i) => `
+      <div style="position:relative;width:64px;height:64px;border-radius:10px;overflow:hidden;background:#000;flex-shrink:0">
+        ${p.kind === 'image'
+          ? `<img src="${p.url}" style="width:100%;height:100%;object-fit:cover">`
+          : `<video src="${p.url}" muted style="width:100%;height:100%;object-fit:cover"></video>
+             <span style="position:absolute;left:4px;bottom:2px;font-size:14px">🎬</span>`}
+        <button type="button" data-bq-rm="${i}" style="position:absolute;top:2px;right:2px;width:20px;height:20px;border-radius:50%;border:none;background:rgba(0,0,0,.7);color:#fff;cursor:pointer;line-height:1">×</button>
+      </div>`).join('');
+  }
+
+  function resetPicked(){
+    picked.forEach(p => URL.revokeObjectURL(p.url));
+    picked = [];
+    paintPreviews();
+  }
+
+  async function addFiles(list){
+    for(const f of Array.from(list)){
+      const isImg = f.type.startsWith('image/'), isVid = f.type.startsWith('video/');
+      if(!isImg && !isVid){ toast('⚠️', f.name + ' is not a photo or video'); continue; }
+
+      if(isImg){
+        if(picked.filter(p => p.kind === 'image').length >= MAX_IMG){ toast('⚠️', 'Up to ' + MAX_IMG + ' photos'); continue; }
+        const small = await shrink(f);
+        if(small.size > MAX_IMG_BYTES){ toast('⚠️', 'Photo is too large (max 5 MB)'); continue; }
+        picked.push({ file: small, kind: 'image', url: URL.createObjectURL(small) });
+      }else{
+        if(picked.filter(p => p.kind === 'video').length >= MAX_VID){ toast('⚠️', 'Only 1 video allowed'); continue; }
+        if(f.size > MAX_VID_BYTES){ toast('⚠️', 'Video is too large (max 25 MB)'); continue; }
+        if(!/mp4|webm/.test(f.type)){ toast('⚠️', 'Video must be MP4 or WEBM'); continue; }
+        const secs = await videoSeconds(f);
+        if(secs > MAX_VID_SECONDS){ toast('⚠️', 'Video must be 30 seconds or shorter'); continue; }
+        picked.push({ file: f, kind: 'video', url: URL.createObjectURL(f) });
+      }
+    }
+    paintPreviews();
+  }
+
+  // ── add the picker to the rating pop-up ──
+  function injectPicker(){
+    const txt = document.getElementById('rate-txt');
+    if(!txt || document.getElementById('bq-pick')) return;
+
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'text-align:left;margin:-6px 0 16px';
+    wrap.innerHTML = `
+      <input type="file" id="bq-pick" accept="image/*,video/mp4,video/webm" multiple style="display:none">
+      <button type="button" id="bq-pick-btn" class="btn btn-outline btn-sm" style="width:100%">📷 Add photos or video</button>
+      <div style="font-size:11px;color:var(--txt2);margin-top:6px">Up to 3 photos and 1 video (30 sec). Visible to everyone on the shop page.</div>
+      <div id="bq-previews" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"></div>`;
+    txt.insertAdjacentElement('afterend', wrap);
+
+    const input = wrap.querySelector('#bq-pick');
+    wrap.querySelector('#bq-pick-btn').addEventListener('click', () => input.click());
+    input.addEventListener('change', () => { addFiles(input.files); input.value = ''; });
+    wrap.addEventListener('click', e => {
+      const b = e.target.closest && e.target.closest('[data-bq-rm]');
+      if(!b) return;
+      const [p] = picked.splice(Number(b.dataset.bqRm), 1);
+      if(p) URL.revokeObjectURL(p.url);
+      paintPreviews();
+    });
+  }
+  componentsReady.then(injectPicker).catch(() => {});
+
+  // a fresh pop-up starts empty
+  const _openModalBase = openModal;
+  openModal = function(id){
+    if(id === 'm-rate'){ injectPicker(); resetPicked(); }
+    _openModalBase(id);
+  };
+
+  // ── upload after the rating is saved ──
+  const _submitBase = submitRating;
+  submitRating = function(){
+    const visit = S.lastCompletedVisit;
+    const before = S.ratedShops.length;
+    const files = picked.map(p => p.file);
+
+    _submitBase();
+
+    if(visit && S.ratedShops.length > before && files.length && visit.entryId){
+      const fd = new FormData();
+      files.forEach(f => fd.append('files', f));
+      toast('⏫', 'Uploading your photos…');
+      fetch(BQ_BASE + '/api/queue/' + visit.entryId + '/media', { method: 'POST', body: fd })
+        .then(r => r.json().then(j => ({ r, j })))
+        .then(({ r, j }) => {
+          if(!r.ok || !j.success) throw new Error(j.error || 'Upload failed');
+          toast('✅', 'Photos added to the shop page');
+          if(document.getElementById('s-shop')?.classList.contains('active')) loadGallery();
+        })
+        .catch(e => toast('⚠️', e.message || 'Could not upload the photos'));
+    }
+    if(S.ratedShops.length > before) resetPicked();
+  };
+
+  // ── gallery on the shop page ──
+  function lightbox(m){
+    const o = document.createElement('div');
+    o.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px';
+    o.innerHTML = m.kind === 'video'
+      ? `<video src="${m.src}" controls autoplay style="max-width:100%;max-height:90vh"></video>`
+      : `<img src="${m.src}" style="max-width:100%;max-height:90vh">`;
+    o.addEventListener('click', e => { if(e.target === o) o.remove(); });
+    document.body.appendChild(o);
+  }
+
+  async function loadGallery(){
+    const body = document.getElementById('sh-body');
+    const shop = S.shops[S.selectedShop];
+    if(!body || !shop) return;
+
+    let list = [];
+    try{
+      const r = await fetch(BQ_BASE + '/api/shops/reviews?shop_name=' + encodeURIComponent(shop.name));
+      const j = await r.json();
+      if(r.ok && j.success) list = j.reviews;
+    }catch(e){ return; }
+
+    let box = document.getElementById('bq-gallery');
+    if(!box){
+      box = document.createElement('div');
+      box.id = 'bq-gallery';
+      body.appendChild(box);
+    }
+    if(!list.length){ box.innerHTML = ''; return; }
+
+    box.innerHTML = `
+      <div style="font-size:17px;font-weight:700;font-family:'Syne',sans-serif;margin:8px 0 12px">
+        Customer Photos & Reviews
+      </div>
+      ${list.map(rv => `
+        <div class="card card-p" style="margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px">
+            <strong>${esc(rv.name)}</strong>
+            <span>${'⭐'.repeat(rv.stars)}</span>
+          </div>
+          ${rv.review ? `<div style="font-size:13px;color:var(--txt2);margin-bottom:8px">${esc(rv.review)}</div>` : ''}
+          ${rv.media.length ? `
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              ${rv.media.map(m => {
+                const src = BQ_BASE + m.url;
+                return m.kind === 'video'
+                  ? `<div data-bq-media="${src}" data-kind="video" style="position:relative;width:88px;height:88px;border-radius:10px;overflow:hidden;background:#000;cursor:pointer">
+                       <video src="${src}#t=0.1" preload="metadata" muted style="width:100%;height:100%;object-fit:cover;pointer-events:none"></video>
+                       <span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:26px">▶️</span></div>`
+                  : `<img src="${src}" data-bq-media="${src}" data-kind="image" loading="lazy"
+                       style="width:88px;height:88px;object-fit:cover;border-radius:10px;cursor:pointer">`;
+              }).join('')}
+            </div>` : ''}
+        </div>`).join('')}
+      <div style="height:24px"></div>`;
+
+    box.onclick = e => {
+      const m = e.target.closest && e.target.closest('[data-bq-media]');
+      if(m) lightbox({ src: m.dataset.bqMedia, kind: m.dataset.kind });
+    };
+  }
+
+  const _openShopBase = openShop;
+  openShop = function(id){
+    _openShopBase(id);
+    loadGallery();
+  };
 })();
