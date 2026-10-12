@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&display=swap');
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -11,10 +13,10 @@
   --s2: #18181f;
   --s3: #1e1e28;
   --s4: #252530;
-  --b1: #ffffff0d;
-  --b2: #ffffff18;
-  --b3: #ffffff28;
-  --b4: #ffffff40;
+  --b1: #25252d;
+  --b2: #33333d;
+  --b3: #45454f;
+  --b4: #5c5c68;
   --gold: #f5c842;
   --gold2: #e8b820;
   --gdim: #f5c84222;
@@ -31,9 +33,9 @@
   --green: #2ed573;
   --gdim2: #2ed57320;
   --warn: #ffa502;
-  --r: 12px;
-  --rl: 18px;
-  --rxl: 24px;
+  --r: 6px;
+  --rl: 8px;
+  --rxl: 10px;
 }
 
 html,
@@ -52,7 +54,7 @@ h2,
 h3,
 .brand,
 .num {
-  font-family: 'Syne', sans-serif
+  font-family: 'Playfair Display', Georgia, serif
 }
 
 /* SCREENS */
@@ -111,8 +113,7 @@ h3,
   justify-content: space-between;
   padding: 14px 18px;
   border-bottom: 1px solid var(--b1);
-  background: rgba(10, 10, 15, 0.95);
-  backdrop-filter: blur(12px);
+  background: var(--bg);
   flex-shrink: 0;
   position: relative;
   z-index: 5
@@ -120,8 +121,8 @@ h3,
 
 .nav-brand {
   font-size: 22px;
-  font-weight: 800;
-  letter-spacing: -0.5px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
   color: var(--gold)
 }
 
@@ -146,7 +147,7 @@ h3,
 .tabs {
   display: flex;
   border-top: 1px solid var(--b1);
-  background: rgba(10, 10, 15, 0.98);
+  background: var(--bg);
   flex-shrink: 0;
   padding-bottom: env(safe-area-inset-bottom, 0px)
 }
@@ -192,6 +193,7 @@ h3,
   transition: all .18s;
   text-decoration: none;
   line-height: 1;
+  letter-spacing: .03em;
   -webkit-appearance: none
 }
 
@@ -203,7 +205,7 @@ h3,
   background: var(--gold);
   color: #0a0a0f;
   font-weight: 700;
-  box-shadow: 0 0 0 0 var(--gdim)
+  box-shadow: none
 }
 
 .btn-gold:hover {
@@ -246,7 +248,7 @@ h3,
 .btn-sm {
   padding: 7px 14px;
   font-size: 13px;
-  border-radius: 9px
+  border-radius: 5px
 }
 
 .btn-full {
@@ -300,7 +302,7 @@ label {
 }
 
 .glass {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--s2);
   border: 1px solid var(--b2);
   border-radius: var(--rl)
 }
@@ -310,9 +312,10 @@ label {
   display: inline-flex;
   align-items: center;
   padding: 4px 11px;
-  border-radius: 50px;
+  border-radius: 4px;
   font-size: 12px;
   font-weight: 500;
+  letter-spacing: .03em;
   white-space: nowrap
 }
 
@@ -354,7 +357,7 @@ label {
 .stat-n {
   font-size: 30px;
   font-weight: 800;
-  font-family: 'Syne', sans-serif
+  font-family: 'Playfair Display', Georgia, serif
 }
 
 .stat-l {
@@ -376,7 +379,7 @@ label {
   text-align: center;
   font-size: 26px;
   font-weight: 700;
-  font-family: 'Syne', sans-serif;
+  font-family: 'Playfair Display', Georgia, serif;
   background: var(--s3);
   border: 2px solid var(--b2);
   border-radius: var(--r);
@@ -414,7 +417,7 @@ label {
 }
 
 .qi-num {
-  font-family: 'Syne', sans-serif;
+  font-family: 'Playfair Display', Georgia, serif;
   font-size: 18px;
   font-weight: 800;
   min-width: 44px;
@@ -460,8 +463,7 @@ label {
 }
 
 .shop-card:hover {
-  border-color: var(--b3);
-  transform: translateY(-1px)
+  border-color: var(--gold)
 }
 
 .shop-card:active {
@@ -473,7 +475,7 @@ label {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, .75);
+  background: rgba(0, 0, 0, .7);
   z-index: 100;
   align-items: center;
   justify-content: center;
@@ -534,7 +536,7 @@ label {
   transition: opacity .25s;
   pointer-events: none;
   white-space: nowrap;
-  box-shadow: 0 8px 32px #0008
+  box-shadow: 0 4px 14px #0006
 }
 
 #toast.show {
@@ -545,7 +547,7 @@ label {
 .pbar {
   height: 6px;
   background: var(--s3);
-  border-radius: 3px;
+  border-radius: 1px;
   overflow: hidden;
   margin-top: 8px
 }
@@ -553,7 +555,7 @@ label {
 .pfill {
   height: 100%;
   background: var(--gold);
-  border-radius: 3px;
+  border-radius: 1px;
   transition: width 1.2s ease
 }
 
@@ -599,7 +601,7 @@ label {
 }
 
 .pulse {
-  animation: pulse 2s infinite
+  animation: none
 }
 
 .fadein {
@@ -612,13 +614,14 @@ label {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Syne', sans-serif;
+  font-family: 'Playfair Display', Georgia, serif;
   font-weight: 800;
   flex-shrink: 0
 }
 
 /* HERO GLOW */
 .glow-gold {
+  display: none;
   position: absolute;
   top: 0;
   left: 50%;
@@ -630,6 +633,7 @@ label {
 }
 
 .glow-cyan {
+  display: none;
   position: absolute;
   bottom: 0;
   left: 50%;
@@ -693,7 +697,7 @@ label {
 
 .abar {
   flex: 1;
-  border-radius: 4px 4px 0 0;
+  border-radius: 2px 2px 0 0;
   background: var(--gold);
   transition: height 1.2s ease;
   opacity: .65;
@@ -713,7 +717,7 @@ label {
 
 /* NOTIFICATION BANNER */
 .notif {
-  background: linear-gradient(135deg, var(--gdim) 0%, rgba(0, 212, 170, .12) 100%);
+  background: var(--gdim);
   border: 1px solid var(--gold);
   border-radius: var(--r);
   padding: 12px 16px;
@@ -761,4 +765,42 @@ label {
     font-size: 24px
   }
 
+}
+
+/* ═══ BARBERSHOP LOOK ═══ */
+
+.nav::after {
+  content: none;
+}
+
+/* headings written inline in script.js (font-family:'Syne') get the new serif face,
+   same font-size as before */
+[style*="Syne"] {
+  font-family: 'Playfair Display', Georgia, serif !important;
+  font-weight: 700 !important;
+  font-variant-numeric: lining-nums;
+  letter-spacing: 0 !important;
+}
+
+h1,
+h2,
+h3,
+.brand,
+.num,
+.stat-n,
+.qi-num,
+.av {
+  font-variant-numeric: lining-nums;
+}
+
+/* small caps-style labels read more like a shop sign than a trading app */
+.stat-l,
+.prow-lab,
+label {
+  letter-spacing: .04em;
+}
+
+/* inline pill shapes written in script.js */
+[style*="border-radius:50px"] {
+  border-radius: 4px !important;
 }
