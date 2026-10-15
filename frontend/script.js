@@ -1,3 +1,4 @@
+//STATE 
 const S={
   role:null,
   prev:'s-land',
@@ -22,12 +23,10 @@ const S={
     photo:'',
     onlineCollected:0
   },
-
   inQueue:false,
   myTok:'',
   mySvc:'',
   myShopId:0,
-
   selectedSvc:0,
   selectedShop:null,
   pendingJoin:null,
@@ -58,11 +57,9 @@ const S={
 
 const CUSTOMER_STORAGE_KEY = "barberQCustomers";
 const ACTIVE_CUSTOMER_KEY = "barberQActiveCustomer";
-
 function getCustomerKey(phone) {
     return String(phone || "").replace(/\D/g, "").slice(-10);
 }
-
 function getAllCustomers() {
     try {
         return JSON.parse(
@@ -77,9 +74,7 @@ function getAllCustomers() {
 function saveCurrentCustomer() {
     const phone = getCustomerKey(S.user.phone);
     if (!phone) return false;
-
     const customers = getAllCustomers();
-
     customers[phone] = {
         name: S.user.name || "Customer",
         phone: S.user.phone,
@@ -90,13 +85,11 @@ function saveCurrentCustomer() {
         paymentMethods: S.paymentMethods || [],
         lastCompletedVisit: S.lastCompletedVisit || null
     };
-
     try {
         localStorage.setItem(
             CUSTOMER_STORAGE_KEY,
             JSON.stringify(customers)
         );
-
         localStorage.setItem(ACTIVE_CUSTOMER_KEY, phone);
         return true;
     } catch (error) {
@@ -109,10 +102,8 @@ function saveCurrentCustomer() {
 function loadCustomer(phone, enteredName = "") {
     const key = getCustomerKey(phone);
     if (!key) return false;
-
     const customers = getAllCustomers();
     const saved = customers[key];
-
     S.user = saved ? {
         name: saved.name || enteredName || "Customer",
         phone: saved.phone || "+91 " + key,
@@ -122,45 +113,34 @@ function loadCustomer(phone, enteredName = "") {
         phone: "+91 " + key,
         location: "Not set"
     };
-
     S.queueHistory = saved?.queueHistory || [];
     S.ratedShops = saved?.ratedShops || [];
     S.payments = saved?.payments || [];
     S.paymentMethods = saved?.paymentMethods || [];
     S.lastCompletedVisit = saved?.lastCompletedVisit || null;
-
     S.inQueue = false;
     S.myTok = "";
     S.mySvc = "";
     S.myShopId = 0;
-
     localStorage.setItem(ACTIVE_CUSTOMER_KEY, key);
-
     saveCurrentCustomer();
     updateUserAvatar();
-
     return true;
 }
 
 const PUBLIC_SHOP_KEY = 'barberShopPublic';
-
 function publishBarberShop(){
   try{
     const shop = S.shops.find(s => s.isBarberProfile);
-
     if(!shop){
       localStorage.removeItem(PUBLIC_SHOP_KEY);
       localStorage.removeItem(PUBLIC_SHOP_KEY + 'Photo');
       return;
     }
-
     const { photo, ...rest } = shop;
-
     localStorage.setItem(PUBLIC_SHOP_KEY, JSON.stringify(rest));
-
     if(photo) localStorage.setItem(PUBLIC_SHOP_KEY + 'Photo', photo);
     else      localStorage.removeItem(PUBLIC_SHOP_KEY + 'Photo');
-
   }catch(e){
     console.warn('Could not publish barber shop:', e);
   }
@@ -169,29 +149,22 @@ function publishBarberShop(){
 function loadPublishedShop(){
   try{
     const raw = localStorage.getItem(PUBLIC_SHOP_KEY);
-
     if(!raw){
       S.shops = S.shops.filter(s => !s.isBarberProfile);
       return false;
     }
-
     const data = JSON.parse(raw);
-
     data.photo = localStorage.getItem(PUBLIC_SHOP_KEY + 'Photo') || '';
     data.isBarberProfile = true;
-
     const i = S.shops.findIndex(s => s.isBarberProfile);
-
     if(i >= 0){
       data.id = S.shops[i].id;
       S.shops[i] = data;
     }else{
-      data.id = S.shops.length;     // ids are indexes into S.shops
+      data.id = S.shops.length;     
       S.shops.push(data);
     }
-
     return true;
-
   }catch(e){
     console.warn('Could not load published shop:', e);
     return false;
@@ -207,18 +180,13 @@ function unpublishBarberShop(){
 }
 
 function syncBarberToCustomerShop(){
-
   const b = S.barber;
-
   if(!b || !b.name || !b.shopName) return;
-
   let shop = S.shops.find(s => s.isBarberProfile);
-
   if(!shop){
     shop = { id: S.shops.length, isBarberProfile: true, cur: 0, q: 0, wait: 0 };
     S.shops.push(shop);
   }
-
   Object.assign(shop, {
     name:        b.shopName,
     owner:       b.name,
@@ -234,39 +202,33 @@ function syncBarberToCustomerShop(){
     openingTime: b.openingTime || '',
     closingTime: b.closingTime || ''
   });
-
-  syncShopStats();      // ← this is what publishes it to the customer side
+  syncShopStats();     
 }
 
 function syncShopStats(){
-
   const shop = S.shops.find(s => s.isBarberProfile);
   if(!shop) return;
-
   shop.q    = S.bq.length;
   shop.cur  = S.bq[0] ? S.bq[0].tok : 0;
   shop.wait = S.bq.reduce((t, q) => t + (Number(q.dur) || 0), 0);
   shop.open = S.shopOpen;
-
   publishBarberShop();
   registerShopInBackend();
 }
 
 let _shopSyncSig = '';
+
 async function registerShopInBackend(){
   const b = S.barber;
   if(!b || !b.shopName) return;
-
   const payload = {
     shop_name:   b.shopName,
     address:     b.address || '',
     barber_name: b.name || '',
     open:        S.shopOpen
   };
-
   const sig = JSON.stringify(payload);
   if(sig === _shopSyncSig) return;
-
   try{
     const r = await fetch('https://barber-queue-backend-9z52.onrender.com/api/shops/sync', {
       method: 'POST',
@@ -279,49 +241,37 @@ async function registerShopInBackend(){
     console.warn('Could not register shop in backend:', e);
   }
 }
-window.addEventListener('storage', e => {
 
+window.addEventListener('storage', e => {
   if(e.key !== PUBLIC_SHOP_KEY && e.key !== PUBLIC_SHOP_KEY + 'Photo') return;
   if(S.role === 'barber') return;           // the barber tab owns this data
-
   loadPublishedShop();
-
   const cust = document.getElementById('s-cust');
   if(cust && cust.classList.contains('active')) renderShops();
 });
 
-// Load saved barber services
 const savedServices = localStorage.getItem('barberServices');
-
 if (savedServices) {
   S.services = JSON.parse(savedServices);
 }
 
-// ═══════ NAV ═══════
 function go(id){
-
   const cur=document.querySelector('.screen.active');
-
   if(cur)S.prev=cur.id;
-
   document.querySelectorAll('.screen')
     .forEach(s=>s.classList.remove('active'));
-
   document.getElementById(id).classList.add('active');
-
   if(id==='s-cust'){
     if(S.role !== 'barber') loadPublishedShop(); 
     renderShops();
     renderMyQ();
     updateUserAvatar();
   }
-
   if(id==='s-barb'){
     renderBQ();
     renderSvcs();
     renderAnalytics();
   }
-
   if(id==='s-prof')
     renderProfile();
 
@@ -335,19 +285,12 @@ async function loadBarberQueue(shopName) {
     toast("⚠️", "No shop is assigned to this barber.");
     return;
   }
-
   try {
-    const response = await fetch(
-      "https://barber-queue-backend-9z52.onrender.com/api/queue?shop_name=" +
-      encodeURIComponent(shopName)
-    );
-
+    const response = await fetch("https://barber-queue-backend-9z52.onrender.com/api/queue?shop_name=" + encodeURIComponent(shopName));
     const result = await response.json();
-
     if (!response.ok || !result.success) {
       throw new Error(result.error || "Could not load queue");
     }
-
     S.bq = result.queue.map((q, index) => ({
       id: q.id,
       tok: q.token,
@@ -362,7 +305,6 @@ async function loadBarberQueue(shopName) {
             : "wait",
       eta: 0
     }));
-
     renderBQ();
     syncShopStats();
   } catch (error) {
@@ -373,14 +315,11 @@ async function loadBarberQueue(shopName) {
 
 function demoAs(r) {
   S.role = r;
-
   if (r === "customer") {
     go("s-cust");
     return;
   }
-
   go("s-barb");
-
   if (S.barber.shopName) {
     loadBarberQueue(S.barber.shopName);
   } else {
@@ -393,7 +332,6 @@ function openProfile(){
   go('s-prof');
 }
 
-// ═══════ HELPERS ═══════
 function showEl(id){
   document.getElementById(id).style.display='block';
 }
@@ -413,85 +351,63 @@ function closeModal(id){
 let tTimer;
 
 function toast(ico,msg){
-
   document.getElementById('t-ico').textContent=ico;
   document.getElementById('t-msg').textContent=msg;
-
   const el=document.getElementById('toast');
-
   el.classList.add('show');
-
   clearTimeout(tTimer);
-
   tTimer=setTimeout(
     ()=>el.classList.remove('show'),
     3000
   );
 }
 
-// ═══════ AUTH ═══════
-    let generatedOTP = "";
-    let componentsReady = Promise.resolve();
+let generatedOTP = "";
+let componentsReady = Promise.resolve();
 
-    function sendOtp() {
-    const phone = document.getElementById("ph").value.trim();
-    const nameVal = document.getElementById("pname").value.trim();
-    const locEl = document.getElementById("ploc");
-    const locVal = locEl ? locEl.value.trim() : '';
-
-    if (!/^\d{10}$/.test(phone)) {
-        toast("⚠️","Please enter a valid 10-digit phone number");
-        return;
-    }
-
-    S.user.phone = '+91 ' + phone;
-    S.user.name = nameVal || 'Customer';
-    S.user.location = locVal || 'Not set';
-
-        generatedOTP = Math.floor(1000 + Math.random() * 9000).toString();
-
-        console.log("Generated OTP:", generatedOTP);
-
-        document.getElementById("ph-show").textContent =
-            "+91 " + phone;
-
-        document.getElementById("otp-message").innerHTML =
-            "Use code <strong>" + generatedOTP + "</strong> to continue";
-
-        document.getElementById("auth-p1").style.display = "none";
-
-        document.getElementById("auth-p2").style.display = "block";
-
-        document.getElementById("o0").value = "";
-        document.getElementById("o1").value = "";
-        document.getElementById("o2").value = "";
-        document.getElementById("o3").value = "";
-
-        document.getElementById("o0").focus();
-    }
+function sendOtp() {
+  const phone = document.getElementById("ph").value.trim();
+  const nameVal = document.getElementById("pname").value.trim();
+  const locEl = document.getElementById("ploc");
+  const locVal = locEl ? locEl.value.trim() : '';
+  if (!/^\d{10}$/.test(phone)) {
+    toast("⚠️","Please enter a valid 10-digit phone number");
+    return;
+  }
+  S.user.phone = '+91 ' + phone;
+  S.user.name = nameVal || 'Customer';
+  S.user.location = locVal || 'Not set';
+  generatedOTP = Math.floor(1000 + Math.random() * 9000).toString();
+  console.log("Generated OTP:", generatedOTP);
+  document.getElementById("ph-show").textContent ="+91 " + phone;
+  document.getElementById("otp-message").innerHTML ="Use code <strong>" + generatedOTP + "</strong> to continue";
+  document.getElementById("auth-p1").style.display = "none";
+  document.getElementById("auth-p2").style.display = "block";
+  document.getElementById("o0").value = "";
+  document.getElementById("o1").value = "";
+  document.getElementById("o2").value = "";
+  document.getElementById("o3").value = "";
+  document.getElementById("o0").focus();
+}
 
 async function verifyOtp() {
-    const fields = [
-        document.getElementById("o0"),
-        document.getElementById("o1"),
-        document.getElementById("o2"),
-        document.getElementById("o3")
+  const fields = [
+    document.getElementById("o0"),
+    document.getElementById("o1"),
+    document.getElementById("o2"),
+    document.getElementById("o3")
     ];
-
     if (fields.some(el => !el)) {
         toast("⚠️", "OTP fields are missing");
         return;
     }
-
     const enteredOTP = fields.map(el => el.value.trim()).join("");
-
     if (!generatedOTP || enteredOTP !== generatedOTP) {
         toast("⚠️", "Invalid OTP — please try again");
         fields.forEach(el => el.value = "");
         fields[0].focus();
         return;
     }
-
     try {
         await componentsReady;
     } catch (error) {
@@ -499,309 +415,111 @@ async function verifyOtp() {
         toast("⚠️", "Please wait for the app to load");
         return;
     }
-
     const phone = document.getElementById("ph").value.trim();
     const name = document.getElementById("pname").value.trim();
-
     if (!loadCustomer(phone, name)) {
         toast("⚠️", "Could not load customer profile");
         return;
     }
-
     generatedOTP = "";
-
     go("s-role");
-
-    toast("✅", "Profile loaded successfully");
+    toast("Profile loaded successfully");
 }
 
-    function otpFwd(input, index) {
-
-        input.value = input.value.replace(/\D/g, "");
-
-        if (input.value.length === 1 && index < 3) {
-
-            document
-                .getElementById("o" + (index + 1))
-                .focus();
-        }
-    }
-
-
-    function otpBack(input, index, event) {
-
-        if (
-            event.key === "Backspace" &&
-            input.value === "" &&
-            index > 0
-        ) {
-
-            document
-                .getElementById("o" + (index - 1))
-                .focus();
-        }
-    }
-
-// ═══════ CUSTOMER ═══════
-function renderShops(){
-
-  document.getElementById('shop-list').innerHTML=
-
-  S.shops.map(s=>`
-
-    <div class="shop-card"
-    onclick="openShop(${s.id})">
-
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-
-<div style="
-  width:48px;
-  height:48px;
-  border-radius:12px;
-  background:${s.clr}20;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:24px;
-  flex-shrink:0;
-  overflow:hidden;
-">
-  ${
-    s.photo
-      ? `<img
-          src="${s.photo}"
-          alt="${s.name}"
-          style="
-            width:100%;
-            height:100%;
-            object-fit:cover;
-          "
-        >`
-      : s.ico
+function otpFwd(input, index) {
+  input.value = input.value.replace(/\D/g, "");
+  if (input.value.length === 1 && index < 3) {
+    document.getElementById("o" + (index + 1)).focus();
   }
-</div>
+}
 
-        <div style="flex:1;min-width:0">
+function otpBack(input, index, event) {
+  if (event.key === "Backspace" && input.value === "" && index > 0) {
+    document.getElementById("o" + (index - 1)).focus();
+        }
+    }
 
-          <div style="font-weight:700;font-size:15px;font-family:'Syne',sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-            ${s.name}
-          </div>
-
-          <div style="font-size:12px;color:var(--txt2)">
-            ${s.addr}
-          </div>
-
-        </div>
-
-        <span class="tag ${s.open?'tgreen':'tred'}"
-        style="flex-shrink:0">
-          ${s.open?'Open':'Closed'}
-        </span>
-
-      </div>
-
-      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
-
-        <span class="tag tgray">
-          ⭐ ${s.rating} (${s.rev})
-        </span>
-
-        <span class="tag tgray">
-          🎫 Queue: ${s.q}
-        </span>
-
-        <span class="tag tgray">
-          ⏱ ~${s.wait} min
-        </span>
-
-      </div>
-
-      <div style="display:flex;justify-content:space-between;align-items:center">
-
-        <div style="font-size:13px;color:var(--txt2)">
-          Serving:
-          <strong style="color:var(--gold)">
-            #${s.cur}
-          </strong>
-        </div>
-
-        <div style="font-size:13px;color:var(--gold);font-weight:500">
-          View & Join →
-        </div>
-
-      </div>
-
+function renderShops(){
+  document.getElementById('shop-list').innerHTML=
+  S.shops.map(s=>`
+  <div class="shop-card" onclick="openShop(${s.id})">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+    <div style="width:48px;height:48px;border-radius:12px;background:${s.clr}20;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;overflow:hidden;">
+    ${s.photo ? `<imgsrc="${s.photo}"alt="${s.name}"style="width:100%;height:100%;object-fit:cover;">`: s.ico}
     </div>
-
+    <div style="flex:1;min-width:0">
+    <div style="font-weight:700;font-size:15px;font-family:'Syne',sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.name}</div>
+    <div style="font-size:12px;color:var(--txt2)">${s.addr}</div>
+    </div>
+    <span class="tag ${s.open?'tgreen':'tred'}"style="flex-shrink:0">${s.open?'Open':'Closed'}</span>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
+    <span class="tag tgray">⭐ ${s.rating} (${s.rev})</span>
+    <span class="tag tgray">🎫 Queue: ${s.q}</span>
+    <span class="tag tgray">⏱ ~${s.wait} min</span>
+  </div>
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <div style="font-size:13px;color:var(--txt2)">Serving:<strong style="color:var(--gold)">#${s.cur}</strong></div>
+        <div style="font-size:13px;color:var(--gold);font-weight:500">View & Join →</div>
+    </div>
+  </div>
   `).join('');
 }
 
-
 function openShop(id){
-
   S.selectedShop=id;
-
   const s=S.shops[id];
-
   document.getElementById('sh-title').textContent=s.name;
-
   const inQ=S.inQueue&&S.myShopId===id;
-
   document.getElementById('sh-body').innerHTML=`
-
     <div style="background:${s.clr}12;border:1px solid ${s.clr}30;border-radius:var(--rl);padding:20px;margin-bottom:18px;text-align:center">
-
-      <div style="font-size:52px;margin-bottom:8px">
-        ${s.ico}
-      </div>
-
-      <div style="font-size:24px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:6px">
-        ${s.name}
-      </div>
-
-      <div style="color:var(--txt2);font-size:13px;margin-bottom:10px">
-        ${s.addr} · ${s.owner}
-      </div>
-
+      <div style="font-size:52px;margin-bottom:8px">${s.ico}</div>
+      <div style="font-size:24px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:6px">${s.name}</div>
+      <div style="color:var(--txt2);font-size:13px;margin-bottom:10px">${s.addr} · ${s.owner}</div>
       <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap">
-
-        <span class="tag"
-        style="background:rgba(0,0,0,.3);border:1px solid ${s.clr}40;color:${s.clr}">
-          ⭐ ${s.rating} · ${s.rev} reviews
-        </span>
-
-        <span class="tag ${s.open?'tgreen':'tred'}">
-          ${s.open?'● Open':'● Closed'}
-        </span>
-
+        <span class="tag"style="background:rgba(0,0,0,.3);border:1px solid ${s.clr}40;color:${s.clr}">⭐ ${s.rating} · ${s.rev} reviews</span>
+        <span class="tag ${s.open?'tgreen':'tred'}">${s.open?'● Open':'● Closed'}</span>
       </div>
-
     </div>
-
-
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:18px">
-
-      <div class="stat"
-      style="text-align:center;padding:14px 8px">
-
-        <div class="stat-n"
-        style="color:var(--gold);font-size:26px">
-          #${s.cur}
-        </div>
-
-        <div class="stat-l">
-          Serving Now
-        </div>
-
+      <div class="stat" style="text-align:center;padding:14px 8px">
+        <div class="stat-n" style="color:var(--gold);font-size:26px">#${s.cur}</div>
+        <div class="stat-l">Serving Now</div>
       </div>
-
-
-      <div class="stat"
-      style="text-align:center;padding:14px 8px">
-
-        <div class="stat-n"
-        style="font-size:26px">
-          ${s.q}
-        </div>
-
-        <div class="stat-l">
-          In Queue
-        </div>
-
+      <div class="stat" style="text-align:center;padding:14px 8px">
+        <div class="stat-n" style="font-size:26px">${s.q}</div>
+        <div class="stat-l">In Queue</div>
       </div>
-
-
-      <div class="stat"
-      style="text-align:center;padding:14px 8px">
-
-        <div class="stat-n"
-        style="color:var(--cyan);font-size:26px">
-          ${s.wait}
-        </div>
-
-        <div class="stat-l">
-          Min Wait
-        </div>
-
+      <div class="stat" style="text-align:center;padding:14px 8px">
+        <div class="stat-n" style="color:var(--cyan);font-size:26px">${s.wait}</div>
+        <div class="stat-l">Min Wait</div>
       </div>
-
     </div>
-
-
-    <div style="font-size:17px;font-weight:700;font-family:'Syne',sans-serif;margin-bottom:12px">
-      Services Offered
-    </div>
-
+    <div style="font-size:17px;font-weight:700;font-family:'Syne',sans-serif;margin-bottom:12px">Services Offered</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px">
-
       ${s.svcs.map(si=>{
-
         const sv=S.services[si];
-
         return`
-
-          <div class="card card-p"
-          style="display:flex;align-items:center;gap:10px">
-
-            <span style="font-size:24px">
-              ${sv.ico}
-            </span>
-
+          <div class="card card-p"style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:24px">${sv.ico}</span>
             <div>
-
-              <div style="font-weight:500;font-size:14px">
-                ${sv.name}
-              </div>
-
-              <div style="color:var(--gold);font-weight:600;font-size:14px">
-                ₹${sv.price}
-              </div>
-
-              <div style="color:var(--txt2);font-size:12px">
-                ~${sv.dur} min
-              </div>
-
+              <div style="font-weight:500;font-size:14px">${sv.name}</div>
+              <div style="color:var(--gold);font-weight:600;font-size:14px">₹${sv.price}</div>
+              <div style="color:var(--txt2);font-size:12px">~${sv.dur} min</div>
             </div>
-
           </div>
-
         `
-
       }).join('')}
-
     </div>
-
-
-    <div style="font-size:17px;font-weight:700;font-family:'Syne',sans-serif;margin-bottom:12px">
-      Live Queue Preview
-    </div>
-
-
+    <div style="font-size:17px;font-weight:700;font-family:'Syne',sans-serif;margin-bottom:12px">Live Queue Preview</div>
     ${S.bq.slice(0,5).map(q=>`
-
       <div class="qi ${q.st==='cur'?'cur':q.st==='nxt'?'nxt':''}">
-
-        <div class="qi-num"
-        style="background:${q.st==='cur'?'var(--gdim)':q.st==='nxt'?'var(--cdim)':'var(--s3)'};color:${q.st==='cur'?'var(--gold)':q.st==='nxt'?'var(--cyan)':'var(--txt2)'}">
-
-          ${q.tok}
-
-        </div>
-
+        <div class="qi-num"style="background:${q.st==='cur'?'var(--gdim)':q.st==='nxt'?'var(--cdim)':'var(--s3)'};color:${q.st==='cur'?'var(--gold)':q.st==='nxt'?'var(--cyan)':'var(--txt2)'}">${q.tok}</div>
         <div style="flex:1">
-
-          <div style="font-size:14px;font-weight:500">
-            ${q.st==='cur'?q.name:'Customer '+q.tok}
-          </div>
-
-          <div style="font-size:12px;color:var(--txt2)">
-            ${q.svc}
-          </div>
-
+          <div style="font-size:14px;font-weight:500">${q.st==='cur'?q.name:'Customer '+q.tok}</div>
+          <div style="font-size:12px;color:var(--txt2)">${q.svc}</div>
         </div>
-
         <div>
-
           ${
             q.st==='cur'
             ?'<span class="tag tg pulse">Now</span>'
@@ -809,219 +527,127 @@ function openShop(id){
             ?'<span class="tag tgreen">Next</span>'
             :'<span style="font-size:12px;color:var(--txt2)">~'+q.eta+' min</span>'
           }
-
         </div>
-
       </div>
-
     `).join('')}
-
-
     ${inQ?`
-
       <div style="background:var(--gdim);border:2px solid var(--gold);border-radius:var(--rl);padding:20px;margin-top:16px;text-align:center">
-
-        <div style="font-size:12px;color:var(--txt2);margin-bottom:4px">
-          You're in queue!
-        </div>
-
-        <div style="font-size:60px;font-weight:800;font-family:'Syne',sans-serif;color:var(--gold);line-height:1">
-          #${S.myTok}
-        </div>
-
-        <div style="font-size:13px;color:var(--txt2);margin-top:4px">
-          ${S.mySvc}
-        </div>
-
+        <div style="font-size:12px;color:var(--txt2);margin-bottom:4px">You're in queue!</div>
+        <div style="font-size:60px;font-weight:800;font-family:'Syne',sans-serif;color:var(--gold);line-height:1">#${S.myTok}</div>
+        <div style="font-size:13px;color:var(--txt2);margin-top:4px">${S.mySvc}</div>
         <div style="display:flex;gap:8px;justify-content:center;margin-top:12px">
-
-          <button class="btn btn-red btn-sm"
-          onclick="leaveQ()">
-            Leave Queue
-          </button>
-
-          <button class="btn btn-outline btn-sm"
-          onclick="openModal('m-rate');document.getElementById('rate-shop-name').textContent='${s.name}'">
-            Rate Shop ⭐
-          </button>
-
+          <button class="btn btn-red btn-sm" onclick="leaveQ()">Leave Queue</button>
+          <button class="btn btn-outline btn-sm"onclick="openModal('m-rate');document.getElementById('rate-shop-name').textContent='${s.name}'">Rate Shop ⭐</button>
         </div>
-
       </div>
-
     `:`
-
-      <button class="btn ${s.open?'btn-gold':'btn-outline'} btn-full"
-      style="height:52px;font-size:16px;margin-top:16px"
-      onclick="${s.open?"openJoinModal()":'toast(\"⛔\",\"This shop is currently closed\")'}">
-
-        ${s.open?'Join Queue →':'Shop is Closed'}
-
-      </button>
-
+      <button class="btn ${s.open?'btn-gold':'btn-outline'} btn-full" style="height:52px;font-size:16px;margin-top:16px" onclick="${s.open?"openJoinModal()":'toast(\"⛔\",\"This shop is currently closed\")'}">${s.open?'Join Queue →':'Shop is Closed'}</button>
     `}
-
     <div style="height:24px"></div>
-
   `;
-
   go('s-shop');
-
   if(s.open)
     buildJoinModal();
 }
 
-
 function buildJoinModal(){
-
   const s=S.shops[S.selectedShop];
-
   S.selectedSvc=0;
-
   document.getElementById('m-svcs').innerHTML=
-
   s.svcs.map((si,i)=>{
-
     const sv=S.services[si];
-
     return`
-
-      <div class="svc-chip ${i===0?'sel':''}"
-      onclick="pickSvc(${i})">
-
-        <div style="font-size:24px">
-          ${sv.ico}
-        </div>
-
-        <div style="font-size:13px;font-weight:500;margin-top:4px">
-          ${sv.name}
-        </div>
-
-        <div class="svc-price">
-          ₹${sv.price}
-        </div>
-
+      <div class="svc-chip ${i===0?'sel':''}"onclick="pickSvc(${i})">
+        <div style="font-size:24px">${sv.ico}</div>
+        <div style="font-size:13px;font-weight:500;margin-top:4px">${sv.name}</div>
+        <div class="svc-price">₹${sv.price}</div>
       </div>
-
     `
-
   }).join('');
-
   updateJoinInfo();
 }
-
 
 function pickSvc(i){
-
   S.selectedSvc=i;
-
-  document.querySelectorAll('.svc-chip')
-  .forEach(
+  document.querySelectorAll('.svc-chip').forEach(
     (c,idx)=>c.classList.toggle('sel',idx===i)
   );
-
   updateJoinInfo();
 }
 
-
 function updateJoinInfo(){
-
   const s=S.shops[S.selectedShop];
-
   document.getElementById('m-tok').textContent='#'+(s.q+1);
-
   document.getElementById('m-wait').textContent='~'+s.wait+' min';
 }
 
-
 function openJoinModal(){
-
   buildJoinModal();
-
   openModal('m-join');
 }
 
-// ═══════════════════════════════════════ PAYMENT FLOW ═══════════════════════════════════════
-
-
 function confirmJoin() {
     const s = S.shops[S.selectedShop];
-
     if (!s) {
         toast('⚠️', 'Shop information not found');
         return;
     }
-
     const svcIdx = s.svcs[S.selectedSvc];
     const sv = S.services[svcIdx];
-
     if (!sv) {
         toast('⚠️', 'Service information not found');
         return;
     }
-
     S.pendingJoin = {
         shopId: S.selectedShop,
         svcName: sv.name,
         price: sv.price,
         tok: s.q + 1
     };
-
     closeModal('m-join');
     openPayModal();
 }
 
 async function updateUpiQr() {
-    const p = S.pendingJoin;
-    const s = p && S.shops[p.shopId];
-    S.shopPay = null;
-
-    const opt = document.getElementById('pay-upi_qr');
-    if (opt) opt.style.display = 'none';
-    if (!s) return;
-
-    try {
-        const r = await fetch(BQ_BASE + '/api/shops');
-        const j = await r.json();
-        const hit = (j.shops || []).find(x => x.name.toLowerCase() === s.name.toLowerCase());
-        if (hit && hit.upi_qr_url) {
-            S.shopPay = hit;
-            if (opt) opt.style.display = 'flex';
-        }
-    } catch (e) { console.warn('Could not load shop UPI details:', e); }
+  const p = S.pendingJoin;
+  const s = p && S.shops[p.shopId];
+  S.shopPay = null;
+  const opt = document.getElementById('pay-upi_qr');
+  if (opt) opt.style.display = 'none';
+  if (!s) return;
+  try {
+    const r = await fetch(BQ_BASE + '/api/shops');
+    const j = await r.json();
+    const hit = (j.shops || []).find(x => x.name.toLowerCase() === s.name.toLowerCase());
+    if (hit && hit.upi_qr_url) {
+      S.shopPay = hit;
+      if (opt) opt.style.display = 'flex';
+    }
+  } catch (e) { console.warn('Could not load shop UPI details:', e); }
 }
 
-
 function openPayModal() {
-    const p = S.pendingJoin;
-
+  const p = S.pendingJoin;
     if (!p) {
         toast('⚠️', 'No pending queue request');
         return;
     }
-
     const amountEl = document.getElementById('pay-amt');
     const serviceEl = document.getElementById('pay-svc');
-
     if (amountEl) amountEl.textContent = '₹' + p.price;
     if (serviceEl) serviceEl.textContent = p.svcName + ' · Token #' + p.tok;
-
     updateUpiQr();
-
     const payBtnLabel = document.getElementById('pay-btn-label');
     if (payBtnLabel) payBtnLabel.textContent = 'Pay & Join Queue';
-
     selectPayMethod('online');
     openModal('m-pay');
 }
 
 function selectPayMethod(method) {
     S.payMethod = method;
-
     document.querySelectorAll('.pay-opt').forEach(el => el.classList.remove('sel'));
     const selected = document.getElementById('pay-' + method);
     if (selected) selected.classList.add('sel');
-
     const pay = S.shopPay;
     const qrSection = document.getElementById('upi-qr-section');
     if (qrSection) {
@@ -1032,22 +658,16 @@ function selectPayMethod(method) {
             document.getElementById('upi-id-text').textContent = pay.upi_id ? 'UPI ID: ' + pay.upi_id : '';
         }
     }
-
     const button = document.getElementById('pay-btn-label');
     if (!button) return;
-    button.textContent =
-        method === 'shop'   ? 'Confirm & Join (Pay at Shop)' :
-        method === 'upi_qr' ? "I've Paid — Join Queue" :
-                              'Pay & Join Queue';
+    button.textContent =method === 'shop'   ? 'Confirm & Join (Pay at Shop)' :method === 'upi_qr' ? "I've Paid — Join Queue" :'Pay & Join Queue';
 }
 
 async function processPayment() {
     const p = S.pendingJoin;
     if (!p) { toast('⚠️', 'No pending queue request'); return; }
-
     const s = S.shops[p.shopId];
     if (!s) { toast('⚠️', 'Shop information not found'); return; }
-
       if (S.payMethod === 'upi_qr') {
         finalizeJoin(p, s, false, { payment_method: 'upi_qr' });
         return;
@@ -1056,20 +676,16 @@ async function processPayment() {
         finalizeJoin(p, s, false, { payment_method: 'shop' });
         return;
       }
-
     const button = document.getElementById('pay-btn-label');
     if (button) button.innerHTML = '<span class="spinner"></span> Creating order…';
-
     try {
         const orderRes = await fetch('https://barber-queue-backend-9z52.onrender.com/api/payments/create-order', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ amount: p.price })
         });
-
         if (!orderRes.ok) throw new Error('Could not create order');
         const order = await orderRes.json();
-
         const options = {
             key: order.key_id,
             amount: order.amount,
@@ -1078,25 +694,19 @@ async function processPayment() {
             name: 'Glowora', // was 'Barber-Q'
             description: p.svcName + ' · Token #' + p.tok,
             handler: async function (response) {
-
                 const verifyRes = await fetch('https://barber-queue-backend-9z52.onrender.com/api/payments/verify', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        razorpay_order_id: response.razorpay_order_id,
-                        razorpay_payment_id: response.razorpay_payment_id,
-                        razorpay_signature: response.razorpay_signature
-                    })
-                });
-
+                    method: 'POST',headers: { 'Content-Type': 'application/json' },body: JSON.stringify({
+                      razorpay_order_id: response.razorpay_order_id,
+                      razorpay_payment_id: response.razorpay_payment_id,
+                      razorpay_signature: response.razorpay_signature
+                })
+              });
                 const result = await verifyRes.json();
-
                 if (result.verified) {
                   finalizeJoin(p, s, true, {
                     payment_method: 'razorpay',
                     razorpay_payment_id: response.razorpay_payment_id
                   });
-                    // finalizeJoin(p, s, true);
                 } else {
                     toast('⚠️', 'Payment verification failed');
                     if (button) button.textContent = 'Pay & Join Queue';
@@ -1115,14 +725,12 @@ async function processPayment() {
                   upi: { name: 'Pay via UPI', instruments: [{ method: 'upi' }] }
                 },
                 sequence: ['block.upi'],
-                preferences: { show_default_blocks: true }   // cards/netbanking still available
+                preferences: { show_default_blocks: true }   
               }
             }
         };
-
         const rzp = new Razorpay(options);
         rzp.open();
-
     } catch (err) {
         console.error(err);
         toast('⚠️', 'Could not start payment — please try again');
@@ -1135,7 +743,6 @@ async function finalizeJoin(p, s, paidOnline, extra = {}) {
     toast("⚠️", "Booking information is missing");
     return;
   }
-
   try {
     const response = await fetch(
       "https://barber-queue-backend-9z52.onrender.com/api/queue",
@@ -1156,9 +763,7 @@ async function finalizeJoin(p, s, paidOnline, extra = {}) {
         })
       }
     );
-
     const result = await response.json();
-
     if (!response.ok || !result.success) {
       throw new Error(result.error || "Booking could not be saved");
     }
@@ -1172,7 +777,6 @@ async function finalizeJoin(p, s, paidOnline, extra = {}) {
     s.q = (s.q || 0) + 1;
     if (!Array.isArray(S.payments)) S.payments = [];
     if (!Array.isArray(S.paymentMethods)) S.paymentMethods = [];
-
     S.payments.unshift({
       id: "PAY" + Date.now().toString().slice(-8),
       shop: s.name,
@@ -1194,7 +798,6 @@ async function finalizeJoin(p, s, paidOnline, extra = {}) {
         S.onlineCollected = 0;
       }
       S.onlineCollected += p.price;
-
       if (!S.paymentMethods.includes("Online Payment")) {
         S.paymentMethods.push("Online Payment");
       }
@@ -1221,35 +824,24 @@ async function finalizeJoin(p, s, paidOnline, extra = {}) {
     }
     openModal("m-ok");
     toast(
-      "✅",
-      paidOnline
-        ? "Payment successful and booking saved!"
-        : "Added to queue — pay at shop"
+      "✅",paidOnline ? "Payment successful and booking saved!" : "Added to queue — pay at shop"
     );
   } catch (error) {
     console.error("Booking error:", error);
     toast("⚠️", error.message || "Could not save booking");
   }
 }
+
 function renderMyQ(){
   const el=document.getElementById('my-q');
   if(!el)return;
   if(!S.inQueue){
     el.innerHTML=`
       <div style="text-align:center;padding:60px 20px">
-        <div style="font-size:52px;margin-bottom:12px">
-          🎫
-        </div>
-        <div style="font-size:20px;font-weight:700;font-family:'Syne',sans-serif;margin-bottom:8px">
-          No Active Queue
-        </div>
-        <p style="color:var(--txt2);font-size:14px;margin-bottom:20px">
-          Browse nearby shops and join a queue!
-        </p>
-        <button class="btn btn-gold"
-        onclick="cTab('home',null)">
-          Find Barbers →
-        </button>
+        <div style="font-size:52px;margin-bottom:12px">🎫</div>
+        <div style="font-size:20px;font-weight:700;font-family:'Syne',sans-serif;margin-bottom:8px">No Active Queue</div>
+        <p style="color:var(--txt2);font-size:14px;margin-bottom:20px">Browse nearby shops and join a queue!</p>
+        <button class="btn btn-gold" onclick="cTab('home',null)">Find Barbers →</button>
       </div>
     `;
     return;
@@ -1263,139 +855,65 @@ function renderMyQ(){
   el.innerHTML=`
     ${ahead<=2?`
       <div class="notif">
-        <span style="font-size:20px">
-          🔔
-        </span>
+        <span style="font-size:20px">🔔</span>
         <div>
-          <div style="font-weight:500;font-size:14px">
-            Almost your turn!
-          </div>
-          <div style="font-size:12px;color:var(--txt2)">
-            ${ahead} customer${ahead!==1?'s':''} ahead of you
-          </div>
+          <div style="font-weight:500;font-size:14px">Almost your turn!</div>
+          <div style="font-size:12px;color:var(--txt2)">${ahead} customer${ahead!==1?'s':''} ahead of you</div>
         </div>
       </div>
     `:''}
     <div style="background:var(--gdim);border:2px solid var(--gold);border-radius:var(--rxl);padding:28px;text-align:center;margin-bottom:18px">
-      <div style="font-size:12px;color:var(--txt2);margin-bottom:6px">
-        ${s.name}
-      </div>
-      <div style="font-size:13px;color:var(--txt2);margin-bottom:4px">
-        Your Token
-      </div>
-      <div style="font-size:80px;font-weight:800;font-family:'Syne',sans-serif;color:var(--gold);line-height:1">
-        #${S.myTok}
-      </div>
-      <div style="font-size:14px;color:var(--txt2);margin-top:6px">
-        ${S.mySvc}
-      </div>
+      <div style="font-size:12px;color:var(--txt2);margin-bottom:6px">${s.name}</div>
+      <div style="font-size:13px;color:var(--txt2);margin-bottom:4px">Your Token</div>
+      <div style="font-size:80px;font-weight:800;font-family:'Syne',sans-serif;color:var(--gold);line-height:1">#${S.myTok}</div>
+      <div style="font-size:14px;color:var(--txt2);margin-top:6px">${S.mySvc}</div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px">
-      <div class="stat"
-      style="text-align:center">
-
-        <div class="stat-n"
-        style="color:var(--gold)">
-          #${s.cur}
-        </div>
-
-        <div class="stat-l">
-          Serving Now
-        </div>
-
+      <div class="stat" style="text-align:center">
+        <div class="stat-n" style="color:var(--gold)">#${s.cur}</div>
+        <div class="stat-l">Serving Now</div>
       </div>
-
-
-      <div class="stat"
-      style="text-align:center">
-
-        <div class="stat-n"
-        style="color:var(--cyan)">
-          ${ahead}
-        </div>
-
-        <div class="stat-l">
-          Ahead of You
-        </div>
-
+      <div class="stat" style="text-align:center">
+        <div class="stat-n" style="color:var(--cyan)">${ahead}</div>
+        <div class="stat-l">Ahead of You</div>
       </div>
-
     </div>
-
-
-    <div class="stat"
-    style="margin-bottom:16px">
-
+    <div class="stat"  style="margin-bottom:16px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-
-        <span style="color:var(--txt2);font-size:14px">
-          Estimated wait
-        </span>
-
-        <span style="font-size:20px;font-weight:800;font-family:'Syne',sans-serif;color:var(--gold)">
-          ~${s.wait} min
-        </span>
-
+        <span style="color:var(--txt2);font-size:14px">Estimated wait</span>
+        <span style="font-size:20px;font-weight:800;font-family:'Syne',sans-serif;color:var(--gold)">~${s.wait} min</span>
       </div>
-
       <div class="pbar">
-
-        <div class="pfill"
-        style="width:${prog}%">
         </div>
-
-      </div>
-
-      <div style="font-size:12px;color:var(--txt2);margin-top:6px;text-align:right">
-        Progress to your turn
-      </div>
-
+          <div class="pfill"style="width:${prog}%"></div>
+        </div>
+      <div style="font-size:12px;color:var(--txt2);margin-top:6px;text-align:right">Progress to your turn</div>
     </div>
-
-
     <div style="display:flex;gap:10px">
-
-      <button class="btn btn-red"
-      style="flex:1"
-      onclick="leaveQ();cTab('queue',null)">
-        Leave Queue
-      </button>
-
-      <button class="btn btn-outline"
-      style="flex:1"
-      onclick="openModal('m-rate');document.getElementById('rate-shop-name').textContent='${s.name}'">
-        Rate Shop ⭐
-      </button>
-
+      <button class="btn btn-red" style="flex:1" onclick="leaveQ();cTab('queue',null)">Leave Queue</button>
+      <button class="btn btn-outline"style="flex:1"onclick="openModal('m-rate');document.getElementById('rate-shop-name').textContent='${s.name}'">Rate Shop ⭐</button>
     </div>
-
     <div style="height:20px"></div>
-
   `;
 }
+
 function cTab(name,el){
-  document.getElementById('cust-home').style.display=
-    name==='home'?'block':'none';
-  document.getElementById('cust-queue').style.display=
-    name==='queue'?'block':'none';
+  document.getElementById('cust-home').style.display=name==='home'?'block':'none';
+  document.getElementById('cust-queue').style.display=name==='queue'?'block':'none';
   if(el){
-    document.querySelectorAll('#c-tabs .tab')
-    .forEach(t=>t.classList.remove('on'));
+    document.querySelectorAll('#c-tabs .tab').forEach(t=>t.classList.remove('on'));
     el.classList.add('on');
   }
   if(name==='queue')
     renderMyQ();
 }
-async function cqFetchQueue(shopName){
-  const res = await fetch(
-    "https://barber-queue-backend-9z52.onrender.com/api/queue?shop_name=" + encodeURIComponent(shopName)
-  );
-  const result = await res.json();
 
+async function cqFetchQueue(shopName){
+  const res = await fetch("https://barber-queue-backend-9z52.onrender.com/api/queue?shop_name=" + encodeURIComponent(shopName));
+  const result = await res.json();
   if(!res.ok || !result.success){
     throw new Error(result.error || "Could not load queue");
   }
-
   return result.queue.map(q => ({
     id:     q.id,
     tok:    q.token,
@@ -1405,10 +923,10 @@ async function cqFetchQueue(shopName){
     status: q.status
   }));
 }
+
 function cqApply(list){
   S.myQueueList = list;
   const idx = list.findIndex(q => String(q.id) === String(S.myQueueEntryId));
-
   if(idx === -1){
     S._cqMiss = (S._cqMiss || 0) + 1;
     if(S._cqMiss >= 2) completeMyVisit();
@@ -1421,26 +939,21 @@ function cqApply(list){
     S._cqHeadSince = Date.now();
   }
 }
-function cqCalc(){
 
+function cqCalc(){
   const list = S.myQueueList;
   if(!Array.isArray(list) || !list.length) return null;
-
   const idx = list.findIndex(q => String(q.id) === String(S.myQueueEntryId));
   if(idx === -1) return null;
-
   const elapsedMin = S._cqHeadSince ? (Date.now() - S._cqHeadSince) / 60000 : 0;
   const headLeft   = Math.max(0, Math.ceil(list[0].dur - elapsedMin));
-
   let wait = 0;
   for(let j = 0; j < idx; j++){
     wait += j === 0 ? headLeft : list[j].dur;
   }
-
   const mine      = list[idx];
   const inService = idx === 0;
   const svc       = inService ? headLeft : mine.dur;
-
   return {
     ahead: idx,
     wait,                       // minutes until my turn starts
@@ -1451,10 +964,9 @@ function cqCalc(){
     inService
   };
 }
+
 function completeMyVisit(){
-
   const shop = S.shops[S.myShopId];
-
   const visit = {
     token:   S.myTok,
     shopId:  S.myShopId,
@@ -1466,14 +978,12 @@ function completeMyVisit(){
     createdAt: new Date().toISOString(),
     timestamp: Date.now()
   };
-
   S.queueHistory.unshift(visit);
   S.lastCompletedVisit = visit;
   const payment = S.payments.find(p =>
     p.token === S.myTok && p.shopId === S.myShopId && p.status === 'Pending'
   );
   if(payment) payment.status = 'Paid';
-
   S.inQueue = false;
   S.myTok = '';
   S.mySvc = '';
@@ -1481,31 +991,25 @@ function completeMyVisit(){
   S.myQueueList = null;
   S._cqMiss = 0;
   S._cqHeadId = null;
-
-  toast('✅', 'Your service is complete! Your visit has been added to history.');
+  toast('Your service is complete! Your visit has been added to history.');
   renderMyQ();
 }
+
 let cqBusy = false;
 
 async function pollCustomer(){
-
   if(cqBusy || S.role !== 'customer') return;
   cqBusy = true;
-
   try{
     const bshop = S.shops.find(s => s.isBarberProfile);
     const mine  = S.inQueue ? S.shops[S.myShopId] : null;
-
     if(bshop){
       try{
         const list = await cqFetchQueue(bshop.name);
-
         bshop.q    = list.length;
         bshop.cur  = list[0] ? list[0].tok : 0;
         bshop.wait = list.reduce((t, q) => t + q.dur, 0);
-
         if(mine === bshop && S.myQueueEntryId) cqApply(list);
-
       }catch(e){
         console.warn('Shop queue refresh failed:', e.message);
       }
@@ -1517,88 +1021,51 @@ async function pollCustomer(){
         console.warn('My queue refresh failed:', e.message);
       }
     }
-
     const cust = document.getElementById('s-cust');
     if(cust && cust.classList.contains('active')){
       renderShops();
       renderMyQ();
     }
-
   }finally{
     cqBusy = false;
   }
 }
 
 setInterval(pollCustomer, 5000);
-
 setInterval(() => {
   const el = document.getElementById('my-q');
   if(S.inQueue && el && el.offsetParent !== null) renderMyQ();
 }, 15000);
 
 function renderMyQ(){
-
   const el = document.getElementById('my-q');
   if(!el) return;
-
   if(!S.inQueue){
-
     el.innerHTML = `
-
       <div style="text-align:center;padding:60px 20px">
-
         <div style="font-size:52px;margin-bottom:12px">🎫</div>
-
-        <div style="font-size:20px;font-weight:700;font-family:'Syne',sans-serif;margin-bottom:8px">
-          No Active Queue
-        </div>
-
-        <p style="color:var(--txt2);font-size:14px;margin-bottom:20px">
-          Browse nearby shops and join a queue!
-        </p>
-
-        <button class="btn btn-gold" onclick="cTab('home',null)">
-          Find Barbers →
-        </button>
-
+        <div style="font-size:20px;font-weight:700;font-family:'Syne',sans-serif;margin-bottom:8px">No Active Queue</div>
+        <p style="color:var(--txt2);font-size:14px;margin-bottom:20px">Browse nearby shops and join a queue!</p>
+        <button class="btn btn-gold" onclick="cTab('home',null)">Find Barbers →</button>
       </div>
     `;
     return;
   }
-
   const s = S.shops[S.myShopId];
-
   if(!s){
     S.inQueue = false;
     return renderMyQ();
   }
-
   const info = cqCalc();
-
   let ahead, serving, headline, detail, prog, almost;
-
   if(info){
     ahead   = info.ahead;
     serving = info.serving;
-
-    headline = info.inService
-      ? '~' + info.svc + ' min'
-      : '~' + info.done + ' min';
-
-    detail = info.inService
-      ? 'Your service is in progress'
-      : 'Your turn starts in ~' + info.wait + ' min · service ~' + info.svc + ' min';
-
-    prog = info.inService
-      ? Math.max(5, Math.min(100, Math.round(100 - (info.svc / (info.dur || 1)) * 100)))
-      : Math.max(5, Math.round(100 - ahead * 15));
-
-    almost = info.inService
-      ? 'Your service is in progress'
-      : ahead + ' customer' + (ahead !== 1 ? 's' : '') + ' ahead of you';
-
+    headline = info.inService ? '~' + info.svc + ' min' : '~' + info.done + ' min';
+    detail = info.inService ? 'Your service is in progress' : 'Your turn starts in ~' + info.wait + ' min · service ~' + info.svc + ' min';
+    prog = info.inService ? Math.max(5, Math.min(100, Math.round(100 - (info.svc / (info.dur || 1)) * 100))) : Math.max(5, Math.round(100 - ahead * 15));
+    almost = info.inService ? 'Your service is in progress' : ahead + ' customer' + (ahead !== 1 ? 's' : '') + ' ahead of you';
   }else{
-
     ahead    = Math.max(0, Number(S.myTok) - s.cur) || 0;
     serving  = s.cur;
     headline = 'Checking…';
@@ -1606,7 +1073,6 @@ function renderMyQ(){
     prog     = 5;
     almost   = '';
   }
-
   el.innerHTML = `
 
     ${info && (info.inService || ahead <= 2) ? `
@@ -1710,7 +1176,6 @@ function renderMyQ(){
     <div style="height:20px"></div>
   `;
 }
-
 function saveBarberProfileLocal(){
   try{
     const { photo, ...profile } = S.barber;
@@ -1757,7 +1222,8 @@ function demoAs(r){
     toast('⚠️', 'Please open Profile → Edit Profile and add your shop details.');
   }
 }
-// ═══════ BARBER ═══════
+
+// BARBER 
 function renderBQ(){
 
   document.getElementById('b-inq').textContent=
@@ -1963,7 +1429,6 @@ function openWalkinModal() {
     nameInput.focus();
   }, 100);
 }
-
 async function addWalkinCustomer() {
   const nameInput = document.getElementById("walkin-name");
   const serviceSelect = document.getElementById("walkin-service");
@@ -1991,7 +1456,6 @@ async function addWalkinCustomer() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        // shop_name: S.barber.shopName || "Royal Cuts",
         shop_name: S.barber.shopName,
         service_name: service.name,
         customer_name: name
@@ -2119,8 +1583,6 @@ function addSvc(){
   const p = parseInt(priceEl.value);
   const d = parseInt(durationEl.value);
   const e = emojiEl.value.trim() || '💇';
-
-  // Validation
   if(!n){
     toast('⚠️','Please enter service name');
     nameEl.focus();
@@ -2139,7 +1601,6 @@ function addSvc(){
     return;
   }
 
-  // Add service
   const newService = {
     id: Date.now(),
     name: n,
@@ -2149,31 +1610,20 @@ function addSvc(){
   };
 
   S.services.push(newService);
-
-  // Save permanently in browser
   localStorage.setItem(
     'barberServices',
     JSON.stringify(S.services)
   );
-
-  // Close modal
   closeModal('m-svc');
-
-  // Refresh service list
   renderSvcs();
-
-  // Reset form
   nameEl.value = '';
   priceEl.value = '';
   durationEl.value = '';
-
   emojiEl.value = '💇';
-
   const selectedEmoji = document.getElementById('emoji-selected');
   if(selectedEmoji){
     selectedEmoji.textContent = '💇';
   }
-
   const picker = document.getElementById('emoji-picker');
   if(picker){
     picker.style.display = 'none';
@@ -2192,7 +1642,6 @@ function delSvc(i){
 
   S.services.splice(i, 1);
 
-  // SAVE UPDATED SERVICES
   localStorage.setItem(
     'barberServices',
     JSON.stringify(S.services)
@@ -2207,72 +1656,14 @@ function delSvc(i){
 }
 
 const serviceEmojis = [
-  '💇','💇‍♂️','💇‍♀️','💈','✂️','🧴','🧔','🪒','👨‍🦰','👨‍🦱','💆','🧖','🧖‍♂️','🧖‍♀️','✨','💅','🎨','🖌️','🌈','💄','👄','👁️','💋', '🛁','🧼','🧽','🌸','🌺','🌹','😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚',
-  '😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🤩',
-  '🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣',
-  '😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬',
-  '🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗',
-  '🤔','🤭','🤫','🤥','😶',
-  '😐','😑','😬','🙄','😯','😦','😧','😮','😲','🥱',
-  '😴','🤤','😪','😵','🤐','🥴','🤢','🤮','🤧','😷',
-
-  // 👨 People
-  '👶','🧒','👦','👧','🧑','👱','👨','👩',
-  '🧔','👴','👵','🙍','🙎','🙅','🙆','💁',
-  '🙋','🧏','🙇','🤦','🤷','👮','👷','💂',
-  '🕵️','👩‍⚕️','👨‍⚕️','👩‍🏫','👨‍🏫',
-  '👩‍💻','👨‍💻','👩‍🍳','👨‍🍳','👩‍🎨','👨‍🎨',
-  '👩‍🚀','👨‍🚀','🤵','👰',,
-
-  // 👍 Gestures
-  '👍','👎','👌','✌️','🤞','🤟','🤘','🤙',
-  '👈','👉','👆','👇','☝️','✋','🤚','🖐️',
-  '🖖','👏','🙌','👐','🤲','🙏','💪','🤝',
-  '👋','💅',
-
-  // 💇 Salon / Beauty / Grooming
-  '💇','💇‍♂️','💇‍♀️','💈','✂️','🪮','🪒',
-  '🧔','🧴','💆','💆‍♂️','💆‍♀️',
-  '🧖','🧖‍♂️','🧖‍♀️','💅','💄',
-  '👄','👁️','👀','🪞',
-  '🛁','🧽','🎨','🖌️','💎',
-  '👑','⭐','🌟','🔥','💫',
-
-  // 🐶 Animals
-  '🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼',
-  '🐨','🐯','🦁','🐮','🐷','🐸','🐵','🙈',
-  '🙉','🙊','🐒','🐔','🐧','🐦','🐤','🦆',
-  '🦅','🦉','🦇','🐺','🐗','🐴','🦄','🐝',
-  '🪲','🐞','🦋','🐌','🐢','🐍','🦎','🐙',
-  '🦀','🐠','🐟','🐡','🦈','🐳','🐋','🦭',
-
-  // 🌸 Nature
-  '🌸','🌺','🌹','🌷','🌻','🌼','🌱','🌿',
-  '☘️','🍀','🌳','🌴','🌵','🌾','🍃','🍂',
-  '🍁','🍄','🌍','🌎','🌏','🌙','🌞','☀️',
-  '🌤️','⛅','🌧️','⛈️','🌩️','❄️','☃️',
-  '🌈','⚡','🔥','💧','🌊','⭐','🌟',
-
-  // 🍎 Food & Drinks
-  '🍎','🍐','🍊','🍋','🍌','🍉','🍇','🍓',
-  '🫐','🍒','🍑','🥭','🍍','🥥','🥝','🍅',
-  '🍆','🥑','🥦','🥕','🌽','🌶️','🫑','🥒',
-  '🥬','🧄','🧅','🥔','🍞','🥐','🥨','🧀',
-  '🍔','🍟','🍕','🌭','🌮','🌯','🥗','🍿',
-  '🍩','🍪','🎂','🍰','🧁','🍫','🍭','🍬',
-  '☕','🍵','🧋','🥤','🧃','🍹','🍸','🍺',
-
-  // ❤️ Symbols
-  '❤️','🧡','💛','💚','💙','💜','🖤','🤍',
-  '🤎','💔','❣️','💕','💞','💓','💗','💖',
-  '💘','💝',
+  '💇','💇‍♂️','💇‍♀️','💈','✂️','🧴','🧔','🪒','👨‍🦰','👨‍🦱','💆','🧖','🧖‍♂️','🧖‍♀️','✨','💅','🎨','🖌️','🌈','💄','👄','👁️','💋','🛁','🧼','🧽','🌸','🌺','🌹','😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗','🤔','🤭','🤫','🤥','😶','😐','😑','😬','🙄','😯','😦','😧','😮','😲','🥱',
+  '😴','🤤','😪','😵','🤐','🥴','🤢','🤮','🤧','😷','👶','🧒','👦','👧','🧑','👱','👨','👩','🧔','👴','👵','🙍','🙎','🙅','🙆','💁','🙋','🧏','🙇','🤦','🤷','👮','👷','💂','🕵️','👩‍⚕️','👨‍⚕️','👩‍🏫','👨‍🏫','👩‍💻','👨‍💻','👩‍🍳','👨‍🍳','👩‍🎨','👨‍🎨','👩‍🚀','👨‍🚀','🤵','👰','💅','💇','💇‍♂️','💇‍♀️','💈','✂️','🪮','🪒','🧔','🧴','💆','💆‍♂️','💆‍♀️','🧖','🧖‍♂️','🧖‍♀️','💅','💄','👄','👁️','👀','🪞','🛁','🧽','🎨','🖌️','💎','👑','⭐','🌟','🔥','💫','🌸','🌺','🌹','🌷','🌻','🌼','🌱','🌿','☘️','🍀','🌳','🌴','🌵','🌾','🍃','🍂',
+  '🍁','🍄','🌍','🌎','🌏','🌙','🌞','☀️','🌤️','⛅','🌧️','⛈️','🌩️','❄️','☃️','🌈','⚡','🔥','💧','🌊','⭐','🌟','🍎','🍐','🍊','🍋','🍌','🍉','🍇','🍓',
+  '🫐','🍒','🍑','🥭','🍍','🥥','🥝','🍅','❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖','💘','💝',
 ];
 function loadEmojiPicker(){
-
   const grid = document.getElementById('emoji-grid');
-
   if(!grid) return;
-
   grid.innerHTML = serviceEmojis.map(emoji => `
     <button
       type="button"
@@ -2357,8 +1748,6 @@ function renderAnalytics() {
     (total, v) => total + Number(v.price || 0),
     0
   );
-
-  // Only successful online payments count here.
   const onlineToday = (S.payments || []).filter(p => {
     if (p.method !== 'Online' || p.status !== 'Paid') {
       return false;
@@ -2522,7 +1911,7 @@ function bTab(tab, el){
   }
 }
 
-// ═══════ PAYMENT HISTORY (for profile) ═══════
+// PAYMENT HISTORY (for profile)
 function renderPaymentHistory(){
 
   if(!S.payments.length){
@@ -2673,7 +2062,6 @@ function renderBarberProfile(){
     bank
   );
 
- // Update top-right barber avatar
   const topAvatar = document.getElementById('barber-top-avatar');
 
   if (topAvatar) {
@@ -2844,7 +2232,6 @@ function saveBarberProfile(){
     return;
   }
 
-
 S.barber.name = name;
 S.barber.phone = '+91 ' + phone;
 S.barber.shopName = shop;
@@ -2854,83 +2241,47 @@ S.barber.closingTime = closing;
 S.barber.payoutBank = bank;
 S.barber.payoutLast4 = last4;
 
-// NEW
 syncBarberToCustomerShop();
-
 saveBarberProfileLocal();
-
 closeModal('m-editbarber');
-
 renderBarberProfile();
-
-toast('✅','Barber profile updated successfully');
-
+toast('Barber profile updated successfully');
 }
 
 function updateShopPhoto(){
-
   const input = document.createElement('input');
-
   input.type = 'file';
   input.accept = 'image/png,image/jpeg,image/webp';
-
   input.onchange = function(){
-
     const file = input.files[0];
-
     if(!file) return;
-
-
     if(file.size > 5 * 1024 * 1024){
-
       toast('⚠️','Image must be smaller than 5 MB');
       return;
-
     }
-
     const reader = new FileReader();
-
     reader.onload = function(e){
-
       S.barber.photo = e.target.result;
       syncBarberToCustomerShop();
       renderBarberProfile();
-
-      toast('📷','Shop photo updated successfully');
-
+      toast('Shop photo updated successfully');
     };
-
     reader.readAsDataURL(file);
   };
-
-
   input.click();
 }
 
-
 function logoutBarber(){
-
   S.role = null;
-
-  toast(
-    '👋',
-    'Logged out successfully'
-  );
-
+  toast('Logged out successfully');
   setTimeout(() => {
     go('s-land');
   }, 600);
 }
 
-
 function deleteBarberAccount(){
-
-  const confirmed = confirm(
-    'Are you sure you want to delete your barber account?'
-  );
-
+  const confirmed = confirm('Are you sure you want to delete your barber account?');
   if(!confirmed) return;
-
   S.barber = {
     name:'',
     phone:'',
@@ -2945,54 +2296,37 @@ function deleteBarberAccount(){
     photo:'',
     onlineCollected:0
   };
-
   S.role = null;
-
-  toast(
-    '🗑️',
-    'Barber account deleted'
-  );
-
+  toast('Barber account deleted');
   setTimeout(() => {
     go('s-land');
   }, 700);
 }
 
-
 function renderProfile(){
-
   const isB = S.role === 'barber';
-
-// ═══════ BARBER PROFILE ═══════
+//  BARBER PROFILE 
 if(isB){
-
   const b = S.barber;
-
   const barberName = b.name || 'Barber Name Not Set';
   const phone = b.phone || 'Phone not set';
   const shopName = b.shopName || 'Shop name not set';
   const address = b.address || 'Address not set';
-
   const hours =
     b.openingTime && b.closingTime
       ? `${b.openingTime} – ${b.closingTime}`
       : 'Hours not set';
-
   const rating =
     b.ratingCount > 0
       ? `${b.rating.toFixed(1)} / 5.0 (${b.ratingCount} reviews)`
       : 'No ratings yet';
-
   const payout =
     b.payoutBank && b.payoutLast4
       ? `${b.payoutBank} ••••${b.payoutLast4}`
       : 'Payout account not set';
-
   const initial =
     barberName.charAt(0).toUpperCase();
-
   document.getElementById('prof-body').innerHTML = `
-
     <div style="
       text-align:center;
       padding:24px 0 28px
@@ -3237,7 +2571,7 @@ if(isB){
         class="btn btn-outline btn-full"
         onclick="editBarberProfile()"
       >
-        ✏️ Edit Profile
+         Edit Profile
       </button>
 
 
@@ -3245,7 +2579,7 @@ if(isB){
         class="btn btn-outline btn-full"
         onclick="toast('📷','Shop photo upload coming soon!')"
       >
-        📷 Update Shop Photo
+        Update Shop Photo
       </button>
 
 
@@ -3273,9 +2607,7 @@ if(isB){
 
   return;
 }
-
-  // ═══════ CUSTOMER PROFILE ═══════
-
+  // CUSTOMER PROFILE
   const userName = S.user.name || 'Customer';
   const userPhone = S.user.phone || 'Phone not available';
   const userLocation = S.user.location || 'Not set';
@@ -3603,8 +2935,6 @@ function useMyLocation(inputId, btn) {
 
                 const data = await res.json();
                 const addr = data.address || {};
-
-                // Build a short "Area, City" style string
                 const area = addr.suburb || addr.neighbourhood || addr.residential || addr.road || '';
                 const city = addr.city || addr.town || addr.village || addr.state_district || '';
 
@@ -3665,12 +2995,10 @@ function logout(){
   },600);
 }
 
-
-// ═══════ RATING ═══════
+// RATING 
 function setStar(n){
 
   S.rating=n;
-
   document
     .querySelectorAll('#star-row .star-btn')
     .forEach(
@@ -3703,7 +3031,7 @@ function submitRating(){
   const visit=S.lastCompletedVisit;
 
   if(S.ratedShops.some(r=>r.shopId===visit.shopId)){
-    toast('ℹ️','You have already rated this shop.');
+    toast('You have already rated this shop.');
     return;
   }
 
@@ -3724,10 +3052,7 @@ if (!saveCurrentCustomer()) return;
 
   closeModal('m-rate');
 
-  toast(
-    '⭐',
-    `Thanks for rating ${S.rating} star${S.rating!==1?'s':''}!`
-  );
+  toast(`Thanks for rating ${S.rating} star${S.rating!==1?'s':''}!` );
 
   S.rating=0;
 
@@ -3745,7 +3070,7 @@ if (!saveCurrentCustomer()) return;
   }
 }
 
-// ═══════ SUPPORT / CUSTOMER CARE ═══════
+// SUPPORT / CUSTOMER CARE
 const FAQS=[
   {
     q:'How do I join a queue?',
@@ -3918,7 +3243,7 @@ function sendChatMsg(){
   },900);
 }
 
-// ═══════ LOAD HTML COMPONENTS ═══════
+// LOAD HTML COMPONENTS 
 
 async function loadComponent(containerId, fileName) {
   const container = document.getElementById(containerId);
@@ -3970,7 +3295,7 @@ async function loadComponents() {
 
 componentsReady = loadComponents();
 
-// ═══════ STAY ON THE SAME SCREEN AFTER A PAGE RELOAD ═══════
+// STAY ON THE SAME SCREEN AFTER A PAGE RELOAD
 (function(){
   const VIEW_KEY = 'barberqView';
   const RESTORABLE = ['s-cust', 's-shop', 's-barb', 's-prof', 's-support'];
@@ -4008,7 +3333,6 @@ componentsReady = loadComponents();
 
     go(v.screen === 's-prof' ? 's-prof' : 's-cust');
 
-    // A customer who is in a queue goes straight back to "My Queue".
     if(S.inQueue && v.screen !== 's-prof'){
       const tabs = document.querySelectorAll('#c-tabs .tab');
       cTab('queue', tabs[1] || null);
@@ -4016,10 +3340,9 @@ componentsReady = loadComponents();
   })();
 })();
 
-// ═══════ RATE AFTER THE SERVICE · LIVE ANALYTICS · REAL RATING ═══════
+// RATE AFTER THE SERVICE · LIVE ANALYTICS · REAL RATING
 const BQ_BASE = 'https://barber-queue-backend-9z52.onrender.com';
 
-// ── 1. Customer: work out what happened to my token, then offer the rating ──
 completeMyVisit = async function(){
 
   if(S._finishing || !S.myQueueEntryId) return;
@@ -4038,7 +3361,6 @@ completeMyVisit = async function(){
     }
   }catch(e){ /* server unreachable */ }
 
-  // Cannot tell, or still waiting / being served: keep the booking as it is.
   if(!status || ['waiting', 'serving', 'cur', 'nxt', 'wait'].includes(status)){
     S._cqMiss = 0;
     S._finishing = false;
@@ -4089,7 +3411,6 @@ completeMyVisit = async function(){
 
   renderMyQ();
 
-  // The rating window opens only now, after the service.
   if(status === 'completed'){
     const nameEl = document.getElementById('rate-shop-name');
     if(nameEl) nameEl.textContent = S.lastCompletedVisit.shop;
@@ -4097,8 +3418,6 @@ completeMyVisit = async function(){
   }
 };
 
-// "Rate Shop" is hidden while the customer is still waiting; after the
-// service it is offered on the empty My Queue screen.
 const _renderMyQBase = renderMyQ;
 renderMyQ = function(){
   _renderMyQBase();
@@ -4131,8 +3450,6 @@ function rateLastVisit(){
   if(nameEl) nameEl.textContent = v.shop;
   openModal('m-rate');
 }
-
-// Send the rating to the database so the barber sees it.
 const _submitRatingBase = submitRating;
 submitRating = function(){
   const stars  = S.rating;
@@ -4156,8 +3473,6 @@ submitRating = function(){
     renderMyQ();
   }
 };
-
-// ── 2. Barber: real numbers from the database ──
 let _statsSig = '';
 
 async function refreshBarberStats(){
@@ -4222,8 +3537,6 @@ renderAnalytics = function(){
 
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-  // Online payments are only known on the device that took them.
   const onlineToday = (S.payments || []).filter(p => {
     if(p.method !== 'Online' || p.status !== 'Paid') return false;
     const d = new Date(p.createdAt || p.timestamp || '');
@@ -4295,8 +3608,6 @@ function esc2(v){
     {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]
   ));
 }
-
-// Refresh the numbers right after "Done", and every few seconds.
 const _doneTokenBase = doneToken;
 doneToken = async function(){
   await _doneTokenBase();
@@ -4306,7 +3617,7 @@ doneToken = async function(){
 setInterval(refreshBarberStats, 6000);
 setTimeout(refreshBarberStats, 1500);
 
-// ═══════ SHOP SEARCH + FILTER CHIPS (All / Top Rated / Nearby / Open Now) ═══════
+//  SHOP SEARCH + FILTER CHIPS (All / Top Rated / Nearby / Open Now) 
 S.shopFilter = 'all';
 S.shopQuery  = '';
 
@@ -4409,17 +3720,9 @@ renderShops = function(){
 
   paint();
 })();
-
-// ═══════════════════════════════════════════════════════════════
-// FIXES: leaveQ · restore active queue & history from the backend ·
-//        working Help & Support (FAQ, assistant chat, tickets)
-// Paste at the very END of script.js (after everything else).
-// ═══════════════════════════════════════════════════════════════
 (function(){
 
   const digits10 = p => String(p || '').replace(/\D/g, '').slice(-10);
-
-  // ── 1. Every booking is stored against the customer's phone number ──
   const _fetchBase = window.fetch.bind(window);
   window.fetch = function(url, opts){
     try{
@@ -4434,8 +3737,6 @@ renderShops = function(){
     }catch(e){}
     return _fetchBase(url, opts);
   };
-
-  // ── 2. Leave Queue (was missing) ──
   window.leaveQ = async function(){
     if(!S.inQueue || !S.myQueueEntryId){
       toast('ℹ️', 'You are not in a queue');
@@ -4447,7 +3748,6 @@ renderShops = function(){
     try{
       const r = await fetch(BQ_BASE + '/api/queue/' + entryId + '/cancel', { method: 'POST' });
       const j = await r.json().catch(() => ({}));
-      // 404 / "already closed" also means the booking is gone: just clear it here.
       if(!r.ok && r.status !== 404 && r.status !== 400){
         throw new Error(j.error || 'Could not leave the queue');
       }
@@ -4459,8 +3759,6 @@ renderShops = function(){
     S.inQueue = false; S.myTok = ''; S.mySvc = '';
     S.myQueueEntryId = null; S.myQueueList = null;
     S._cqMiss = 0; S._cqHeadId = null;
-
-    // an unpaid pay-at-shop booking is no longer owed
     const pay = (S.payments || []).find(p => p.status === 'Pending' && p.shopId === S.myShopId);
     if(pay) pay.status = 'Cancelled';
 
@@ -4471,8 +3769,6 @@ renderShops = function(){
     renderMyQ();
     if(typeof pollCustomer === 'function') pollCustomer();
   };
-
-  // ── 3. Restore active queue + visit history for this phone number ──
   function shopIndexFor(a){
     let i = S.shops.findIndex(s => s.name.toLowerCase() === String(a.shop_name).toLowerCase());
     if(i >= 0) return i;
@@ -4538,9 +3834,6 @@ renderShops = function(){
     if(ok) restoreFromBackend(phone, false);
     return ok;
   };
-
-  // After a page reload only S.user came back — reload this number's saved
-  // data too, otherwise the next save would overwrite it with an empty history.
   try{
     const v = JSON.parse(sessionStorage.getItem('barberqView') || 'null');
     if(v && v.role !== 'barber' && v.user && digits10(v.user.phone).length === 10){
@@ -4549,8 +3842,6 @@ renderShops = function(){
       componentsReady.then(() => restoreFromBackend(v.user.phone, true)).catch(() => {});
     }
   }catch(e){}
-
-  // ── 4. Help & Support ──
   const esc = s => String(s).replace(/[&<>"']/g, c =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const LOCAL_TK = 'barberQTickets';
@@ -4690,7 +3981,6 @@ renderShops = function(){
       if(!r.ok || !j.success) throw new Error(j.error || 'Could not save the ticket');
       toast('✅', 'Ticket ' + j.ticket.ref + ' raised');
     }catch(e){
-      // server unreachable: keep it on this device so nothing is lost
       try{
         const list = JSON.parse(localStorage.getItem(LOCAL_TK) || '[]');
         list.push({ id: 'BQ-' + Date.now(), phone: S.user.phone || '', subject: sub, description: msg,
@@ -4761,7 +4051,6 @@ renderShops = function(){
     });
   };
 
-  // close sheets when leaving the screen
   const _goBase = go;
   go = function(id){ closeSheets(); _goBase(id); };
 
@@ -4776,7 +4065,6 @@ renderShops = function(){
   const esc = s => String(s).replace(/[&<>"']/g, c =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-  // ── pictures are shrunk in the browser before upload ──
   function shrink(file){
     return new Promise(resolve => {
       if(file.type === 'image/gif') return resolve(file);
@@ -4844,8 +4132,6 @@ renderShops = function(){
     }
     paintPreviews();
   }
-
-  // ── add the picker to the rating pop-up ──
   function injectPicker(){
     const txt = document.getElementById('rate-txt');
     if(!txt || document.getElementById('bq-pick')) return;
@@ -4871,23 +4157,17 @@ renderShops = function(){
     });
   }
   componentsReady.then(injectPicker).catch(() => {});
-
-  // a fresh pop-up starts empty
   const _openModalBase = openModal;
   openModal = function(id){
     if(id === 'm-rate'){ injectPicker(); resetPicked(); }
     _openModalBase(id);
   };
-
-  // ── upload after the rating is saved ──
   const _submitBase = submitRating;
   submitRating = function(){
     const visit = S.lastCompletedVisit;
     const before = S.ratedShops.length;
     const files = picked.map(p => p.file);
-
     _submitBase();
-
     if(visit && S.ratedShops.length > before && files.length && visit.entryId){
       const fd = new FormData();
       files.forEach(f => fd.append('files', f));
@@ -4903,8 +4183,6 @@ renderShops = function(){
     }
     if(S.ratedShops.length > before) resetPicked();
   };
-
-  // ── gallery on the shop page ──
   function lightbox(m){
     const o = document.createElement('div');
     o.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px';
@@ -4914,19 +4192,16 @@ renderShops = function(){
     o.addEventListener('click', e => { if(e.target === o) o.remove(); });
     document.body.appendChild(o);
   }
-
   async function loadGallery(){
     const body = document.getElementById('sh-body');
     const shop = S.shops[S.selectedShop];
     if(!body || !shop) return;
-
     let list = [];
     try{
       const r = await fetch(BQ_BASE + '/api/shops/reviews?shop_name=' + encodeURIComponent(shop.name));
       const j = await r.json();
       if(r.ok && j.success) list = j.reviews;
     }catch(e){ return; }
-
     let box = document.getElementById('bq-gallery');
     if(!box){
       box = document.createElement('div');
@@ -4934,7 +4209,6 @@ renderShops = function(){
       body.appendChild(box);
     }
     if(!list.length){ box.innerHTML = ''; return; }
-
     box.innerHTML = `
       <div style="font-size:17px;font-weight:700;font-family:'Syne',sans-serif;margin:8px 0 12px">
         Customer Photos & Reviews
@@ -4960,13 +4234,11 @@ renderShops = function(){
             </div>` : ''}
         </div>`).join('')}
       <div style="height:24px"></div>`;
-
     box.onclick = e => {
       const m = e.target.closest && e.target.closest('[data-bq-media]');
       if(m) lightbox({ src: m.dataset.bqMedia, kind: m.dataset.kind });
     };
   }
-
   const _openShopBase = openShop;
   openShop = function(id){
     _openShopBase(id);
