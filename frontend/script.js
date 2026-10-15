@@ -1,4 +1,3 @@
-// ═══════ STATE ═══════
 const S={
   role:null,
   prev:'s-land',
@@ -57,7 +56,6 @@ const S={
   onlineCollected:0
 };
 
-// CUSTOMER DATA: separate profile and history for each phone number
 const CUSTOMER_STORAGE_KEY = "barberQCustomers";
 const ACTIVE_CUSTOMER_KEY = "barberQActiveCustomer";
 
@@ -115,7 +113,6 @@ function loadCustomer(phone, enteredName = "") {
     const customers = getAllCustomers();
     const saved = customers[key];
 
-    // Load existing customer or initialize a separate new customer.
     S.user = saved ? {
         name: saved.name || enteredName || "Customer",
         phone: saved.phone || "+91 " + key,
@@ -132,8 +129,6 @@ function loadCustomer(phone, enteredName = "") {
     S.paymentMethods = saved?.paymentMethods || [];
     S.lastCompletedVisit = saved?.lastCompletedVisit || null;
 
-    // Active queue details should be restored from the backend
-    // when backend support for customer queue lookup is implemented.
     S.inQueue = false;
     S.myTok = "";
     S.mySvc = "";
@@ -146,15 +141,6 @@ function loadCustomer(phone, enteredName = "") {
 
     return true;
 }
-
-
-
-
-
-
-
-
-
 
 const PUBLIC_SHOP_KEY = 'barberShopPublic';
 
@@ -180,7 +166,6 @@ function publishBarberShop(){
   }
 }
 
-// Customer side: read the published shop into S.shops.
 function loadPublishedShop(){
   try{
     const raw = localStorage.getItem(PUBLIC_SHOP_KEY);
@@ -267,8 +252,6 @@ function syncShopStats(){
   registerShopInBackend();
 }
 
-// Tell the database about the barber's shop (name, address, open/closed)
-// so customers can book it. Only sends when something changed.
 let _shopSyncSig = '';
 async function registerShopInBackend(){
   const b = S.barber;
@@ -296,8 +279,6 @@ async function registerShopInBackend(){
     console.warn('Could not register shop in backend:', e);
   }
 }
-
-// A customer tab that is already open picks up changes live.
 window.addEventListener('storage', e => {
 
   if(e.key !== PUBLIC_SHOP_KEY && e.key !== PUBLIC_SHOP_KEY + 'Photo') return;
@@ -389,19 +370,6 @@ async function loadBarberQueue(shopName) {
     toast("⚠️", error.message || "Could not load the queue");
   }
 }
-
-// function demoAs(r) {
-//   S.role = r;
-
-//   if (r === "customer") {
-//     go("s-cust");
-//   } else {
-//     // Temporary demo shop selection
-//     S.barber.shopName = "Royal Cuts";
-//     go("s-barb");
-//     loadBarberQueue(S.barber.shopName);
-//   }
-// }
 
 function demoAs(r) {
   S.role = r;
@@ -975,8 +943,6 @@ function openJoinModal(){
 
 // ═══════════════════════════════════════ PAYMENT FLOW ═══════════════════════════════════════
 
-// const UPI_VPA = 'yokshitajaiswal@okicici';
-// const UPI_PAYEE_NAME = 'Barber-Q';
 
 function confirmJoin() {
     const s = S.shops[S.selectedShop];
@@ -1005,29 +971,6 @@ function confirmJoin() {
     openPayModal();
 }
 
-
-// function updateUpiQr() {
-
-//     const qrImg = document.getElementById('upi-qr-img');
-
-//     if (!qrImg) {
-//         console.warn('UPI QR image element not found');
-//         return;
-//     }
-
-//     qrImg.src = 'QR.webp';
-//     qrImg.alt = 'UPI QR Code';
-
-//     qrImg.style.position = 'absolute';
-//     qrImg.style.width = '227px';
-//     qrImg.style.height = 'auto';
-//     qrImg.style.maxWidth = 'none';
-//     qrImg.style.left = '-23px';
-//     qrImg.style.top = '-60px';
-//     qrImg.style.padding = '0';
-//     qrImg.style.margin = '0';
-//     qrImg.style.borderRadius = '0';
-// }
 async function updateUpiQr() {
     const p = S.pendingJoin;
     const s = p && S.shops[p.shopId];
@@ -1072,25 +1015,6 @@ function openPayModal() {
     openModal('m-pay');
 }
 
-
-// function selectPayMethod(method) {
-//     S.payMethod = method;
-
-//     document.querySelectorAll('.pay-opt').forEach(el => el.classList.remove('sel'));
-
-//     const selected = document.getElementById('pay-' + method);
-//     if (selected) selected.classList.add('sel');
-
-//     const qrSection = document.getElementById('upi-qr-section');
-//     if (qrSection) qrSection.style.display = method === 'online' ? 'block' : 'none';
-
-//     const button = document.getElementById('pay-btn-label');
-//     if (!button) return;
-
-//     button.textContent = method === 'shop'
-//         ? 'Confirm & Join (Pay at Shop)'
-//         : 'Pay & Join Queue';
-// }
 function selectPayMethod(method) {
     S.payMethod = method;
 
@@ -1124,10 +1048,6 @@ async function processPayment() {
     const s = S.shops[p.shopId];
     if (!s) { toast('⚠️', 'Shop information not found'); return; }
 
-    // if (S.payMethod !== 'online') {
-    //     finalizeJoin(p, s, false);
-    //     return;
-    // }
       if (S.payMethod === 'upi_qr') {
         finalizeJoin(p, s, false, { payment_method: 'upi_qr' });
         return;
@@ -1231,7 +1151,6 @@ async function finalizeJoin(p, s, paidOnline, extra = {}) {
           shop_address: s.addr,
           shop_owner: s.owner,
           service_price: p.price,
-          // service_duration: (S.services.find(x => x.name === p.svcName) || {}).dur
           service_duration: (S.services.find(x => x.name === p.svcName) || {}).dur,
           ...extra
         })
@@ -1243,21 +1162,14 @@ async function finalizeJoin(p, s, paidOnline, extra = {}) {
     if (!response.ok || !result.success) {
       throw new Error(result.error || "Booking could not be saved");
     }
-
     const booking = result.booking;
-
-    // Use the token and ID returned by the database.
     p.tok = booking.token;
     S.myQueueEntryId = booking.id;
     S.inQueue = true;
     S.myTok = booking.token;
     S.mySvc = p.svcName;
     S.myShopId = p.shopId;
-
-    // Update local shop information.
     s.q = (s.q || 0) + 1;
-
-    // Record payment information in the current browser session.
     if (!Array.isArray(S.payments)) S.payments = [];
     if (!Array.isArray(S.paymentMethods)) S.paymentMethods = [];
 
@@ -1268,7 +1180,6 @@ async function finalizeJoin(p, s, paidOnline, extra = {}) {
       token: booking.token,
       svc: p.svcName,
       amount: p.price,
-      // method: paidOnline ? "Online" : "Pay at Shop",
       method: paidOnline ? "Online" : (extra.payment_method === 'upi_qr' ? "UPI QR" : "Pay at Shop"),
       status: paidOnline ? "Paid" : "Pending",
       date: new Date().toLocaleDateString("en-IN", {
@@ -1278,12 +1189,10 @@ async function finalizeJoin(p, s, paidOnline, extra = {}) {
       createdAt: new Date().toISOString(),
       timestamp: Date.now()
     });
-
     if (paidOnline) {
       if (typeof S.onlineCollected !== "number") {
         S.onlineCollected = 0;
       }
-
       S.onlineCollected += p.price;
 
       if (!S.paymentMethods.includes("Online Payment")) {
@@ -1292,146 +1201,96 @@ async function finalizeJoin(p, s, paidOnline, extra = {}) {
     } else if (!S.paymentMethods.includes("Pay at Shop")) {
       S.paymentMethods.push("Pay at Shop");
     }
-
-    // Close payment modal and show confirmation.
     closeModal("m-pay");
-
     const tokenEl = document.getElementById("ok-tok");
     const subEl = document.getElementById("ok-sub");
     const serviceEl = document.getElementById("ok-svc");
     const note = document.getElementById("ok-pay-note");
-
     if (tokenEl) tokenEl.textContent = booking.token;
-
     if (subEl) {
       subEl.textContent =
         "Token #" + booking.token + " · ~" + s.wait + " min wait";
     }
-
     if (serviceEl) serviceEl.textContent = p.svcName;
-
     if (note) {
-      // note.style.color = paidOnline ? "var(--green)" : "var(--txt2)";
-      // note.textContent = paidOnline
-      //   ? "✅ Payment of ₹" + p.price + " received"
-      //   : "💵 Pay ₹" + p.price + " at the shop";
       note.textContent = paidOnline
       ? "✅ Payment of ₹" + p.price + " received"
       : extra.payment_method === 'upi_qr'
       ? "📲 UPI payment sent — the barber will confirm it"
       : "💵 Pay ₹" + p.price + " at the shop";
     }
-
     openModal("m-ok");
-
     toast(
       "✅",
       paidOnline
         ? "Payment successful and booking saved!"
         : "Added to queue — pay at shop"
     );
-
   } catch (error) {
     console.error("Booking error:", error);
     toast("⚠️", error.message || "Could not save booking");
   }
 }
-
 function renderMyQ(){
-
   const el=document.getElementById('my-q');
-
   if(!el)return;
-
   if(!S.inQueue){
-
     el.innerHTML=`
-
       <div style="text-align:center;padding:60px 20px">
-
         <div style="font-size:52px;margin-bottom:12px">
           🎫
         </div>
-
         <div style="font-size:20px;font-weight:700;font-family:'Syne',sans-serif;margin-bottom:8px">
           No Active Queue
         </div>
-
         <p style="color:var(--txt2);font-size:14px;margin-bottom:20px">
           Browse nearby shops and join a queue!
         </p>
-
         <button class="btn btn-gold"
         onclick="cTab('home',null)">
           Find Barbers →
         </button>
-
       </div>
-
     `;
-
     return;
   }
-
   const s=S.shops[S.myShopId];
-
   const ahead=Math.max(0,S.myTok-s.cur);
-
   const prog=Math.max(
     5,
     Math.round(100-ahead*15)
   );
-
   el.innerHTML=`
-
     ${ahead<=2?`
-
       <div class="notif">
-
         <span style="font-size:20px">
           🔔
         </span>
-
         <div>
-
           <div style="font-weight:500;font-size:14px">
             Almost your turn!
           </div>
-
           <div style="font-size:12px;color:var(--txt2)">
             ${ahead} customer${ahead!==1?'s':''} ahead of you
           </div>
-
         </div>
-
       </div>
-
     `:''}
-
-
     <div style="background:var(--gdim);border:2px solid var(--gold);border-radius:var(--rxl);padding:28px;text-align:center;margin-bottom:18px">
-
       <div style="font-size:12px;color:var(--txt2);margin-bottom:6px">
         ${s.name}
       </div>
-
       <div style="font-size:13px;color:var(--txt2);margin-bottom:4px">
         Your Token
       </div>
-
       <div style="font-size:80px;font-weight:800;font-family:'Syne',sans-serif;color:var(--gold);line-height:1">
         #${S.myTok}
       </div>
-
       <div style="font-size:14px;color:var(--txt2);margin-top:6px">
         ${S.mySvc}
       </div>
-
     </div>
-
-
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px">
-
       <div class="stat"
       style="text-align:center">
 
@@ -1514,29 +1373,19 @@ function renderMyQ(){
 
   `;
 }
-
-
 function cTab(name,el){
-
   document.getElementById('cust-home').style.display=
     name==='home'?'block':'none';
-
   document.getElementById('cust-queue').style.display=
     name==='queue'?'block':'none';
-
   if(el){
-
     document.querySelectorAll('#c-tabs .tab')
     .forEach(t=>t.classList.remove('on'));
-
     el.classList.add('on');
   }
-
   if(name==='queue')
     renderMyQ();
 }
-
-// ── Ask the backend for a shop's active queue (same data the barber sees) ──
 async function cqFetchQueue(shopName){
   const res = await fetch(
     "https://barber-queue-backend-9z52.onrender.com/api/queue?shop_name=" + encodeURIComponent(shopName)
@@ -1556,34 +1405,22 @@ async function cqFetchQueue(shopName){
     status: q.status
   }));
 }
-
-// ── Work out where the customer is in that queue ──
 function cqApply(list){
-
   S.myQueueList = list;
-
   const idx = list.findIndex(q => String(q.id) === String(S.myQueueEntryId));
 
-  // Not in the active queue any more. Wait for two polls in a row so a
-  // single hiccup is never mistaken for "service finished".
   if(idx === -1){
     S._cqMiss = (S._cqMiss || 0) + 1;
     if(S._cqMiss >= 2) completeMyVisit();
     return;
   }
-
   S._cqMiss = 0;
-
-  // Remember when the person at the front started being served,
-  // so the time left can count down between polls.
   const head = list[0];
   if(S._cqHeadId !== head.id){
     S._cqHeadId    = head.id;
     S._cqHeadSince = Date.now();
   }
 }
-
-// Position and time left, recalculated from the clock every time it is drawn.
 function cqCalc(){
 
   const list = S.myQueueList;
@@ -1614,8 +1451,6 @@ function cqCalc(){
     inService
   };
 }
-
-// The barber marked this customer's token complete.
 function completeMyVisit(){
 
   const shop = S.shops[S.myShopId];
@@ -1634,8 +1469,6 @@ function completeMyVisit(){
 
   S.queueHistory.unshift(visit);
   S.lastCompletedVisit = visit;
-
-  // A pay-at-shop payment becomes a completed payment now.
   const payment = S.payments.find(p =>
     p.token === S.myTok && p.shopId === S.myShopId && p.status === 'Pending'
   );
@@ -1652,8 +1485,6 @@ function completeMyVisit(){
   toast('✅', 'Your service is complete! Your visit has been added to history.');
   renderMyQ();
 }
-
-// ── Customer polling (every 5 s while the customer is using the app) ──
 let cqBusy = false;
 
 async function pollCustomer(){
@@ -1665,7 +1496,6 @@ async function pollCustomer(){
     const bshop = S.shops.find(s => s.isBarberProfile);
     const mine  = S.inQueue ? S.shops[S.myShopId] : null;
 
-    // 1) Live numbers on the barber's shop card.
     if(bshop){
       try{
         const list = await cqFetchQueue(bshop.name);
@@ -1680,8 +1510,6 @@ async function pollCustomer(){
         console.warn('Shop queue refresh failed:', e.message);
       }
     }
-
-    // 2) Customer is queued at some other shop.
     if(mine && mine !== bshop && S.myQueueEntryId){
       try{
         cqApply(await cqFetchQueue(mine.name));
@@ -1703,13 +1531,11 @@ async function pollCustomer(){
 
 setInterval(pollCustomer, 5000);
 
-// Redraw every 15 s so the minutes keep counting down between polls.
 setInterval(() => {
   const el = document.getElementById('my-q');
   if(S.inQueue && el && el.offsetParent !== null) renderMyQ();
 }, 15000);
 
-// ── My Queue tab, now with live position and time left ──
 function renderMyQ(){
 
   const el = document.getElementById('my-q');
@@ -1772,7 +1598,7 @@ function renderMyQ(){
       : ahead + ' customer' + (ahead !== 1 ? 's' : '') + ' ahead of you';
 
   }else{
-    // Still waiting for the first answer from the backend.
+
     ahead    = Math.max(0, Number(S.myTok) - s.cur) || 0;
     serving  = s.cur;
     headline = 'Checking…';
@@ -1885,10 +1711,6 @@ function renderMyQ(){
   `;
 }
 
-
-// ── Barber profile survives a page reload ──
-// (Live Server reloads on every file save, which used to empty the profile,
-//  so the dashboard stopped asking the backend for the queue.)
 function saveBarberProfileLocal(){
   try{
     const { photo, ...profile } = S.barber;
@@ -1917,8 +1739,6 @@ function restoreBarberProfile(){
   }
 }
 
-// Same as before, but the barber's saved profile is loaded first, so the
-// dashboard knows its shop and starts asking the backend for the queue.
 function demoAs(r){
   S.role = r;
 
@@ -1937,15 +1757,6 @@ function demoAs(r){
     toast('⚠️', 'Please open Profile → Edit Profile and add your shop details.');
   }
 }
-
-
-
-
-
-
-
-
-
 // ═══════ BARBER ═══════
 function renderBQ(){
 
@@ -2084,107 +1895,6 @@ async function doneToken() {
   }
 }
 
-// function doneToken(){
-
-//   if(S.bq.length===0)return;
-
-//   const done=S.bq.shift();
-
-//   S.doneCnt++;
-
-//   const sv=S.services.find(
-//     s=>s.name===done.svc
-//   );
-
-//   // if(sv)
-//   //   S.earn+=sv.price; 
-
-// if (sv) {
-//   S.earn += sv.price;
-// }
-
-// // Record every completed customer for barber analytics
-// if (!Array.isArray(S.barberVisits)) {
-//   S.barberVisits = [];
-// }
-
-// const completedAt = new Date();
-
-// S.barberVisits.unshift({
-//   token: done.tok,
-//   service: done.svc,
-//   price: sv ? sv.price : 0,
-//   createdAt: completedAt.toISOString(),
-//   timestamp: completedAt.getTime()
-// });
-
-//   if(S.inQueue && S.myTok===done.tok){
-
-//     const shopId=S.myShopId;
-//     const shop=S.shops[shopId];
-
-//     const visit={
-//       token:done.tok,
-//       shopId:shopId,
-//       shop:shop ? shop.name : 'Barber Shop',
-//       service:done.svc,
-//       date:new Date().toLocaleDateString('en-IN',{
-//         day:'2-digit',
-//         month:'short',
-//         year:'numeric'
-//       }),
-
-// createdAt: new Date().toISOString(),
-// timestamp: Date.now()
-
-//     };
-
-//     S.queueHistory.unshift(visit);
-//     S.lastCompletedVisit=visit;
-
-//     // A pay-at-shop payment becomes a completed payment now.
-//     const payment=S.payments.find(p=>
-//       p.token===done.tok && p.status==='Pending'
-//     );
-
-//     if(payment){
-//       payment.status='Paid';
-
-//       if(!S.paymentMethods.includes('Pay at Shop')){
-//         S.paymentMethods.push('Pay at Shop');
-//       }
-//     }
-
-//     S.inQueue=false;
-//     S.myTok=null;
-//     S.mySvc='';
-//     S.myShopId=null;
-//   }
-
-//   const doneEl=document.getElementById('b-done');
-//   const earnEl=document.getElementById('b-earn');
-
-//   if(doneEl) doneEl.textContent=S.doneCnt;
-//   if(earnEl) earnEl.textContent='₹'+S.earn.toLocaleString('en-IN');
-
-//   if(S.bq.length>0){
-
-//     S.bq[0].st='cur';
-
-//     if(S.bq.length>1)
-//       S.bq[1].st='nxt';
-
-//   }
-
-//   renderBQ();
-
-//   if(S.lastCompletedVisit && S.lastCompletedVisit.token===done.tok){
-//     toast('✅','Your service is complete! Your visit has been added to history.');
-//   }else{
-//     toast('✅','Token completed! Calling next customer.');
-//   }
-// }
-
 async function skipToken() {
   if (!S.bq.length) return;
 
@@ -2253,15 +1963,6 @@ function openWalkinModal() {
     nameInput.focus();
   }, 100);
 }
-
-
-
-
-
-
-
-
-
 
 async function addWalkinCustomer() {
   const nameInput = document.getElementById("walkin-name");
@@ -2506,30 +2207,7 @@ function delSvc(i){
 }
 
 const serviceEmojis = [
-// Hair
-  '💇','💇‍♂️','💇‍♀️','💈','✂️','🧴',
-  
-  // Beard / Shaving
-  '🧔','🪒','👨‍🦰','👨‍🦱',
-  
-  // Beauty / Skin
-  '💆','🧖','🧖‍♂️','🧖‍♀️','✨',
-  
-  // Nails
-  '💅',
-  
-  // Hair styling / Coloring
-  '🎨','🖌️','🌈',,
-  
-  // Makeup / Beauty
-  '💄','👄','👁️','💋',
-  
-  // Spa / Grooming
-  '🛁','🧼','🧽','🌸','🌺','🌹',
-
-  // 😀 Smileys & People
-  '😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇',
-  '🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚',
+  '💇','💇‍♂️','💇‍♀️','💈','✂️','🧴','🧔','🪒','👨‍🦰','👨‍🦱','💆','🧖','🧖‍♂️','🧖‍♀️','✨','💅','🎨','🖌️','🌈','💄','👄','👁️','💋', '🛁','🧼','🧽','🌸','🌺','🌹','😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚',
   '😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🤩',
   '🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣',
   '😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬',
@@ -3167,22 +2845,6 @@ function saveBarberProfile(){
   }
 
 
-  
-  // S.barber.name = name;
-  // S.barber.phone = '+91 ' + phone;
-  // S.barber.shopName = shop;
-  // S.barber.address = address;
-  // S.barber.openingTime = opening;
-  // S.barber.closingTime = closing;
-  // S.barber.payoutBank = bank;
-  // S.barber.payoutLast4 = last4;
-
-
-  // closeModal('m-editbarber');
-  // renderBarberProfile();
-
-  // toast('✅','Barber profile updated successfully');
-
 S.barber.name = name;
 S.barber.phone = '+91 ' + phone;
 S.barber.shopName = shop;
@@ -3225,7 +2887,6 @@ function updateShopPhoto(){
       return;
 
     }
-
 
     const reader = new FileReader();
 
@@ -3882,8 +3543,6 @@ function saveProfileEdit() {
         .replace(/\D/g, "")
         .slice(-10);
 
-    // If the current profile has no phone number,
-    // check whether this number already has saved data.
     if (!oldPhone) {
         const existingCustomer = customers[phoneDigits];
 
