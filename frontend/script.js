@@ -975,8 +975,8 @@ function openJoinModal(){
 
 // ═══════════════════════════════════════ PAYMENT FLOW ═══════════════════════════════════════
 
-const UPI_VPA = 'yokshitajaiswal@okicici';
-const UPI_PAYEE_NAME = 'Barber-Q';
+// const UPI_VPA = 'yokshitajaiswal@okicici';
+// const UPI_PAYEE_NAME = 'Barber-Q';
 
 function confirmJoin() {
     const s = S.shops[S.selectedShop];
@@ -1006,27 +1006,46 @@ function confirmJoin() {
 }
 
 
-function updateUpiQr() {
+// function updateUpiQr() {
 
-    const qrImg = document.getElementById('upi-qr-img');
+//     const qrImg = document.getElementById('upi-qr-img');
 
-    if (!qrImg) {
-        console.warn('UPI QR image element not found');
-        return;
-    }
+//     if (!qrImg) {
+//         console.warn('UPI QR image element not found');
+//         return;
+//     }
 
-    qrImg.src = 'QR.webp';
-    qrImg.alt = 'UPI QR Code';
+//     qrImg.src = 'QR.webp';
+//     qrImg.alt = 'UPI QR Code';
 
-    qrImg.style.position = 'absolute';
-    qrImg.style.width = '227px';
-    qrImg.style.height = 'auto';
-    qrImg.style.maxWidth = 'none';
-    qrImg.style.left = '-23px';
-    qrImg.style.top = '-60px';
-    qrImg.style.padding = '0';
-    qrImg.style.margin = '0';
-    qrImg.style.borderRadius = '0';
+//     qrImg.style.position = 'absolute';
+//     qrImg.style.width = '227px';
+//     qrImg.style.height = 'auto';
+//     qrImg.style.maxWidth = 'none';
+//     qrImg.style.left = '-23px';
+//     qrImg.style.top = '-60px';
+//     qrImg.style.padding = '0';
+//     qrImg.style.margin = '0';
+//     qrImg.style.borderRadius = '0';
+// }
+async function updateUpiQr() {
+    const p = S.pendingJoin;
+    const s = p && S.shops[p.shopId];
+    S.shopPay = null;
+
+    const opt = document.getElementById('pay-upi_qr');
+    if (opt) opt.style.display = 'none';
+    if (!s) return;
+
+    try {
+        const r = await fetch(BQ_BASE + '/api/shops');
+        const j = await r.json();
+        const hit = (j.shops || []).find(x => x.name.toLowerCase() === s.name.toLowerCase());
+        if (hit && hit.upi_qr_url) {
+            S.shopPay = hit;
+            if (opt) opt.style.display = 'flex';
+        }
+    } catch (e) { console.warn('Could not load shop UPI details:', e); }
 }
 
 
@@ -1054,25 +1073,49 @@ function openPayModal() {
 }
 
 
+// function selectPayMethod(method) {
+//     S.payMethod = method;
+
+//     document.querySelectorAll('.pay-opt').forEach(el => el.classList.remove('sel'));
+
+//     const selected = document.getElementById('pay-' + method);
+//     if (selected) selected.classList.add('sel');
+
+//     const qrSection = document.getElementById('upi-qr-section');
+//     if (qrSection) qrSection.style.display = method === 'online' ? 'block' : 'none';
+
+//     const button = document.getElementById('pay-btn-label');
+//     if (!button) return;
+
+//     button.textContent = method === 'shop'
+//         ? 'Confirm & Join (Pay at Shop)'
+//         : 'Pay & Join Queue';
+// }
 function selectPayMethod(method) {
     S.payMethod = method;
 
     document.querySelectorAll('.pay-opt').forEach(el => el.classList.remove('sel'));
-
     const selected = document.getElementById('pay-' + method);
     if (selected) selected.classList.add('sel');
 
+    const pay = S.shopPay;
     const qrSection = document.getElementById('upi-qr-section');
-    if (qrSection) qrSection.style.display = method === 'online' ? 'block' : 'none';
+    if (qrSection) {
+        const show = method === 'upi_qr' && pay && pay.upi_qr_url;
+        qrSection.style.display = show ? 'block' : 'none';
+        if (show) {
+            document.getElementById('upi-qr-img').src = BQ_BASE + pay.upi_qr_url;
+            document.getElementById('upi-id-text').textContent = pay.upi_id ? 'UPI ID: ' + pay.upi_id : '';
+        }
+    }
 
     const button = document.getElementById('pay-btn-label');
     if (!button) return;
-
-    button.textContent = method === 'shop'
-        ? 'Confirm & Join (Pay at Shop)'
-        : 'Pay & Join Queue';
+    button.textContent =
+        method === 'shop'   ? 'Confirm & Join (Pay at Shop)' :
+        method === 'upi_qr' ? "I've Paid — Join Queue" :
+                              'Pay & Join Queue';
 }
-
 
 async function processPayment() {
     const p = S.pendingJoin;
@@ -1081,10 +1124,18 @@ async function processPayment() {
     const s = S.shops[p.shopId];
     if (!s) { toast('⚠️', 'Shop information not found'); return; }
 
-    if (S.payMethod !== 'online') {
-        finalizeJoin(p, s, false);
+    // if (S.payMethod !== 'online') {
+    //     finalizeJoin(p, s, false);
+    //     return;
+    // }
+      if (S.payMethod === 'upi_qr') {
+        finalizeJoin(p, s, false, { payment_method: 'upi_qr' });
         return;
-    }
+      }
+      if (S.payMethod !== 'online') {
+        finalizeJoin(p, s, false, { payment_method: 'shop' });
+        return;
+      }
 
     const button = document.getElementById('pay-btn-label');
     if (button) button.innerHTML = '<span class="spinner"></span> Creating order…';
@@ -1104,7 +1155,7 @@ async function processPayment() {
             amount: order.amount,
             currency: order.currency,
             order_id: order.order_id,
-            name: 'Barber-Q',
+            name: 'Glowora', // was 'Barber-Q'
             description: p.svcName + ' · Token #' + p.tok,
             handler: async function (response) {
 
@@ -1121,7 +1172,11 @@ async function processPayment() {
                 const result = await verifyRes.json();
 
                 if (result.verified) {
-                    finalizeJoin(p, s, true);
+                  finalizeJoin(p, s, true, {
+                    payment_method: 'razorpay',
+                    razorpay_payment_id: response.razorpay_payment_id
+                  });
+                    // finalizeJoin(p, s, true);
                 } else {
                     toast('⚠️', 'Payment verification failed');
                     if (button) button.textContent = 'Pay & Join Queue';
@@ -1133,7 +1188,16 @@ async function processPayment() {
                     toast('ℹ️', 'Payment cancelled');
                 }
             },
-            theme: { color: '#f5c842' }
+            theme: { color: '#f5c842' },
+            config: {
+              display: {
+                blocks: {
+                  upi: { name: 'Pay via UPI', instruments: [{ method: 'upi' }] }
+                },
+                sequence: ['block.upi'],
+                preferences: { show_default_blocks: true }   // cards/netbanking still available
+              }
+            }
         };
 
         const rzp = new Razorpay(options);
@@ -1146,7 +1210,7 @@ async function processPayment() {
     }
 }
 
-async function finalizeJoin(p, s, paidOnline) {
+async function finalizeJoin(p, s, paidOnline, extra = {}) {
   if (!s || !p) {
     toast("⚠️", "Booking information is missing");
     return;
@@ -1167,7 +1231,9 @@ async function finalizeJoin(p, s, paidOnline) {
           shop_address: s.addr,
           shop_owner: s.owner,
           service_price: p.price,
-          service_duration: (S.services.find(x => x.name === p.svcName) || {}).dur
+          // service_duration: (S.services.find(x => x.name === p.svcName) || {}).dur
+          service_duration: (S.services.find(x => x.name === p.svcName) || {}).dur,
+          ...extra
         })
       }
     );
@@ -1202,7 +1268,8 @@ async function finalizeJoin(p, s, paidOnline) {
       token: booking.token,
       svc: p.svcName,
       amount: p.price,
-      method: paidOnline ? "Online" : "Pay at Shop",
+      // method: paidOnline ? "Online" : "Pay at Shop",
+      method: paidOnline ? "Online" : (extra.payment_method === 'upi_qr' ? "UPI QR" : "Pay at Shop"),
       status: paidOnline ? "Paid" : "Pending",
       date: new Date().toLocaleDateString("en-IN", {
         day: "2-digit",
@@ -1244,10 +1311,15 @@ async function finalizeJoin(p, s, paidOnline) {
     if (serviceEl) serviceEl.textContent = p.svcName;
 
     if (note) {
-      note.style.color = paidOnline ? "var(--green)" : "var(--txt2)";
+      // note.style.color = paidOnline ? "var(--green)" : "var(--txt2)";
+      // note.textContent = paidOnline
+      //   ? "✅ Payment of ₹" + p.price + " received"
+      //   : "💵 Pay ₹" + p.price + " at the shop";
       note.textContent = paidOnline
-        ? "✅ Payment of ₹" + p.price + " received"
-        : "💵 Pay ₹" + p.price + " at the shop";
+      ? "✅ Payment of ₹" + p.price + " received"
+      : extra.payment_method === 'upi_qr'
+      ? "📲 UPI payment sent — the barber will confirm it"
+      : "💵 Pay ₹" + p.price + " at the shop";
     }
 
     openModal("m-ok");
