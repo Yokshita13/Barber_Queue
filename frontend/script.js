@@ -445,7 +445,7 @@ function renderShops(){
   <div class="shop-card" onclick="openShop(${s.id})">
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
     <div style="width:48px;height:48px;border-radius:12px;background:${s.clr}20;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;overflow:hidden;">
-    ${s.photo ? `<imgsrc="${s.photo}"alt="${s.name}"style="width:100%;height:100%;object-fit:cover;">`: s.ico}
+    ${s.photo ? `<img src="${s.photo}" alt="${s.name}" style="width:100%;height:100%;object-fit:cover;">` : s.ico}
     </div>
     <div style="flex:1;min-width:0">
     <div style="font-weight:700;font-size:15px;font-family:'Syne',sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.name}</div>
@@ -473,7 +473,9 @@ function openShop(id){
   const inQ=S.inQueue&&S.myShopId===id;
   document.getElementById('sh-body').innerHTML=`
     <div style="background:${s.clr}12;border:1px solid ${s.clr}30;border-radius:var(--rl);padding:20px;margin-bottom:18px;text-align:center">
-      <div style="font-size:52px;margin-bottom:8px">${s.ico}</div>
+      ${s.photo
+  ? `<img src="${s.photo}" alt="${s.name}" style="width:100%;max-height:180px;object-fit:cover;border-radius:12px;margin-bottom:12px">`
+  : `<div style="font-size:52px;margin-bottom:8px">${s.ico}</div>`}
       <div style="font-size:24px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:6px">${s.name}</div>
       <div style="color:var(--txt2);font-size:13px;margin-bottom:10px">${s.addr} · ${s.owner}</div>
       <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap">
@@ -3491,7 +3493,6 @@ async function refreshBarberStats(){
     S.barberStats = j;
     S.doneCnt = j.today.done;
     S.earn    = j.today.earnings;
-
     const set = (id, text) => {
       const el = document.getElementById(id);
       if(el) el.textContent = text;
@@ -3499,19 +3500,15 @@ async function refreshBarberStats(){
     set('b-done', S.doneCnt);
     set('b-earn', '₹' + Math.round(S.earn).toLocaleString('en-IN'));
     set('b-wait', j.today.avg_wait == null ? '—' : j.today.avg_wait);
-
     const ratingChanged =
       S.barber.rating !== j.rating.average ||
       S.barber.ratingCount !== j.rating.count;
-
     S.barber.rating      = j.rating.average;
     S.barber.ratingCount = j.rating.count;
     if(ratingChanged) syncBarberToCustomerShop();
-
     const sig = JSON.stringify(j);
     if(sig !== _statsSig){
       _statsSig = sig;
-
       const shown = id => {
         const el = document.getElementById(id);
         return el && el.style.display !== 'none' && el.offsetParent !== null;
@@ -3523,18 +3520,14 @@ async function refreshBarberStats(){
 }
 
 renderAnalytics = function(){
-
   const container = document.getElementById('b-analytics');
   if(!container) return;
-
   refreshBarberStats();
-
   const st = S.barberStats || {
     today: { done: 0, earnings: 0, avg_wait: null },
     week:  { daily: [0,0,0,0,0,0,0], done: 0, revenue: 0, services: [] },
     rating: { average: 0, count: 0 }
   };
-
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const onlineToday = (S.payments || []).filter(p => {
@@ -3542,15 +3535,12 @@ renderAnalytics = function(){
     const d = new Date(p.createdAt || p.timestamp || '');
     return !isNaN(d.getTime()) && d >= todayStart && d <= now;
   }).reduce((t, p) => t + Number(p.amount || 0), 0);
-
   const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
   const daily = st.week.daily;
   const maxCount = Math.max(1, ...daily);
-
   const averageRating = st.rating.count
     ? st.rating.average.toFixed(1) + ' ★ (' + st.rating.count + ')'
     : '—';
-
   container.innerHTML = `
     <div class="card pad" style="margin-bottom:12px">
       <div class="muted">Total Revenue (This Week)</div>
@@ -3566,7 +3556,6 @@ renderAnalytics = function(){
         ₹${onlineToday.toLocaleString('en-IN')}
       </div>
     </div>
-
     <div class="card pad" style="margin-bottom:12px">
       <div style="font-weight:700;margin-bottom:20px">Completed Customers This Week</div>
       <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;align-items:end">
@@ -3580,7 +3569,6 @@ renderAnalytics = function(){
           </div>`).join('')}
       </div>
     </div>
-
     <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px">
       <div class="card pad">
         <div style="font-size:28px;font-weight:800;color:var(--green)">${st.week.done}</div>
@@ -3591,15 +3579,12 @@ renderAnalytics = function(){
         <div class="muted">Average Rating</div>
       </div>
     </div>
-
     <div class="card pad">
       <div style="font-weight:700;margin-bottom:16px">Top Services This Week</div>
-      ${st.week.services.length
-        ? st.week.services.map(([name, count]) => `
-            <div style="display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--s3)">
-              <span>${esc2(name)}</span><strong>${count}</strong>
-            </div>`).join('')
-        : '<div class="muted">No completed services recorded this week yet.</div>'}
+      ${st.week.services.length ? st.week.services.map(([name, count]) => `
+        <div style="display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--s3)">
+          <span>${esc2(name)}</span><strong>${count}</strong>
+        </div>`).join('') : '<div class="muted">No completed services recorded this week yet.</div>'}
     </div>`;
 };
 
@@ -3608,7 +3593,9 @@ function esc2(v){
     {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]
   ));
 }
+
 const _doneTokenBase = doneToken;
+
 doneToken = async function(){
   await _doneTokenBase();
   refreshBarberStats();
@@ -3616,55 +3603,42 @@ doneToken = async function(){
 
 setInterval(refreshBarberStats, 6000);
 setTimeout(refreshBarberStats, 1500);
-
-//  SHOP SEARCH + FILTER CHIPS (All / Top Rated / Nearby / Open Now) 
 S.shopFilter = 'all';
 S.shopQuery  = '';
 
 function bqVisibleShops(){
-
   let list = S.shops.slice();                 // same objects, ids untouched
   const q = (S.shopQuery || '').trim().toLowerCase();
-
   if(q){
     list = list.filter(s =>
       [s.name, s.addr, s.owner].some(v => String(v || '').toLowerCase().includes(q))
     );
   }
-
   if(S.shopFilter === 'top'){
     list = list
       .filter(s => Number(s.rating) >= 4.5)
       .sort((a, b) => Number(b.rating) - Number(a.rating));
   }
-
   if(S.shopFilter === 'open'){
     list = list.filter(s => s.open);
   }
-
   if(S.shopFilter === 'near'){
     const loc = String((S.user && S.user.location) || '').toLowerCase();
     const words = loc.split(/[,\s\-–]+/).filter(w => w.length >= 3 && w !== 'not' && w !== 'set');
-
     if(words.length){
       const score = s => words.filter(w => String(s.addr || '').toLowerCase().includes(w)).length;
       list = list.filter(s => score(s) > 0).sort((a, b) => score(b) - score(a));
     }
   }
-
   return list;
 }
-
 const _renderShopsBase = renderShops;
 renderShops = function(){
-
   const all = S.shops;
   const shown = bqVisibleShops();
-
   S.shops = shown;
   try{ _renderShopsBase(); }
   finally{ S.shops = all; }
-
   const box = document.getElementById('shop-list');
   if(box && shown.length === 0){
     const msg = S.shopFilter === 'near' && !/\w{3,}/.test(((S.user && S.user.location) || '').replace(/not set/i, ''))
@@ -3677,17 +3651,13 @@ renderShops = function(){
 };
 
 (async function wireShopFilters(){
-
   try{ await componentsReady; }catch(e){ return; }
-
   const home = document.getElementById('cust-home');
   if(!home) return;
-
   const input = home.querySelector('input.inp');
   const chips = [...home.querySelectorAll('span.tag')].filter(el =>
     /All|Top Rated|Nearby|Open Now/.test(el.textContent)
   );
-
   const keyOf = el => {
     const t = el.textContent;
     return /Top Rated/.test(t) ? 'top'
@@ -3846,9 +3816,8 @@ renderShops = function(){
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const LOCAL_TK = 'barberQTickets';
 
-  function ensureSupportUI(){
+function ensureSupportUI(){
     if(document.getElementById('bq-chat')) return;
-
     const css = document.createElement('style');
     css.textContent = `
       .bq-ov{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:none;align-items:flex-end;justify-content:center}
@@ -3868,7 +3837,6 @@ renderShops = function(){
       .bq-faq-a{display:none;padding:0 14px 14px;font-size:13px;color:var(--txt2,#aaa);line-height:1.5}
       .bq-faq.open .bq-faq-a{display:block}`;
     document.head.appendChild(css);
-
     const wrap = document.createElement('div');
     wrap.innerHTML = `
       <div class="bq-ov" id="bq-chat"><div class="bq-sheet">
@@ -3893,13 +3861,10 @@ renderShops = function(){
         <button class="bq-btn g" type="button" data-bq="close" style="width:100%">Cancel</button>
       </div></div>`;
     document.body.appendChild(wrap);
-
     document.addEventListener('click', e => {
       const t = e.target;
       if(!t || !t.closest) return;
-
       if(t.classList.contains('bq-ov') || t.closest('[data-bq="close"]')){ closeSheets(); return; }
-
       const q = t.closest('.bq-faq-q');
       if(q){
         e.preventDefault(); e.stopPropagation();
@@ -3969,7 +3934,6 @@ renderShops = function(){
     const cat = document.getElementById('bq-tk-cat').value;
     if(sub.length < 3){ toast('⚠️', 'Please add a subject'); return; }
     if(msg.length < 5){ toast('⚠️', 'Please describe the problem'); return; }
-
     const btn = document.getElementById('bq-tk-send');
     btn.disabled = true;
     try{
@@ -4044,27 +4008,21 @@ renderShops = function(){
         </div>`).join('')}
       <div id="bq-my-tickets"></div>
       <div style="height:24px"></div>`;
-
     myTicketsHtml().then(h => {
       const el = document.getElementById('bq-my-tickets');
       if(el) el.innerHTML = h;
     });
   };
-
   const _goBase = go;
   go = function(id){ closeSheets(); _goBase(id); };
-
   componentsReady.then(ensureSupportUI).catch(() => {});
 })();
 
 (function(){
   const MAX_IMG = 3, MAX_VID = 1;
   const MAX_IMG_BYTES = 5 * 1024 * 1024, MAX_VID_BYTES = 25 * 1024 * 1024, MAX_VID_SECONDS = 30;
-
   let picked = [];                       // [{file, kind, url}]
-  const esc = s => String(s).replace(/[&<>"']/g, c =>
-    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-
+  const esc = s => String(s).replace(/[&<>"']/g, c =>({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   function shrink(file){
     return new Promise(resolve => {
       if(file.type === 'image/gif') return resolve(file);
@@ -4081,7 +4039,6 @@ renderShops = function(){
       img.src = u;
     });
   }
-
   function videoSeconds(file){
     return new Promise(resolve => {
       const v = document.createElement('video'), u = URL.createObjectURL(file);
@@ -4091,7 +4048,6 @@ renderShops = function(){
       v.src = u;
     });
   }
-
   function paintPreviews(){
     const box = document.getElementById('bq-previews');
     if(!box) return;
@@ -4104,7 +4060,6 @@ renderShops = function(){
         <button type="button" data-bq-rm="${i}" style="position:absolute;top:2px;right:2px;width:20px;height:20px;border-radius:50%;border:none;background:rgba(0,0,0,.7);color:#fff;cursor:pointer;line-height:1">×</button>
       </div>`).join('');
   }
-
   function resetPicked(){
     picked.forEach(p => URL.revokeObjectURL(p.url));
     picked = [];
@@ -4132,10 +4087,10 @@ renderShops = function(){
     }
     paintPreviews();
   }
+
   function injectPicker(){
     const txt = document.getElementById('rate-txt');
     if(!txt || document.getElementById('bq-pick')) return;
-
     const wrap = document.createElement('div');
     wrap.style.cssText = 'text-align:left;margin:-6px 0 16px';
     wrap.innerHTML = `
@@ -4144,7 +4099,6 @@ renderShops = function(){
       <div style="font-size:11px;color:var(--txt2);margin-top:6px">Up to 3 photos and 1 video (30 sec). Visible to everyone on the shop page.</div>
       <div id="bq-previews" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"></div>`;
     txt.insertAdjacentElement('afterend', wrap);
-
     const input = wrap.querySelector('#bq-pick');
     wrap.querySelector('#bq-pick-btn').addEventListener('click', () => input.click());
     input.addEventListener('change', () => { addFiles(input.files); input.value = ''; });
@@ -4224,17 +4178,11 @@ renderShops = function(){
             <div style="display:flex;gap:8px;flex-wrap:wrap">
               ${rv.media.map(m => {
                 const src = BQ_BASE + m.url;
-                return m.kind === 'video'
-                  ? `<div data-bq-media="${src}" data-kind="video" style="position:relative;width:88px;height:88px;border-radius:10px;overflow:hidden;background:#000;cursor:pointer">
-                       <video src="${src}#t=0.1" preload="metadata" muted style="width:100%;height:100%;object-fit:cover;pointer-events:none"></video>
-                       <span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:26px">▶️</span></div>`
-                  : `<img src="${src}" data-bq-media="${src}" data-kind="image" loading="lazy"
-                       style="width:88px;height:88px;object-fit:cover;border-radius:10px;cursor:pointer">`;
-              }).join('')}
-            </div>` : ''}
-        </div>`).join('')}
-      <div style="height:24px"></div>`;
-    box.onclick = e => {
+                return m.kind === 'video' ? `<div data-bq-media="${src}" data-kind="video" style="position:relative;width:88px;height:88px;border-radius:10px;overflow:hidden;background:#000;cursor:pointer">
+                <video src="${src}#t=0.1" preload="metadata" muted style="width:100%;height:100%;object-fit:cover;pointer-events:none"></video>
+                  <span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:26px">▶️</span></div>`: `<img src="${src}" data-bq-media="${src}" data-kind="image" loading="lazy"style="width:88px;height:88px;object-fit:cover;border-radius:10px;cursor:pointer">`;}).join('')}</div>` : ''}</div>`).join('')}
+                  ${Number(shop.rev) > list.length ? `<div style="text-align:center;font-size:12px;color:var(--txt2);margin:4px 0 12px">+${Number(shop.rev) - list.length} more rating${Number(shop.rev) - list.length === 1 ? '' : 's'} without details</div>` : ''}<div style="height:24px"></div>`;
+      box.onclick = e => {
       const m = e.target.closest && e.target.closest('[data-bq-media]');
       if(m) lightbox({ src: m.dataset.bqMedia, kind: m.dataset.kind });
     };
@@ -4243,5 +4191,1088 @@ renderShops = function(){
   openShop = function(id){
     _openShopBase(id);
     loadGallery();
+  };
+})();
+
+/* =========================================================
+   BARBERQ — DASHBOARD / BOOKINGS / CALENDAR / STAFF / SETTINGS
+   Wraps bTab(); queue, services, analytics and profile logic is untouched.
+   ========================================================= */
+(function () {
+  "use strict";
+
+  const $ = id => document.getElementById(id);
+  const esc = v => String(v == null ? "" : v).replace(/[&<>"']/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const setText = (id, v) => { const n = $(id); if (n) n.textContent = v; };
+
+  const NEW_TABS = {
+    dashboard: "b-dashboard-tab",
+    bookings: "b-bookings-tab",
+    calendar: "b-calendar-tab",
+    staff: "b-staff-tab",
+    settings: "b-settings-tab"
+  };
+  const ALL_IDS = ["b-queue-tab", "b-svc-tab", "b-analytics-tab", "b-profile-tab", ...Object.values(NEW_TABS)];
+  const originalBTab = window.bTab;
+
+  function hideAll() {
+    ALL_IDS.forEach(id => { const s = $(id); if (s) s.style.display = "none"; });
+  }
+  function tabButton(tab) {
+    return document.querySelector('#b-tabs .tab[data-tab="' + tab + '"]');
+  }
+  function highlight(tab, el) {
+    document.querySelectorAll("#b-tabs .tab").forEach(t => t.classList.remove("on"));
+    const b = el || tabButton(tab);
+    if (!b) return;
+    b.classList.add("on");
+    const bar = $("b-tabs");
+    if (bar && bar.scrollTo) {
+      bar.scrollTo({ left: b.offsetLeft - (bar.clientWidth - b.clientWidth) / 2, behavior: "smooth" });
+    }
+  }
+
+  window.bTab = function (tab, el) {
+    hideAll();
+    if (Object.prototype.hasOwnProperty.call(NEW_TABS, tab)) {
+      const target = $(NEW_TABS[tab]);
+      if (!target) return;
+      target.style.display = "block";
+      highlight(tab, el);
+      if (tab === "dashboard") bqRefreshOverview();
+      if (tab === "bookings") bqLoadBookings();
+      if (tab === "calendar") bqRenderCalendar();
+      if (tab === "staff") bqLoadStaff();
+      if (tab === "settings") bqRenderSettings();
+      return;
+    }
+    if (typeof originalBTab === "function") {
+      highlight(tab, el);
+      originalBTab(tab, el || tabButton(tab));
+    }
+  };
+
+  /* ---------------- DASHBOARD ---------------- */
+  const PALETTE = ["#3b82f6", "#a78bfa", "#f5c842", "#4ade80", "#f472b6", "#fb923c"];
+
+  window.bqRefreshOverview = function () {
+    const st = S.barberStats;
+    setText("bq-overview-queue", (S.bq || []).length);
+    setText("bq-overview-done", S.doneCnt || 0);
+    setText("bq-overview-revenue", "₹" + Math.round(S.earn || 0).toLocaleString("en-IN"));
+    setText("bq-overview-wait",
+      st && st.today && st.today.avg_wait != null ? st.today.avg_wait : "—");
+
+    // live queue (top 5)
+    const list = $("bq-overview-queue-list");
+    if (list) {
+      const q = (S.bq || []).slice(0, 5);
+      list.innerHTML = q.length ? q.map(c => `
+        <div class="bq-q-row ${c.st === "cur" ? "cur" : ""}">
+          <div class="bq-q-num">${esc(c.tok)}</div>
+          <div class="bq-q-main"><strong>${esc(c.name)}</strong><span>${esc(c.svc)} · ${esc(c.dur)} min</span></div>
+          <span class="tag ${c.st === "cur" ? "tg" : c.st === "nxt" ? "tgreen" : "tgray"}">
+            ${c.st === "cur" ? "Now" : c.st === "nxt" ? "Next" : "Waiting"}</span>
+        </div>`).join("")
+        : '<p class="bq-muted">No customers are currently in the queue.</p>';
+    }
+
+    // weekly bar chart
+    const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    const daily = st && st.week && Array.isArray(st.week.daily) ? st.week.daily : [0, 0, 0, 0, 0, 0, 0];
+    const max = Math.max(1, ...daily);
+    const chart = $("bq-week-chart");
+    if (chart) {
+      chart.innerHTML = days.map((d, i) => `
+        <div class="bq-bar">
+          <div class="bq-bar-track"><div class="bq-bar-fill" style="height:${daily[i] ? Math.max(8, daily[i] / max * 100) : 0}px"></div></div>
+          ${d}<b>${daily[i] || 0}</b>
+        </div>`).join("");
+    }
+
+    // service mix donut
+    const services = st && st.week && Array.isArray(st.week.services) ? st.week.services.slice(0, 6) : [];
+    const total = services.reduce((t, s) => t + Number(s[1] || 0), 0);
+    const donut = $("bq-donut");
+    const legend = $("bq-donut-legend");
+    setText("bq-donut-total", total);
+    if (donut && legend) {
+      if (!total) {
+        donut.style.background = "var(--s3,#23232f)";
+        legend.innerHTML = '<span class="bq-muted">No completed services this week yet.</span>';
+      } else {
+        let acc = 0;
+        const stops = services.map((s, i) => {
+          const from = acc / total * 100;
+          acc += Number(s[1]);
+          return PALETTE[i % PALETTE.length] + " " + from + "% " + (acc / total * 100) + "%";
+        });
+        donut.style.background = "conic-gradient(" + stops.join(",") + ")";
+        legend.innerHTML = services.map((s, i) =>
+          `<div><i style="background:${PALETTE[i % PALETTE.length]}"></i>${esc(s[0])}<b>${esc(s[1])}</b></div>`).join("");
+      }
+    }
+  };
+
+  /* ---------------- BOOKINGS ---------------- */
+  /* Appointment shape:
+     { id, customer, service, date:'YYYY-MM-DD', start:'HH:MM', end:'HH:MM',
+       status:'pending|confirmed|completed|cancelled', staff }
+     Provide data with bqSetAppointments([...]) or set
+     window.BQ_APPOINTMENTS_URL (GET ?shop_name=... → {appointments:[...]}). */
+  window.bqAppointments = [];
+
+  window.bqSetAppointments = function (list) {
+    window.bqAppointments = Array.isArray(list) ? list : [];
+    bqRenderBookings();
+    bqRenderCalendar();
+  };
+
+  window.bqLoadBookings = async function () {
+    const url = window.BQ_APPOINTMENTS_URL;
+    if (url && S.barber && S.barber.shopName) {
+      try {
+        const r = await fetch(url + "?shop_name=" + encodeURIComponent(S.barber.shopName));
+        const j = await r.json();
+        if (r.ok && Array.isArray(j.appointments)) window.bqAppointments = j.appointments;
+      } catch (e) { console.warn("Could not load appointments:", e); }
+    }
+    bqRenderBookings();
+  };
+
+  window.bqRenderBookings = function () {
+    const body = $("bq-bookings-body");
+    if (!body) return;
+    const search = ($("bq-booking-search")?.value || "").trim().toLowerCase();
+    const filter = $("bq-booking-filter")?.value || "all";
+
+    const rows = window.bqAppointments.filter(a =>
+      (filter === "all" || a.status === filter) &&
+      (!search || [a.customer, a.service].some(v => String(v || "").toLowerCase().includes(search))));
+
+    if (!rows.length) {
+      body.innerHTML = `<tr><td colspan="5" class="bq-empty">${
+        window.bqAppointments.length ? "No bookings match your filters." : "No appointments yet."}</td></tr>`;
+      return;
+    }
+    body.innerHTML = rows.map(a => `
+      <tr>
+        <td><strong>${esc(a.customer)}</strong></td>
+        <td>${esc(a.service)}</td>
+        <td>${esc(a.date)}<br><span class="bq-muted">${esc(a.start)}${a.end ? " – " + esc(a.end) : ""}</span></td>
+        <td><span class="bq-badge ${esc(a.status)}">${esc(a.status)}</span></td>
+        <td>
+          <select class="bq-status-select" onchange="bqSetStatus('${esc(a.id)}',this.value)">
+            ${["pending", "confirmed", "completed", "cancelled"].map(s =>
+              `<option value="${s}" ${s === a.status ? "selected" : ""}>${s}</option>`).join("")}
+          </select>
+        </td>
+      </tr>`).join("");
+  };
+
+  window.bqSetStatus = function (id, status) {
+    const a = window.bqAppointments.find(x => String(x.id) === String(id));
+    if (!a) return;
+    a.status = status;
+    bqRenderBookings();
+    bqRenderCalendar();
+    toast("✅", "Booking marked " + status);
+  };
+
+  /* ---------------- CALENDAR ---------------- */
+  let weekOffset = 0;
+  const isoDate = d =>
+    d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+
+  window.bqCalendarToday = function () { weekOffset = 0; bqRenderCalendar(); };
+  window.bqChangeWeek = function (dir) { weekOffset += Number(dir) || 0; bqRenderCalendar(); };
+
+  window.bqRenderCalendar = function () {
+    const grid = $("bq-calendar-grid");
+    const range = $("bq-calendar-range");
+    if (!grid || !range) return;
+
+    const today = new Date();
+    const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    start.setDate(start.getDate() - ((start.getDay() + 6) % 7) + weekOffset * 7);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    const fmt = d => d.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+    range.textContent = fmt(start) + " – " + fmt(end);
+
+    const b = (window.S && S.barber) || {};
+    let openH = parseInt((b.openingTime || "09:00").split(":")[0], 10);
+    let closeH = parseInt((b.closingTime || "20:00").split(":")[0], 10);
+    if (!(openH >= 0 && closeH > openH)) { openH = 9; closeH = 20; }
+
+    const dates = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(start); d.setDate(start.getDate() + i); return d;
+    });
+
+    let html = '<div class="bq-cal-head">Time</div>' + dates.map(d => `
+      <div class="bq-cal-head ${d.toDateString() === today.toDateString() ? "today" : ""}">
+        ${d.toLocaleDateString("en-IN", { weekday: "short" })}<b>${d.getDate()}</b>
+      </div>`).join("");
+
+    for (let h = openH; h <= closeH; h++) {
+      const hh = String(h).padStart(2, "0");
+      html += `<div class="bq-cal-time">${hh}:00</div>`;
+      dates.forEach(d => {
+        const iso = isoDate(d);
+        const events = window.bqAppointments.filter(a =>
+          a.date === iso && String(a.start || "").slice(0, 2) === hh);
+        html += `<div class="bq-cal-cell ${d.toDateString() === today.toDateString() ? "today" : ""}">
+          ${events.map(a => `
+            <div class="bq-event ${esc(a.status)}" title="${esc(a.service)}">
+              <b>${esc(a.customer)}</b>${esc(a.start)} · ${esc(a.service)}
+            </div>`).join("")}
+        </div>`;
+      });
+    }
+    grid.innerHTML = html;
+  };
+
+  /* ---------------- STAFF (saved on this device) ---------------- */
+  const STAFF_KEY = "barberStaff";
+  const readStaff = () => {
+    try { return JSON.parse(localStorage.getItem(STAFF_KEY) || "[]"); } catch (e) { return []; }
+  };
+  const writeStaff = list => {
+    try { localStorage.setItem(STAFF_KEY, JSON.stringify(list)); return true; }
+    catch (e) { toast("⚠️", "Could not save team data"); return false; }
+  };
+
+  window.bqLoadStaff = function () {
+    const grid = $("bq-staff-grid");
+    if (!grid) return;
+    const b = S.barber || {};
+    const cards = [];
+
+    if (b.name) {
+      cards.push(`
+        <div class="bq-staff-card">
+          <span class="bq-staff-rating">⭐ ${Number(b.rating) > 0 ? Number(b.rating).toFixed(1) : "—"}</span>
+          <div class="bq-staff-head">
+            <div class="bq-staff-av">${b.photo ? `<img src="${esc(b.photo)}" alt="">` : esc(b.name.charAt(0).toUpperCase())}</div>
+            <div><div class="bq-staff-name">${esc(b.name)}</div><div class="bq-staff-sub">Owner · ${esc(b.shopName || "Shop")}</div></div>
+          </div>
+          <div class="bq-staff-spec"><span>Role</span><strong>Owner / Head barber</strong></div>
+          <div class="bq-staff-metrics">
+            <div><span>Done today</span><strong>${S.doneCnt || 0}</strong></div>
+            <div><span>Reviews</span><strong>${Number(b.ratingCount) || 0}</strong></div>
+          </div>
+        </div>`);
+    }
+
+    readStaff().forEach(m => cards.push(`
+      <div class="bq-staff-card">
+        <div class="bq-staff-head">
+          <div class="bq-staff-av">${esc(String(m.name || "?").charAt(0).toUpperCase())}</div>
+          <div><div class="bq-staff-name">${esc(m.name)}</div><div class="bq-staff-sub">${esc(m.phone ? "+91 " + m.phone : "Team member")}</div></div>
+        </div>
+        <div class="bq-staff-spec"><span>Specialist</span><strong>${esc(m.role || "Barber")}</strong></div>
+        <button class="btn btn-outline btn-sm bq-staff-del" onclick="bqDeleteStaff('${esc(m.id)}')">Remove</button>
+      </div>`));
+
+    grid.innerHTML = cards.length ? cards.join("") : `
+      <div class="bq-empty-card"><span>♙</span><strong>No team members yet</strong>
+        <p>Tap “＋ Add” to add your first team member.</p></div>`;
+  };
+
+  window.bqOpenStaffModal = function () {
+    ["bq-staff-name", "bq-staff-role", "bq-staff-phone"].forEach(id => { const n = $(id); if (n) n.value = ""; });
+    openModal("m-staff");
+  };
+
+  window.bqAddStaff = function () {
+    const name = $("bq-staff-name").value.trim();
+    const role = $("bq-staff-role").value.trim();
+    const phone = $("bq-staff-phone").value.replace(/\D/g, "").slice(-10);
+    if (!name) { toast("⚠️", "Please enter a name"); return; }
+    if ($("bq-staff-phone").value.trim() && phone.length !== 10) {
+      toast("⚠️", "Enter a valid 10-digit phone number"); return;
+    }
+    const list = readStaff();
+    list.push({ id: "st" + Date.now(), name, role, phone });
+    if (!writeStaff(list)) return;
+    closeModal("m-staff");
+    bqLoadStaff();
+    toast("✅", name + " added to your team");
+  };
+
+  window.bqDeleteStaff = function (id) {
+    if (!confirm("Remove this team member?")) return;
+    writeStaff(readStaff().filter(m => m.id !== id));
+    bqLoadStaff();
+    toast("🗑️", "Team member removed");
+  };
+
+  /* ---------------- SETTINGS ---------------- */
+  const UPI_KEY = "barberUpi";
+  let pending = { "bq-shop-photo-preview": null, "bq-upi-qr-preview": null };
+
+  window.bqJump = function (id) {
+    const n = $(id);
+    if (n) n.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  window.bqRenderSettings = function () {
+    const b = (window.S && S.barber) || {};
+    setText("bq-settings-shop", b.shopName || "Not set");
+    setText("bq-settings-owner", b.name || "Not set");
+    setText("bq-settings-address", b.address || "Not set");
+    setText("bq-settings-hours", [b.openingTime, b.closingTime].filter(Boolean).join(" – ") || "Not set");
+
+    const photo = $("bq-shop-photo-preview");
+    if (photo && b.photo && !pending["bq-shop-photo-preview"]) { photo.src = b.photo; photo.hidden = false; }
+
+    let upi = {};
+    try { upi = JSON.parse(localStorage.getItem(UPI_KEY) || "{}"); } catch (e) {}
+    const idEl = $("bq-upi-id");
+    if (idEl && !idEl.value) idEl.value = upi.id || "";
+    const qr = $("bq-upi-qr-preview");
+    if (qr && upi.qr && !pending["bq-upi-qr-preview"]) { qr.src = upi.qr; qr.hidden = false; }
+  };
+
+  window.bqPreviewImage = function (input, previewId) {
+    const file = input && input.files && input.files[0];
+    const preview = $(previewId);
+    if (!file || !preview) return;
+    if (!/^image\/(png|jpe?g|webp)$/.test(file.type)) {
+      input.value = ""; toast("⚠️", "Please choose a JPG, PNG or WebP image"); return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      input.value = ""; toast("⚠️", "Image must be smaller than 5 MB"); return;
+    }
+    const reader = new FileReader();
+    reader.onload = e => {
+      preview.src = e.target.result;
+      preview.hidden = false;
+      pending[previewId] = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  window.bqSaveSettings = function () {
+    const msg = $("bq-settings-message");
+    const upiId = ($("bq-upi-id")?.value || "").trim();
+    const newPhoto = pending["bq-shop-photo-preview"];
+    const newQr = pending["bq-upi-qr-preview"];
+
+    if (upiId && !/^[\w.\-]{2,}@[A-Za-z]{2,}$/.test(upiId)) {
+      toast("⚠️", "Enter a valid UPI ID, e.g. name@bank"); return;
+    }
+    if (!newPhoto && !newQr && !upiId) {
+      if (msg) msg.textContent = "Choose a photo, QR code or enter a UPI ID first."; return;
+    }
+
+    const done = [];
+    if (newPhoto) {
+      S.barber.photo = newPhoto;
+      syncBarberToCustomerShop();
+      saveBarberProfileLocal();
+      renderBarberProfile();
+      pending["bq-shop-photo-preview"] = null;
+      done.push("shop photo");
+    }
+    if (newQr || upiId) {
+      let old = {};
+      try { old = JSON.parse(localStorage.getItem(UPI_KEY) || "{}"); } catch (e) {}
+      try {
+        localStorage.setItem(UPI_KEY, JSON.stringify({ id: upiId || old.id || "", qr: newQr || old.qr || "" }));
+        pending["bq-upi-qr-preview"] = null;
+        done.push("UPI details");
+      } catch (e) { toast("⚠️", "Could not save UPI details on this device"); }
+    }
+    if (msg) msg.textContent = "Saved: " + done.join(" and ") + ".";
+    if (done.length) toast("✅", "Settings saved");
+  };
+
+  /* ---------------- AUTO-REFRESH HOOKS ---------------- */
+  const visible = id => { const n = $(id); return n && n.style.display === "block"; };
+
+  const oldRenderBQ = window.renderBQ;
+  if (typeof oldRenderBQ === "function") {
+    window.renderBQ = function () {
+      const out = oldRenderBQ.apply(this, arguments);
+      if (visible("b-dashboard-tab")) bqRefreshOverview();
+      return out;
+    };
+  }
+
+  setInterval(() => {
+    if (S.role !== "barber") return;
+    if (visible("b-dashboard-tab")) bqRefreshOverview();
+    if (visible("b-staff-tab")) bqLoadStaff();
+  }, 4000);
+})();
+
+/* =========================================================
+   BARBERQ — QUEUE → BOOKINGS / CALENDAR BRIDGE
+   Every customer who joins the live queue becomes a booking.
+   Queue, services, analytics and profile code is untouched.
+   ========================================================= */
+(function () {
+  "use strict";
+
+  const $ = id => document.getElementById(id);
+  const pad = n => String(n).padStart(2, "0");
+  const isoDate = d => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+  const hhmm = d => pad(d.getHours()) + ":" + pad(d.getMinutes());
+  const esc = v => String(v == null ? "" : v).replace(/[&<>"']/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const OPEN = ["pending", "confirmed"];
+  const storeKey = shop => "barberBookings:" + shop;
+
+  let activeShop = "";
+  const doneIds = new Set();   // tokens the barber just pressed "Done" on
+
+  function readStore(shop) {
+    try { return JSON.parse(localStorage.getItem(storeKey(shop)) || "[]"); }
+    catch (e) { return []; }
+  }
+  function writeStore() {
+    if (!activeShop) return;
+    try {
+      localStorage.setItem(storeKey(activeShop),
+        JSON.stringify(window.bqAppointments.slice(-500)));
+    } catch (e) { console.warn("Could not save bookings:", e); }
+  }
+  const visible = id => { const n = $(id); return !!n && n.style.display === "block"; };
+
+  /* ---- sync live queue (S.bq) into bookings ---- */
+  function sync(reconcile) {
+    const shop = S.barber && S.barber.shopName;
+    if (!shop) return;
+
+    if (activeShop !== shop) {
+      activeShop = shop;
+      window.bqAppointments = readStore(shop);
+    }
+    if (!Array.isArray(window.bqAppointments)) window.bqAppointments = [];
+
+    const list = window.bqAppointments;
+    const live = Array.isArray(S.bq) ? S.bq : [];
+    const liveIds = new Set(live.map(q => String(q.id)));
+    let changed = false;
+
+    live.forEach(q => {
+      if (q.id == null) return;
+      const status = q.st === "cur" ? "confirmed" : "pending";
+      const found = list.find(a => String(a.id) === String(q.id));
+
+      if (!found) {
+        const now = new Date();
+        const dur = Number(q.dur) || 20;
+        const end = new Date(now.getTime() + dur * 60000);
+        list.push({
+          id: q.id, token: q.tok, customer: q.name, service: q.svc,
+          date: isoDate(now), start: hhmm(now), end: hhmm(end),
+          dur, status, source: "queue"
+        });
+        changed = true;
+      } else if (OPEN.includes(found.status) && found.status !== status) {
+        found.status = status;
+        changed = true;
+      }
+    });
+
+    // Entries that left the queue after a successful refresh
+    if (reconcile) {
+      list.forEach(a => {
+        if (a.source === "queue" && OPEN.includes(a.status) && !liveIds.has(String(a.id))) {
+          a.status = doneIds.has(String(a.id)) ? "completed" : "cancelled";
+          changed = true;
+        }
+      });
+    }
+
+    if (changed) writeStore();
+  }
+
+  function repaint() {
+    if (visible("b-bookings-tab")) window.bqRenderBookings();
+    if (visible("b-calendar-tab")) window.bqRenderCalendar();
+  }
+
+  /* ---- hook queue loading (runs every 5 s already) ---- */
+  const origLoad = window.loadBarberQueue;
+  window.loadBarberQueue = async function () {
+    const before = S.bq;
+    const result = await origLoad.apply(this, arguments);
+    const ok = S.bq !== before;      // S.bq is replaced only on a successful load
+    sync(ok);
+    repaint();
+    return result;
+  };
+
+  /* ---- remember which token the barber completed ---- */
+  const origDone = window.doneToken;
+  window.doneToken = async function () {
+    const cur = S.bq && S.bq[0];
+    if (cur && cur.id != null) doneIds.add(String(cur.id));
+    try { return await origDone.apply(this, arguments); }
+    finally { if (cur && cur.id != null) doneIds.delete(String(cur.id)); }
+  };
+
+  /* ---- BOOKINGS TABLE ---- */
+  window.bqRenderBookings = function () {
+    const body = $("bq-bookings-body");
+    if (!body) return;
+    sync(false);
+
+    const search = ($("bq-booking-search")?.value || "").trim().toLowerCase();
+    const filter = $("bq-booking-filter")?.value || "all";
+    const all = (window.bqAppointments || []).slice().reverse();   // newest first
+
+    const rows = all.filter(a =>
+      (filter === "all" || a.status === filter) &&
+      (!search || [a.customer, a.service, a.token].some(v =>
+        String(v || "").toLowerCase().includes(search))));
+
+    if (!rows.length) {
+      body.innerHTML = `<tr><td colspan="5" class="bq-empty">${
+        all.length ? "No bookings match your filters." : "No appointments yet."}</td></tr>`;
+      return;
+    }
+
+    body.innerHTML = rows.map(a => `
+      <tr>
+        <td><strong>${a.token != null ? "#" + esc(a.token) + " · " : ""}${esc(a.customer)}</strong></td>
+        <td>${esc(a.service)}</td>
+        <td>${esc(a.date)}<br><span class="bq-muted">${esc(a.start)}${a.end ? " – " + esc(a.end) : ""}</span></td>
+        <td><span class="bq-badge ${esc(a.status)}">${esc(a.status)}</span></td>
+        <td>
+          <select class="bq-status-select" onchange="bqSetStatus('${esc(a.id)}',this.value)">
+            ${["pending", "confirmed", "completed", "cancelled"].map(s =>
+              `<option value="${s}" ${s === a.status ? "selected" : ""}>${s}</option>`).join("")}
+          </select>
+        </td>
+      </tr>`).join("");
+  };
+
+  window.bqSetStatus = function (id, status) {
+    const a = (window.bqAppointments || []).find(x => String(x.id) === String(id));
+    if (!a) return;
+    a.status = status;
+    writeStore();
+    window.bqRenderBookings();
+    if (visible("b-calendar-tab")) window.bqRenderCalendar();
+    toast("✅", "Booking marked " + status);
+  };
+
+  /* ---- CALENDAR (hour range grows to include every booking) ---- */
+  let weekOffset = 0;
+  window.bqCalendarToday = function () { weekOffset = 0; window.bqRenderCalendar(); };
+  window.bqChangeWeek = function (dir) { weekOffset += Number(dir) || 0; window.bqRenderCalendar(); };
+
+  window.bqRenderCalendar = function () {
+    const grid = $("bq-calendar-grid");
+    const range = $("bq-calendar-range");
+    if (!grid || !range) return;
+    sync(false);
+
+    const today = new Date();
+    const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    start.setDate(start.getDate() - ((start.getDay() + 6) % 7) + weekOffset * 7);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    const fmt = d => d.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+    range.textContent = fmt(start) + " – " + fmt(end);
+
+    const dates = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(start); d.setDate(start.getDate() + i); return d;
+    });
+    const isoSet = new Set(dates.map(isoDate));
+    const weekItems = (window.bqAppointments || []).filter(a => isoSet.has(a.date));
+
+    const b = (window.S && S.barber) || {};
+    let openH = parseInt((b.openingTime || "09:00").split(":")[0], 10);
+    let closeH = parseInt((b.closingTime || "20:00").split(":")[0], 10);
+    if (!(openH >= 0 && closeH > openH)) { openH = 9; closeH = 20; }
+
+    weekItems.forEach(a => {
+      const h = parseInt(String(a.start || "").slice(0, 2), 10);
+      if (h >= 0) { openH = Math.min(openH, h); closeH = Math.max(closeH, h); }
+    });
+
+    let html = '<div class="bq-cal-head">Time</div>' + dates.map(d => `
+      <div class="bq-cal-head ${d.toDateString() === today.toDateString() ? "today" : ""}">
+        ${d.toLocaleDateString("en-IN", { weekday: "short" })}<b>${d.getDate()}</b>
+      </div>`).join("");
+
+    for (let h = openH; h <= closeH; h++) {
+      const hh = pad(h);
+      html += `<div class="bq-cal-time">${hh}:00</div>`;
+      dates.forEach(d => {
+        const iso = isoDate(d);
+        const events = weekItems.filter(a =>
+          a.date === iso && String(a.start || "").slice(0, 2) === hh);
+        html += `<div class="bq-cal-cell ${d.toDateString() === today.toDateString() ? "today" : ""}">
+          ${events.map(a => `
+            <div class="bq-event ${esc(a.status)}" title="${esc(a.service)} · ${esc(a.status)}">
+              <b>${a.token != null ? "#" + esc(a.token) + " " : ""}${esc(a.customer)}</b>${esc(a.start)} · ${esc(a.service)}
+            </div>`).join("")}
+        </div>`;
+      });
+    }
+    grid.innerHTML = html;
+  };
+
+  /* first pass in case the queue is already loaded */
+  sync(false);
+})();
+
+/* =========================================================
+   BARBERQ — KEEP SETTINGS "BUSINESS INFORMATION" IN SYNC
+   ========================================================= */
+(function () {
+  "use strict";
+
+  const settingsVisible = () => {
+    const n = document.getElementById("b-settings-tab");
+    return !!n && n.style.display === "block";
+  };
+
+  // saveBarberProfile(), updateShopPhoto() and the stats refresh all end by
+  // calling renderBarberProfile(), so hooking it covers every profile change.
+  const baseRenderBarberProfile = window.renderBarberProfile;
+  window.renderBarberProfile = function () {
+    const out = baseRenderBarberProfile.apply(this, arguments);
+    if (typeof window.bqRenderSettings === "function") window.bqRenderSettings();
+    return out;
+  };
+
+  // Also repaint right after the Save button, in case the profile was saved
+  // while another flow is running.
+  const baseSave = window.saveBarberProfile;
+  window.saveBarberProfile = function () {
+    const out = baseSave.apply(this, arguments);
+    if (settingsVisible() && typeof window.bqRenderSettings === "function") {
+      window.bqRenderSettings();
+    }
+    return out;
+  };
+
+  // Fill the boxes immediately if the tab is already open when this loads.
+  if (settingsVisible()) window.bqRenderSettings();
+})();
+window.S = S;   // expose the state object so the add-on code can read S.barber
+
+/* =========================================================
+   BARBERQ — LIVE WAIT ESTIMATE FROM THE QUEUE
+   Wait for a new customer = total duration of everyone in the queue.
+   ========================================================= */
+(function () {
+  "use strict";
+
+  function liveWait() {
+    const q = Array.isArray(S.bq) ? S.bq : [];
+    return q.reduce((t, c) => t + (Number(c.dur) || 0), 0);
+  }
+
+  function paintWait() {
+    if (S.role !== "barber") return;
+    const w = liveWait();
+    ["b-wait", "bq-overview-wait"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el && el.textContent !== String(w)) el.textContent = w;
+    });
+  }
+
+  // repaint whenever the queue or dashboard re-renders
+  const baseRenderBQ = window.renderBQ;
+  window.renderBQ = function () {
+    const out = baseRenderBQ.apply(this, arguments);
+    paintWait();
+    return out;
+  };
+
+  const baseOverview = window.bqRefreshOverview;
+  if (typeof baseOverview === "function") {
+    window.bqRefreshOverview = function () {
+      const out = baseOverview.apply(this, arguments);
+      paintWait();
+      return out;
+    };
+  }
+
+  // the backend refresh runs on its own 6-second timer and overwrites the
+  // value, so correct it again every second
+  setInterval(paintWait, 1000);
+  paintWait();
+})();
+
+/* =========================================================
+   BARBERQ — DEMO CUSTOMER MUST REGISTER BEFORE RATING
+   Registered (OTP-login) customers are not affected.
+   ========================================================= */
+(function () {
+  "use strict";
+
+  const $ = id => document.getElementById(id);
+  const digits10 = p => String(p || "").replace(/\D/g, "").slice(-10);
+  const isDemo = () => digits10(S.user && S.user.phone).length !== 10;
+
+  let allowRate = false;   // lets the rating modal open right after registering
+
+  /* ---- build the registration modal once ---- */
+  function ensureModal() {
+    if ($("m-demoreg")) return;
+    const wrap = document.createElement("div");
+    wrap.className = "overlay";
+    wrap.id = "m-demoreg";
+    wrap.innerHTML = `
+      <div class="modal">
+        <div style="font-size:20px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:6px;">Register to leave a rating</div>
+        <p style="color:var(--txt2);font-size:13px;margin:0 0 18px;line-height:1.5">
+          Please add your name and phone number first. Your visit and rating will be saved to your profile.</p>
+        <div style="margin-bottom:14px">
+          <label>Full Name</label>
+          <input class="inp" id="demoreg-name" type="text" maxlength="50" placeholder="Your name">
+        </div>
+        <div style="margin-bottom:20px">
+          <label>Phone Number</label>
+          <input class="inp" id="demoreg-phone" type="tel" maxlength="10" inputmode="numeric" placeholder="10-digit mobile number">
+        </div>
+        <div style="display:flex;gap:10px;">
+          <button class="btn btn-outline" style="flex:1" type="button" id="demoreg-cancel">Cancel</button>
+          <button class="btn btn-gold" style="flex:1" type="button" id="demoreg-save">Register &amp; Rate</button>
+        </div>
+      </div>`;
+    document.body.appendChild(wrap);
+
+    $("demoreg-cancel").addEventListener("click", () => {
+      closeModal("m-demoreg");
+      toast("ℹ️", "Register to leave a rating");
+    });
+    $("demoreg-save").addEventListener("click", registerDemo);
+    $("demoreg-phone").addEventListener("input", e => {
+      e.target.value = e.target.value.replace(/\D/g, "").slice(0, 10);
+    });
+    wrap.addEventListener("keydown", e => { if (e.key === "Enter") registerDemo(); });
+  }
+
+  function openRegister() {
+    ensureModal();
+    $("demoreg-name").value = (S.user && S.user.name && S.user.name !== "Customer") ? S.user.name : "";
+    $("demoreg-phone").value = "";
+    openModal("m-demoreg");
+    setTimeout(() => $("demoreg-name").focus(), 100);
+  }
+
+  /* ---- save the new customer, keep this visit, merge any old record ---- */
+  function registerDemo() {
+    const name = $("demoreg-name").value.trim();
+    const phone = $("demoreg-phone").value.replace(/\D/g, "");
+
+    if (name.length < 2) { toast("⚠️", "Please enter your name"); $("demoreg-name").focus(); return; }
+    if (!/^\d{10}$/.test(phone)) { toast("⚠️", "Enter a valid 10-digit phone number"); $("demoreg-phone").focus(); return; }
+
+    const existing = getAllCustomers()[phone];
+
+    S.user.name = name;
+    S.user.phone = "+91 " + phone;
+    if (!S.user.location || S.user.location === "Not set") {
+      S.user.location = (existing && existing.location) || "Not set";
+    }
+
+    // if this number already has a saved profile, keep its history too
+    if (existing) {
+      const merge = (mine, theirs, keyOf) => {
+        const seen = new Set((mine || []).map(keyOf));
+        (theirs || []).forEach(x => { if (!seen.has(keyOf(x))) mine.push(x); });
+        return mine;
+      };
+      S.queueHistory = merge(S.queueHistory || [], existing.queueHistory, v => String(v.entryId || v.timestamp));
+      S.ratedShops = merge(S.ratedShops || [], existing.ratedShops, r => String(r.shopId));
+      S.payments = merge(S.payments || [], existing.payments, p => String(p.id));
+      S.paymentMethods = Array.from(new Set([...(S.paymentMethods || []), ...(existing.paymentMethods || [])]));
+    }
+
+    if (!saveCurrentCustomer()) return;
+    updateUserAvatar();
+    closeModal("m-demoreg");
+    toast("✅", "Registered — please rate your visit");
+
+    // now show the rating form
+    allowRate = true;
+    try { openModal("m-rate"); } finally { allowRate = false; }
+  }
+
+  /* ---- gate the rating modal ---- */
+  const baseOpenModal = openModal;
+  openModal = function (id) {
+    if (id === "m-rate" && !allowRate && isDemo()) {
+      openRegister();
+      return;
+    }
+    baseOpenModal(id);
+  };
+
+  /* ---- safety net: never submit a rating without a registered number ---- */
+  const baseSubmitRating = submitRating;
+  submitRating = function () {
+    if (isDemo()) {
+      closeModal("m-rate");
+      openRegister();
+      return;
+    }
+    return baseSubmitRating.apply(this, arguments);
+  };
+
+  /* ---- send the customer's name/phone along with the rating ---- */
+  const baseFetch = window.fetch.bind(window);
+  window.fetch = function (url, opts) {
+    try {
+      if (typeof url === "string" && /\/api\/ratings$/.test(url) &&
+          opts && typeof opts.body === "string") {
+        const body = JSON.parse(opts.body);
+        body.customer_name = S.user.name || "";
+        body.customer_phone = digits10(S.user.phone);
+        opts = Object.assign({}, opts, { body: JSON.stringify(body) });
+      }
+    } catch (e) {}
+    return baseFetch(url, opts);
+  };
+})();
+
+(function () {
+  "use strict";
+
+  const $ = id => document.getElementById(id);
+  const LABEL = { male: "👨 Men", female: "👩 Women", unisex: "👥 Unisex" };
+  const genderOf = s => (s && s.gender) || "unisex";
+
+  const DEMO_TYPES = {
+    "royal cuts": "male",
+    "the blade room": "male",
+    "style studio": "unisex",
+    "classic barber": "male"
+  };
+  S.shops.forEach(s => {
+    if (!s.gender) s.gender = DEMO_TYPES[String(s.name).toLowerCase()] || "unisex";
+  });
+
+  function ensureTypeField() {
+    if ($("bp-type")) return;
+    const shopInput = $("bp-shop");
+    if (!shopInput) return;
+    const box = document.createElement("div");
+    box.innerHTML = `
+      <label>Shop Type</label>
+      <select class="inp" id="bp-type">
+        <option value="male">Male (men only)</option>
+        <option value="female">Female (women only)</option>
+        <option value="unisex">Unisex (men &amp; women)</option>
+      </select>`;
+    shopInput.parentElement.insertAdjacentElement("afterend", box);
+  }
+
+  const baseEdit = window.editBarberProfile;
+  window.editBarberProfile = function () {
+    ensureTypeField();
+    const out = baseEdit.apply(this, arguments);
+    const sel = $("bp-type");
+    if (sel) sel.value = (S.barber && S.barber.shopType) || "unisex";
+    return out;
+  };
+
+  // 2) save it with the rest of the profile (it is persisted by saveBarberProfileLocal)
+  const baseSave = window.saveBarberProfile;
+  window.saveBarberProfile = function () {
+    const sel = $("bp-type");
+    const prev = S.barber.shopType;
+    if (sel) S.barber.shopType = sel.value;
+    const out = baseSave.apply(this, arguments);
+    const modal = $("m-editbarber");
+    if (modal && modal.classList.contains("open")) S.barber.shopType = prev; // validation failed
+    return out;
+  };
+
+  // 3) copy it onto the public shop that customers see
+  const baseSync = window.syncBarberToCustomerShop;
+  window.syncBarberToCustomerShop = function () {
+    const out = baseSync.apply(this, arguments);
+    const shop = S.shops.find(s => s.isBarberProfile);
+    if (shop) {
+      const g = (S.barber && S.barber.shopType) || "unisex";
+      if (shop.gender !== g) {
+        shop.gender = g;
+        publishBarberShop();
+      }
+    }
+    return out;
+  };
+
+  const baseSettings = window.bqRenderSettings;
+  window.bqRenderSettings = function () {
+    const out = baseSettings.apply(this, arguments);
+    const grid = document.querySelector("#b-settings-tab .bq-shop-info");
+    if (grid) {
+      if (!$("bq-settings-type")) {
+        const d = document.createElement("div");
+        d.innerHTML = '<span>Shop type</span><strong id="bq-settings-type"></strong>';
+        grid.appendChild(d);
+      }
+      const g = (S.barber && S.barber.shopType) || "";
+      $("bq-settings-type").textContent = g ? LABEL[g] : "Not set";
+    }
+    return out;
+  };
+
+  S.genderFilter = S.genderFilter || "all";
+
+  function genderMatch(s) {
+    const f = S.genderFilter;
+    if (f === "all") return true;
+    const g = genderOf(s);
+    if (f === "unisex") return g === "unisex";
+    return g === f || g === "unisex";
+  }
+
+  const baseVisible = window.bqVisibleShops;
+  window.bqVisibleShops = function () {
+    return baseVisible.apply(this, arguments).filter(genderMatch);
+  };
+
+  function decorateCards() {
+    document.querySelectorAll("#shop-list .shop-card").forEach(card => {
+      if (card.querySelector("[data-gender-tag]")) return;
+      const m = /openShop\((\d+)\)/.exec(card.getAttribute("onclick") || "");
+      const shop = m && S.shops.find(s => s.id === Number(m[1]));
+      const row = card.querySelector(".tag.tgray");
+      if (!shop || !row) return;
+      const t = document.createElement("span");
+      t.className = "tag tgray";
+      t.setAttribute("data-gender-tag", "1");
+      t.textContent = LABEL[genderOf(shop)];
+      row.parentElement.appendChild(t);
+    });
+  }
+
+  const baseRenderShops = window.renderShops;
+  window.renderShops = function () {
+    const out = baseRenderShops.apply(this, arguments);
+    decorateCards();
+    return out;
+  };
+
+  const CHIPS = [
+    { key: "male", text: "👨 Male" },
+    { key: "female", text: "👩 Female" },
+    { key: "unisex", text: "👥 Unisex" }
+  ];
+
+  (async function addGenderChips() {
+    try { await componentsReady; } catch (e) { return; }
+    const home = $("cust-home");
+    if (!home) return;
+
+    const existing = [...home.querySelectorAll("span.tag")].filter(el =>
+      /All|Top Rated|Nearby|Open Now/.test(el.textContent));
+    if (!existing.length || home.querySelector("[data-gender]")) return;
+
+    const last = existing[existing.length - 1];
+    const allChip = existing.find(el => /^\s*All\s*$/.test(el.textContent));
+    if (last.parentElement) last.parentElement.style.overflowX = "auto";
+
+    let anchor = last;
+    const mine = CHIPS.map(c => {
+      const el = document.createElement("span");
+      el.className = "tag tgray";
+      el.dataset.gender = c.key;
+      el.textContent = c.text;
+      el.style.cssText = "cursor:pointer;flex-shrink:0;white-space:nowrap";
+      anchor.insertAdjacentElement("afterend", el);
+      anchor = el;
+      return el;
+    });
+
+    const paint = () => {
+      mine.forEach(el => {
+        el.className = "tag " + (el.dataset.gender === S.genderFilter ? "tg" : "tgray");
+      });
+      if (allChip && S.genderFilter !== "all") allChip.className = "tag tgray";
+    };
+
+    mine.forEach(el => el.addEventListener("click", () => {
+      S.genderFilter = S.genderFilter === el.dataset.gender ? "all" : el.dataset.gender;
+      renderShops();
+      paint();
+    }));
+
+    existing.forEach(el => el.addEventListener("click", () => {
+      if (el === allChip) S.genderFilter = "all";
+      setTimeout(() => { renderShops(); paint(); }, 0);
+    }));
+
+    paint();
+  })();
+})();
+
+(function () {
+  "use strict";
+  const $ = id => document.getElementById(id);
+  const isNewShop = () => !(S.barber && S.barber.shopName);
+  function prepareTypeField() {
+    const sel = $("bp-type");
+    if (!sel) return;
+
+    if (!sel.querySelector('option[value=""]')) {
+      const ph = document.createElement("option");
+      ph.value = "";
+      ph.disabled = true;
+      ph.textContent = "Select shop type…";
+      sel.insertBefore(ph, sel.firstChild);
+    }
+    const label = sel.parentElement.querySelector("label");
+    if (label && !/\*/.test(label.textContent)) label.textContent = "Shop Type *";
+
+    sel.value = (S.barber && S.barber.shopType) || "";
+  }
+
+  function setRegistrationMode() {
+    const modal = $("m-editbarber");
+    if (!modal) return;
+    const title = modal.querySelector(".modal > div");
+    const saveBtn = modal.querySelector("button.btn-gold");
+    const reg = isNewShop();
+    if (title) title.textContent = reg ? "Register Your Shop" : "Edit Barber Profile";
+    if (saveBtn) saveBtn.textContent = reg ? "Register Shop" : "Save Changes";
+  }
+
+  const baseEdit = window.editBarberProfile;
+  window.editBarberProfile = function () {
+    const out = baseEdit.apply(this, arguments);
+    prepareTypeField();
+    setRegistrationMode();
+    return out;
+  };
+  const baseSave = window.saveBarberProfile;
+  window.saveBarberProfile = function () {
+    const sel = $("bp-type");
+    if (sel && !sel.value) {
+      toast("⚠️", "Please select your shop type (Male, Female or Unisex)");
+      sel.focus();
+      return;
+    }
+    const wasNew = isNewShop();
+    const out = baseSave.apply(this, arguments);
+    if (wasNew && !isNewShop()) toast("🎉", "Your shop is registered!");
+    return out;
+  };
+
+  const baseGo = window.go;
+  window.go = function (id) {
+    const out = baseGo.apply(this, arguments);
+    if (id === "s-barb" && S.role === "barber" && isNewShop()) {
+      setTimeout(() => {
+        const modal = $("m-editbarber");
+        if (modal && !modal.classList.contains("open")) window.editBarberProfile();
+      }, 400);
+    }
+    return out;
   };
 })();
