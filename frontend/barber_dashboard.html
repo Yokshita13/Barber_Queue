@@ -1,511 +1,3 @@
-<!-- <!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>BarberQ: A Smart Digital Queue Management System</title>
-
-    <link
-        href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,400&display=swap"
-        rel="stylesheet">
-
-    <link rel="stylesheet" href="style.css">
-</head>
-
-<body>
-    <div class="screen" id="s-barb">
-        <div class="nav">
-            <div class="nav-brand">Glowora</div>
-            <div style="display:flex; align-items:center; gap:10px;">
-                <span id="shop-status" class="tag tgreen pulse" style="cursor:pointer" onclick="toggleShop()">●Open</span>
-                <div id="barber-top-avatar" class="av" style="width:36px; height:36px; background:var(--cdim); border:2px solid var(--cyan); color:var(--cyan); font-size:14px; cursor:pointer;display:flex; align-items:center; justify-content:center; overflow:hidden;"onclick="bTab('profile',document.querySelector('#b-tabs .tab:last-child'))">B</div>
-            </div>
-        </div>
-        <div class="scroll pad pad-b" id="b-queue-tab">
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px;">
-                <div class="stat">
-                    <div style="font-size:20px;margin-bottom:4px">👥</div>
-                    <div class="stat-n" style="color:var(--gold)" id="b-inq">0</div>
-                    <div class="stat-l">In Queue</div>
-                </div>
-                <div class="stat">
-                    <div style="font-size:20px;margin-bottom:4px">✅</div>
-                    <div class="stat-n" style="color:var(--green)" id="b-done">0</div>
-                    <div class="stat-l">Done Today</div>
-                </div>
-                <div class="stat">
-                    <div style="font-size:20px;margin-bottom:4px">💰</div>
-                    <div class="stat-n" style="font-size:20px;color:var(--gold)" id="b-earn">₹0</div>
-                    <div class="stat-l">Today's Earnings</div>
-                    <div class="pbar">
-                        <div class="pfill" style="width:0%"></div>
-                    </div>
-                </div>
-                <div class="stat">
-                    <div style="font-size:20px;margin-bottom:4px">⏱️</div>
-                    <div class="stat-n" id="b-wait">28</div>
-                    <div class="stat-l">Avg Wait (min)</div>
-                </div>
-            </div>
-            <div style="font-size:18px; font-weight:700; font-family:'Syne',sans-serif; margin-bottom:14px;">Live Queue
-            </div>
-            <div id="b-qlist"></div>
-            <button class="btn btn-outline btn-full" style="margin-top:4px" onclick="openWalkinModal()">Add Walk-in
-                Customer</button>
-        </div>
-        <div class="scroll pad pad-b" id="b-svc-tab" style="display:none">
-            <div style="font-size:20px; font-weight:800; font-family:'Syne',sans-serif; margin-bottom:18px;">Services
-            </div>
-            <div id="b-svclist"></div>
-            <button class="btn btn-outline btn-full" style="margin-top:12px" onclick="openModal('m-svc')">Add
-                Service</button>
-        </div>
-        <div class="scroll pad pad-b" id="b-analytics-tab" style="display:none">
-            <div style="font-size:20px; font-weight:800; font-family:'Syne',sans-serif; margin-bottom:18px;">Analytics
-            </div>
-            <div id="b-analytics"></div>
-            <div style="height:20px"></div>
-        </div>
-        <div class="scroll pad pad-b" id="b-profile-tab" style="display:none">
-            <div style="margin-bottom:20px;">
-                <button onclick="bTab('queue', document.querySelector('#b-tabs .tab:first-child'))"
-                    style="background:none; border:none; color:var(--txt2); font-size:14px; cursor:pointer; padding:0;">←
-                    Back</button>
-            </div>
-            <div style="text-align:center;margin-bottom:24px;">
-                <div id="barber-profile-photo" class="av"
-                    style="width:82px; height:82px; margin:0 auto 12px; background:var(--cdim); border:2px solid var(--cyan); color:var(--cyan); font-size:28px;display:flex; align-items:center; justify-content:center;">
-                    B</div>
-                <div id="barber-profile-name" style="font-size:22px; font-weight:800; font-family:'Syne',sans-serif;">
-                    Not set
-                </div>
-                <div id="barber-profile-shop" style="color:var(--txt2);margin-top:5px;">Shop name not set</div>
-            </div>
-            <div style="font-size:17px; font-weight:700; font-family:'Syne',sans-serif; margin-bottom:12px;">Personal
-                Information</div>
-            <div class="card" style="margin-bottom:20px">
-                <div style="margin-bottom:16px">
-                    <div class="stat-l">Full Name</div>
-                    <div id="barber-profile-fullname" style="margin-top:4px; font-weight:600;">Not set</div>
-                </div>
-                <div>
-                    <div class="stat-l">Phone Number</div>
-                    <div id="barber-profile-phone" style="margin-top:4px; font-weight:600;">Not set</div>
-                </div>
-            </div>
-            <div style="font-size:17px; font-weight:700;font-family:'Syne',sans-serif; margin-bottom:12px;">Shop
-                Information
-            </div>
-            <div class="card" style="margin-bottom:20px">
-                <div style="margin-bottom:16px">
-                    <div class="stat-l">Shop Name</div>
-                    <div id="barber-profile-shopname" style="margin-top:4px; font-weight:600;">Not set</div>
-                </div>
-                <div style="margin-bottom:16px">
-                    <div class="stat-l">Address</div>
-                    <div id="barber-profile-address" style="margin-top:4px;font-weight:600;">Not set</div>
-                </div>
-                <div>
-                    <div class="stat-l">Opening Hours</div>
-                    <div id="barber-profile-hours" style="margin-top:4px;font-weight:600;">Not set</div>
-                </div>
-            </div>
-            <div style="font-size:17px;font-weight:700;font-family:'Syne',sans-serif;margin-bottom:12px;">Customer
-                Rating
-            </div>
-            <div class="card" style="margin-bottom:20px">
-                <div id="barber-profile-rating" style="font-size:20px;font-weight:800;">No ratings yet</div>
-                <div id="barber-profile-rating-count" style="color:var(--txt2);margin-top:5px;">0 reviews</div>
-                <div style="font-size:12px;color:var(--txt2);margin-top:10px;">Rating is calculated automatically from
-                    customer
-                    reviews.</div>
-            </div>
-            <div style="font-size:17px;font-weight:700;font-family:'Syne',sans-serif;margin-bottom:12px;">Payout
-                Information
-            </div>
-            <div class="card" style="margin-bottom:20px">
-                <div style="margin-bottom:16px">
-                    <div class="stat-l">Bank Account</div>
-                    <div id="barber-profile-bank" style="margin-top:4px;font-weight:600;">Not set</div>
-                </div>
-                <div>
-                    <div class="stat-l">Online Payments Collected</div>
-                    <div id="barber-profile-online"
-                        style="margin-top:4px;font-size:20px;font-weight:800;color:var(--gold);">₹0
-                    </div>
-                </div>
-            </div>
-            <div style="font-size:17px;font-weight:700;font-family:'Syne',sans-serif;margin-bottom:12px;">Account</div>
-            <button class="btn btn-outline btn-full" style="margin-bottom:10px" onclick="editBarberProfile()">Edit
-                Profile</button>
-            <button class="btn btn-outline btn-full" style="margin-bottom:10px" onclick="updateShopPhoto()">Update Shop
-                Photo</button>
-            <button class="btn btn-outline btn-full" style="margin-bottom:10px" onclick="logoutBarber()">Logout</button>
-            <button class="btn btn-outline btn-full" style="color:#ff6b6b;border-color:#ff6b6b"
-                onclick="deleteBarberAccount()">Delete Account</button>
-        </div>
-        <div class="scroll pad pad-b bq-new-tab" id="b-dashboard-tab" style="display:none">
-            <div class="bq-heading-row">
-                <div>
-                    <p class="bq-eyebrow">YOUR SHOP AT A GLANCE</p>
-                    <h2 class="bq-title">Dashboard</h2>
-                    <p class="bq-muted">Your daily overview and shop activity.</p>
-                </div>
-                <button class="btn btn-outline" onclick="bqRefreshOverview()">↻ Refresh</button>
-            </div>
-
-            <div class="bq-stat-grid">
-                <article class="bq-stat-card">
-                    <span class="bq-stat-icon bq-blue">♙</span>
-                    <span class="bq-stat-label">Customers in queue</span>
-                    <strong id="bq-overview-queue">0</strong>
-                    <small>Live queue</small>
-                </article>
-                <article class="bq-stat-card">
-                    <span class="bq-stat-icon bq-green">✓</span>
-                    <span class="bq-stat-label">Completed today</span>
-                    <strong id="bq-overview-done">0</strong>
-                    <small>Completed visits</small>
-                </article>
-                <article class="bq-stat-card">
-                    <span class="bq-stat-icon bq-gold">₹</span>
-                    <span class="bq-stat-label">Today's earnings</span>
-                    <strong id="bq-overview-revenue">₹0</strong>
-                    <small>Based on existing earnings</small>
-                </article>
-                <article class="bq-stat-card">
-                    <span class="bq-stat-icon bq-purple">◷</span>
-                    <span class="bq-stat-label">Average wait</span>
-                    <strong><span id="bq-overview-wait">—</span><small> min</small></strong>
-                    <small>Queue estimate</small>
-                </article>
-            </div>
-
-            <div class="bq-panel">
-                <div class="bq-panel-head">
-                    <div>
-                        <h3>Live queue status</h3>
-                        <p class="bq-muted">Customers currently waiting for service.</p>
-                    </div>
-                    <button class="btn btn-outline btn-sm"
-                        onclick="bTab('queue',document.querySelector('#b-tabs .tab'))">
-                        Manage queue →
-                    </button>
-                </div>
-                <div id="bq-overview-queue-list" class="bq-queue-list">
-                    <p class="bq-muted">Open the dashboard to load your queue.</p>
-                </div>
-            </div>
-
-            <div class="bq-panel">
-                <div class="bq-panel-head">
-                    <div>
-                        <h3>Quick actions</h3>
-                        <p class="bq-muted">Get to your most-used tools quickly.</p>
-                    </div>
-                </div>
-                <div class="bq-quick-grid">
-                    <button class="bq-quick-action" onclick="bTab('queue',null)">
-                        <span>♙</span><strong>Manage queue</strong><small>Waiting customers</small>
-                    </button>
-                    <button class="bq-quick-action" onclick="bTab('bookings',null)">
-                        <span>▤</span><strong>View bookings</strong><small>Appointments list</small>
-                    </button>
-                    <button class="bq-quick-action" onclick="bTab('calendar',null)">
-                        <span>▦</span><strong>Open calendar</strong><small>Daily schedule</small>
-                    </button>
-                    <button class="bq-quick-action" onclick="bTab('settings',null)">
-                        <span>⚙</span><strong>Shop settings</strong><small>Photos and QR code</small>
-                    </button>
-                </div>
-            </div>
-        </div>
-        <div class="scroll pad pad-b bq-new-tab" id="b-bookings-tab" style="display:none">
-            <div class="bq-heading-row">
-                <div>
-                    <p class="bq-eyebrow">APPOINTMENT MANAGEMENT</p>
-                    <h2 class="bq-title">Bookings</h2>
-                    <p class="bq-muted">Review appointments and update their status.</p>
-                </div>
-                <button class="btn btn-outline" onclick="bqLoadBookings()">↻ Refresh</button>
-            </div>
-
-            <div class="bq-filter-row">
-                <input class="inp" id="bq-booking-search" placeholder="Search customer or service..."
-                    oninput="bqRenderBookings()">
-                <select class="inp" id="bq-booking-filter" onchange="bqRenderBookings()">
-                    <option value="all">All statuses</option>
-                    <option value="pending">Pending</option>
-                    <option value="confirmed">Confirmed</option>
-                    <option value="completed">Completed</option>
-                    <option value="cancelled">Cancelled</option>
-                </select>
-            </div>
-
-            <div class="bq-panel">
-                <div class="bq-table-wrap">
-                    <table class="bq-table">
-                        <thead>
-                            <tr>
-                                <th>Customer</th>
-                                <th>Service</th>
-                                <th>Date / Time</th>
-                                <th>Status</th>
-                                <th>Manage</th>
-                            </tr>
-                        </thead>
-                        <tbody id="bq-bookings-body">
-                            <tr>
-                                <td colspan="5" class="bq-empty">
-                                    Booking data will appear here when connected to your appointment API.
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <p class="bq-muted bq-footnote">
-                Booking status changes require a working appointment endpoint; the existing queue is kept separate.
-            </p>
-        </div>
-        <div class="scroll pad pad-b bq-new-tab" id="b-calendar-tab" style="display:none">
-            <div class="bq-heading-row">
-                <div>
-                    <p class="bq-eyebrow">PLAN YOUR DAY</p>
-                    <h2 class="bq-title">Calendar</h2>
-                    <p class="bq-muted">A weekly view of your scheduled appointments.</p>
-                </div>
-                <button class="btn btn-outline" onclick="bqCalendarToday()">Today</button>
-            </div>
-
-            <div class="bq-panel">
-                <div class="bq-calendar-toolbar">
-                    <button class="btn btn-outline btn-sm" onclick="bqChangeWeek(-1)">←</button>
-                    <strong id="bq-calendar-range">This week</strong>
-                    <button class="btn btn-outline btn-sm" onclick="bqChangeWeek(1)">→</button>
-                </div>
-                <div id="bq-calendar-grid" class="bq-calendar-grid"></div>
-                <p class="bq-muted bq-footnote">
-                    Calendar appointments will populate when booking data is connected.
-                </p>
-            </div>
-        </div>
-        <div class="scroll pad pad-b bq-new-tab" id="b-staff-tab" style="display:none">
-            <div class="bq-heading-row">
-                <div>
-                    <p class="bq-eyebrow">YOUR TEAM</p>
-                    <h2 class="bq-title">Staff</h2>
-                    <p class="bq-muted">Manage team members and availability.</p>
-                </div>
-                <button class="btn btn-outline" onclick="bqLoadStaff()">↻ Refresh</button>
-            </div>
-
-            <div class="bq-panel">
-                <div class="bq-panel-head">
-                    <div>
-                        <h3>Team members</h3>
-                        <p class="bq-muted">Staff data is loaded only when a real staff API is available.</p>
-                    </div>
-                </div>
-                <div id="bq-staff-grid" class="bq-staff-grid">
-                    <div class="bq-empty-card">
-                        <span>♙</span>
-                        <strong>Staff list</strong>
-                        <p>Connect a staff endpoint to display registered barbers, availability and assignments.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="scroll pad pad-b bq-new-tab" id="b-settings-tab" style="display:none">
-            <div class="bq-heading-row">
-                <div>
-                    <p class="bq-eyebrow">SHOP PREFERENCES</p>
-                    <h2 class="bq-title">Settings</h2>
-                    <p class="bq-muted">Manage your shop details, photos and payment QR code.</p>
-                </div>
-            </div>
-
-            <div class="bq-panel">
-                <div class="bq-panel-head">
-                    <div>
-                        <h3>Shop information</h3>
-                        <p class="bq-muted">Your current profile remains the source of truth.</p>
-                    </div>
-                    <button class="btn btn-outline btn-sm" onclick="editBarberProfile()">Edit profile ↗</button>
-                </div>
-                <div class="bq-shop-info">
-                    <div><span>Shop name</span><strong id="bq-settings-shop">Not set</strong></div>
-                    <div><span>Owner / barber</span><strong id="bq-settings-owner">Not set</strong></div>
-                    <div><span>Address</span><strong id="bq-settings-address">Not set</strong></div>
-                    <div><span>Opening hours</span><strong id="bq-settings-hours">Not set</strong></div>
-                </div>
-            </div>
-
-            <div class="bq-panel">
-                <div class="bq-panel-head">
-                    <div>
-                        <h3>Shop photo</h3>
-                        <p class="bq-muted">Preview an image before uploading it.</p>
-                    </div>
-                </div>
-                <div class="bq-upload-area">
-                    <img id="bq-shop-photo-preview" alt="Shop photo preview" hidden>
-                    <label class="bq-upload-button" for="bq-shop-photo-file">＋ Choose shop photo</label>
-                    <input id="bq-shop-photo-file" type="file" accept="image/*"
-                        onchange="bqPreviewImage(this,'bq-shop-photo-preview')">
-                    <p class="bq-muted">Choose a JPG, PNG or WebP image.</p>
-                    <button class="btn btn-outline" onclick="updateShopPhoto()">Open existing shop-photo upload</button>
-                </div>
-            </div>
-
-            <div class="bq-panel">
-                <div class="bq-panel-head">
-                    <div>
-                        <h3>UPI payment QR code</h3>
-                        <p class="bq-muted">Preview your own QR code for customers to scan.</p>
-                    </div>
-                </div>
-                <div class="bq-upload-area">
-                    <img id="bq-upi-qr-preview" alt="UPI QR code preview" hidden>
-                    <label class="bq-upload-button" for="bq-upi-qr-file">＋ Choose UPI QR code</label>
-                    <input id="bq-upi-qr-file" type="file" accept="image/*"
-                        onchange="bqPreviewImage(this,'bq-upi-qr-preview')">
-                    <label for="bq-upi-id">UPI ID</label>
-                    <input class="inp" id="bq-upi-id" placeholder="yourname@bank">
-                    <p class="bq-muted">
-                        Selecting a file previews it in this browser. Server upload and persistence need the matching
-                        backend endpoint.
-                    </p>
-                    <button class="btn btn-primary" onclick="bqSaveSettingsNotice()">Save settings</button>
-                    <p id="bq-settings-message" class="bq-muted" role="status"></p>
-                </div>
-            </div>
-        </div>
-
-        <div class="tabs" id="b-tabs">
-            <button class="tab" onclick="bTab('dashboard',this)">
-                <span class="tab-ico">▦</span>Dashboard
-            </button>
-            <button class="tab" onclick="bTab('svc',this)">
-                <span class="tab-ico">✂️</span>Services
-            </button>
-            <button class="tab on" onclick="bTab('queue',this)">
-                <span class="tab-ico">📋</span>Queue
-            </button>
-            <button class="tab" onclick="bTab('analytics',this)">
-                <span class="tab-ico">📊</span>Analytics
-            </button>
-            <button class="tab" onclick="bTab('bookings',this)">
-                <span class="tab-ico">▤</span>Bookings
-            </button>
-            <button class="tab" onclick="bTab('calendar',this)">
-                <span class="tab-ico">▦</span>Calendar
-            </button>
-            <button class="tab" onclick="bTab('staff',this)">
-                <span class="tab-ico">♙</span>Staff
-            </button>
-            <button class="tab" onclick="bTab('profile',this)">
-                <span class="tab-ico">👤</span>Profile
-            </button>
-            <button class="tab" onclick="bTab('settings',this)">
-                <span class="tab-ico">⚙</span>Settings
-            </button>
-        </div>
-    </div>
-    <div class="overlay" id="m-editbarber">
-        <div class="modal">
-            <div style="font-size:20px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:18px;">Edit Barber
-                Profile
-            </div>
-            <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:20px;">
-                <div>
-                    <label>Full Name</label>
-                    <input class="inp" id="bp-name" type="text" placeholder="Your full name" maxlength="50">
-                </div>
-                <div>
-                    <label>Phone Number</label>
-                    <input class="inp" id="bp-phone" type="tel" maxlength="10" inputmode="numeric">
-                </div>
-                <div>
-                    <label>Shop Name</label>
-                    <input class="inp" id="bp-shop" type="text" placeholder="Your shop name" maxlength="60">
-                </div>
-                <div>
-                    <label>Shop Address</label>
-                    <input class="inp" id="bp-address" type="text" maxlength="120">
-                </div>
-                <div>
-                    <label>Opening Time</label>
-                    <input class="inp" id="bp-open" type="time">
-                </div>
-                <div>
-                    <label>Closing Time</label>
-                    <input class="inp" id="bp-close" type="time">
-                </div>
-                <div>
-                    <label>Bank Name</label>
-                    <input class="inp" id="bp-bank" type="text" placeholder="e.g. HDFC Bank" maxlength="50">
-                </div>
-                <div>
-                    <label>Account Last 4 Digits</label>
-                    <input class="inp" id="bp-last4" type="tel" maxlength="4" inputmode="numeric">
-                </div>
-            </div>
-            <div
-                style="padding:10px 12px;margin-bottom:18px;border-radius:var(--r);background:var(--s2);color:var(--txt2);font-size:12px;line-height:1.5;">
-                Your rating is calculated from customer reviews and cannot be edited manually.</div>
-            <div style="display:flex; gap:10px;">
-                <button class="btn btn-outline" style="flex:1" onclick="closeModal('m-editbarber')">Cancel</button>
-                <button class="btn btn-gold" style="flex:1" onclick="saveBarberProfile()">Save Changes</button>
-            </div>
-        </div>
-    </div>
-    <div class="overlay" id="m-walkin">
-        <div class="modal">
-            <div style="font-size:20px;font-weight:800; font-family:'Syne',sans-serif; margin-bottom:18px;">Add Walk-in
-                Customer</div>
-            <div style="margin-bottom:14px">
-                <label>Customer Name</label>
-                <input class="inp" id="walkin-name" type="text" placeholder="Enter customer name" maxlength="50">
-            </div>
-            <div style="margin-bottom:20px">
-                <label>Service</label>
-                <select class="inp" id="walkin-service"></select>
-            </div>
-            <div style="display:flex;gap:10px;">
-                <button class="btn btn-outline" style="flex:1" onclick="closeModal('m-walkin')">Cancel</button>
-                <button class="btn btn-gold" style="flex:1" onclick="addWalkinCustomer()">Add Customer</button>
-            </div>
-        </div>
-    </div>
-    <script src="script.js"></script>
-
-</body>
-
-</html> -->
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 <!DOCTYPE html>
 <html lang="en">
 
@@ -526,410 +18,620 @@
 <body>
 
   <div class="screen" id="s-barb">
-  <div class="nav">
-    <div class="nav-brand">Glowora</div>
-    <div style="display:flex; align-items:center; gap:10px;">
-      <span id="shop-status" class="tag tgreen pulse" style="cursor:pointer" onclick="toggleShop()">● Open</span>
-      <div id="barber-top-avatar" class="av"
-        style="width:36px;height:36px;background:var(--cdim);border:2px solid var(--cyan);color:var(--cyan);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;overflow:hidden;"
-        onclick="bTab('profile')">B</div>
+    <div class="nav">
+      <div class="nav-brand">Glowora</div>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span id="shop-status" class="tag tgreen pulse" style="cursor:pointer" onclick="toggleShop()">● Open</span>
+        <div id="barber-top-avatar" class="av"
+          style="width:36px;height:36px;background:var(--cdim);border:2px solid var(--cyan);color:var(--cyan);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;overflow:hidden;"
+          onclick="bTab('profile')">B</div>
+      </div>
+    </div>
+    <div class="scroll pad pad-b" id="b-queue-tab">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px;">
+        <div class="stat">
+          <div style="font-size:20px;margin-bottom:4px">👥</div>
+          <div class="stat-n" style="color:var(--gold)" id="b-inq">0</div>
+          <div class="stat-l">In Queue</div>
+        </div>
+        <div class="stat">
+          <div style="font-size:20px;margin-bottom:4px">✅</div>
+          <div class="stat-n" style="color:var(--green)" id="b-done">0</div>
+          <div class="stat-l">Done Today</div>
+        </div>
+        <div class="stat">
+          <div style="font-size:20px;margin-bottom:4px">💰</div>
+          <div class="stat-n" style="font-size:20px;color:var(--gold)" id="b-earn">₹0</div>
+          <div class="stat-l">Today's Earnings</div>
+          <div class="pbar">
+            <div class="pfill" style="width:0%"></div>
+          </div>
+        </div>
+        <div class="stat">
+          <div style="font-size:20px;margin-bottom:4px">⏱️</div>
+          <div class="stat-n" id="b-wait">28</div>
+          <div class="stat-l">Avg Wait (min)</div>
+        </div>
+      </div>
+      <div style="font-size:18px;font-weight:700;font-family:'Syne',sans-serif;margin-bottom:14px;">Live Queue</div>
+      <div id="b-qlist"></div>
+      <button class="btn btn-outline btn-full" style="margin-top:4px" onclick="openWalkinModal()">Add Walk-in
+        Customer</button>
+    </div>
+    <div class="scroll pad pad-b" id="b-svc-tab" style="display:none">
+      <div style="font-size:20px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:18px;">Services</div>
+      <div id="b-svclist"></div>
+      <button class="btn btn-outline btn-full" style="margin-top:12px" onclick="openModal('m-svc')">Add Service</button>
+    </div>
+    <div class="scroll pad pad-b" id="b-analytics-tab" style="display:none">
+      <div style="font-size:20px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:18px;">Analytics</div>
+      <div id="b-analytics"></div>
+      <div style="height:20px"></div>
+    </div>
+    <div class="scroll pad pad-b" id="b-profile-tab" style="display:none">
+      <div style="margin-bottom:20px;">
+        <button onclick="bTab('queue')"
+          style="background:none;border:none;color:var(--txt2);font-size:14px;cursor:pointer;padding:0;">← Back</button>
+      </div>
+      <div style="text-align:center;margin-bottom:24px;">
+        <div id="barber-profile-photo" class="av"
+          style="width:82px;height:82px;margin:0 auto 12px;background:var(--cdim);border:2px solid var(--cyan);color:var(--cyan);font-size:28px;display:flex;align-items:center;justify-content:center;">
+          B</div>
+        <div id="barber-profile-name" style="font-size:22px;font-weight:800;font-family:'Syne',sans-serif;">Not set
+        </div>
+        <div id="barber-profile-shop" style="color:var(--txt2);margin-top:5px;">Shop name not set</div>
+      </div>
+      <div style="font-size:17px;font-weight:700;font-family:'Syne',sans-serif;margin-bottom:12px;">Personal Information
+      </div>
+      <div class="card" style="margin-bottom:20px">
+        <div style="margin-bottom:16px">
+          <div class="stat-l">Full Name</div>
+          <div id="barber-profile-fullname" style="margin-top:4px;font-weight:600;">Not set</div>
+        </div>
+        <div>
+          <div class="stat-l">Phone Number</div>
+          <div id="barber-profile-phone" style="margin-top:4px;font-weight:600;">Not set</div>
+        </div>
+      </div>
+      <div style="font-size:17px;font-weight:700;font-family:'Syne',sans-serif;margin-bottom:12px;">Shop Information
+      </div>
+      <div class="card" style="margin-bottom:20px">
+        <div style="margin-bottom:16px">
+          <div class="stat-l">Shop Name</div>
+          <div id="barber-profile-shopname" style="margin-top:4px;font-weight:600;">Not set</div>
+        </div>
+        <div style="margin-bottom:16px">
+          <div class="stat-l">Address</div>
+          <div id="barber-profile-address" style="margin-top:4px;font-weight:600;">Not set</div>
+        </div>
+        <div>
+          <div class="stat-l">Opening Hours</div>
+          <div id="barber-profile-hours" style="margin-top:4px;font-weight:600;">Not set</div>
+        </div>
+      </div>
+      <div style="font-size:17px;font-weight:700;font-family:'Syne',sans-serif;margin-bottom:12px;">Customer Rating
+      </div>
+      <div class="card" style="margin-bottom:20px">
+        <div id="barber-profile-rating" style="font-size:20px;font-weight:800;">No ratings yet</div>
+        <div id="barber-profile-rating-count" style="color:var(--txt2);margin-top:5px;">0 reviews</div>
+        <div style="font-size:12px;color:var(--txt2);margin-top:10px;">Rating is calculated automatically from customer
+          reviews.</div>
+      </div>
+      <div style="font-size:17px;font-weight:700;font-family:'Syne',sans-serif;margin-bottom:12px;">Payout Information
+      </div>
+      <div class="card" style="margin-bottom:20px">
+        <div style="margin-bottom:16px">
+          <div class="stat-l">Bank Account</div>
+          <div id="barber-profile-bank" style="margin-top:4px;font-weight:600;">Not set</div>
+        </div>
+        <div>
+          <div class="stat-l">Online Payments Collected</div>
+          <div id="barber-profile-online" style="margin-top:4px;font-size:20px;font-weight:800;color:var(--gold);">₹0
+          </div>
+        </div>
+      </div>
+      <div style="font-size:17px;font-weight:700;font-family:'Syne',sans-serif;margin-bottom:12px;">Account</div>
+      <button class="btn btn-outline btn-full" style="margin-bottom:10px" onclick="editBarberProfile()">Edit
+        Profile</button>
+      <button class="btn btn-outline btn-full" style="margin-bottom:10px" onclick="updateShopPhoto()">Update Shop
+        Photo</button>
+      <button class="btn btn-outline btn-full" style="margin-bottom:10px" onclick="logoutBarber()">Logout</button>
+      <button class="btn btn-outline btn-full" style="color:#ff6b6b;border-color:#ff6b6b"
+        onclick="deleteBarberAccount()">Delete Account</button>
+    </div>
+    <div class="scroll pad pad-b bq-new-tab" id="b-dashboard-tab" style="display:none">
+      <div class="bq-heading-row">
+        <div>
+          <p class="bq-eyebrow">YOUR SHOP AT A GLANCE</p>
+          <h2 class="bq-title">Dashboard</h2>
+          <p class="bq-muted">Your daily overview and shop activity.</p>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="bqRefreshOverview()">↻ Refresh</button>
+      </div>
+      <div class="bq-stat-grid">
+        <article class="bq-stat-card bq-t-blue">
+          <div class="bq-stat-top"><span class="bq-stat-label">Customers in queue</span><span
+              class="bq-stat-icon bq-blue">♙</span></div>
+          <strong id="bq-overview-queue">0</strong>
+          <small>Live queue</small>
+        </article>
+        <article class="bq-stat-card bq-t-green">
+          <div class="bq-stat-top"><span class="bq-stat-label">Completed today</span><span
+              class="bq-stat-icon bq-green">✓</span></div>
+          <strong id="bq-overview-done">0</strong>
+          <small>Completed visits</small>
+        </article>
+        <article class="bq-stat-card bq-t-gold">
+          <div class="bq-stat-top"><span class="bq-stat-label">Today's earnings</span><span
+              class="bq-stat-icon bq-gold">₹</span></div>
+          <strong id="bq-overview-revenue">₹0</strong>
+          <small>From completed services</small>
+        </article>
+        <article class="bq-stat-card bq-t-purple">
+          <div class="bq-stat-top"><span class="bq-stat-label">Average wait</span><span
+              class="bq-stat-icon bq-purple">◷</span></div>
+          <strong><span id="bq-overview-wait">—</span><em> min</em></strong>
+          <small>Queue estimate</small>
+        </article>
+      </div>
+      <div class="bq-panel">
+        <div class="bq-panel-head">
+          <div>
+            <h3>Completed this week</h3>
+            <p class="bq-muted">Customers served per day.</p>
+          </div>
+        </div>
+        <div id="bq-week-chart" class="bq-bars"></div>
+      </div>
+      <div class="bq-panel">
+        <div class="bq-panel-head">
+          <div>
+            <h3>Service mix</h3>
+            <p class="bq-muted">Most booked services this week.</p>
+          </div>
+        </div>
+        <div class="bq-donut-wrap">
+          <div id="bq-donut" class="bq-donut"><span id="bq-donut-total">0</span></div>
+          <div id="bq-donut-legend" class="bq-legend"></div>
+        </div>
+      </div>
+      <div class="bq-panel">
+        <div class="bq-panel-head">
+          <div>
+            <h3>Live queue status</h3>
+            <p class="bq-muted">Customers currently waiting.</p>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="bTab('queue')">Manage →</button>
+        </div>
+        <div id="bq-overview-queue-list" class="bq-queue-list">
+          <p class="bq-muted">Loading your queue…</p>
+        </div>
+      </div>
+      <div class="bq-panel">
+        <div class="bq-panel-head">
+          <div>
+            <h3>Quick actions</h3>
+            <p class="bq-muted">Your most-used tools.</p>
+          </div>
+        </div>
+        <div class="bq-quick-grid">
+          <button class="bq-quick-action" onclick="bTab('queue')"><span>♙</span><strong>Manage
+              queue</strong><small>Waiting customers</small></button>
+          <button class="bq-quick-action" onclick="bTab('bookings')"><span>▤</span><strong>View
+              bookings</strong><small>Appointments list</small></button>
+          <button class="bq-quick-action" onclick="bTab('calendar')"><span>▦</span><strong>Open
+              calendar</strong><small>Weekly schedule</small></button>
+          <button class="bq-quick-action" onclick="bTab('settings')"><span>⚙</span><strong>Shop
+              settings</strong><small>Photo and UPI QR</small></button>
+        </div>
+      </div>
+      <div style="height:20px"></div>
+    </div>
+    <div class="scroll pad pad-b bq-new-tab" id="b-bookings-tab" style="display:none">
+      <div class="bq-heading-row">
+        <div>
+          <p class="bq-eyebrow">APPOINTMENT MANAGEMENT</p>
+          <h2 class="bq-title">Bookings</h2>
+          <p class="bq-muted">Review appointments and update their status.</p>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="bqLoadBookings()">↻ Refresh</button>
+      </div>
+      <div class="bq-filter-row">
+        <input class="inp" id="bq-booking-search" placeholder="Search customer or service..."
+          oninput="bqRenderBookings()">
+        <select class="inp" id="bq-booking-filter" onchange="bqRenderBookings()">
+          <option value="all">All statuses</option>
+          <option value="pending">Pending</option>
+          <option value="confirmed">Confirmed</option>
+          <option value="completed">Completed</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+      </div>
+      <div class="bq-panel">
+        <div class="bq-table-wrap">
+          <table class="bq-table">
+            <thead>
+              <tr>
+                <th>Customer</th>
+                <th>Service</th>
+                <th>Date / Time</th>
+                <th>Status</th>
+                <th>Manage</th>
+              </tr>
+            </thead>
+            <tbody id="bq-bookings-body">
+              <tr>
+                <td colspan="5" class="bq-empty">No appointments yet.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <p class="bq-muted bq-footnote">The live queue is separate from appointments and is managed in the Queue tab.</p>
+    </div>
+    <div class="scroll pad pad-b bq-new-tab" id="b-calendar-tab" style="display:none">
+      <div class="bq-heading-row">
+        <div>
+          <p class="bq-eyebrow">PLAN YOUR DAY</p>
+          <h2 class="bq-title">Calendar</h2>
+          <p class="bq-muted">A weekly view of your scheduled appointments.</p>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="bqCalendarToday()">Today</button>
+      </div>
+      <div class="bq-panel">
+        <div class="bq-calendar-toolbar">
+          <button class="btn btn-outline btn-sm" onclick="bqChangeWeek(-1)">←</button>
+          <strong id="bq-calendar-range">This week</strong>
+          <button class="btn btn-outline btn-sm" onclick="bqChangeWeek(1)">→</button>
+        </div>
+        <div class="bq-cal-scroll">
+          <div id="bq-calendar-grid" class="bq-calendar-grid"></div>
+        </div>
+        <p class="bq-muted bq-footnote">Hours follow your shop's opening and closing time.</p>
+      </div>
+    </div>
+    <div class="scroll pad pad-b bq-new-tab" id="b-staff-tab" style="display:none">
+      <div class="bq-heading-row">
+        <div>
+          <p class="bq-eyebrow">YOUR TEAM</p>
+          <h2 class="bq-title">Our Crew</h2>
+          <p class="bq-muted">Manage team members and their specialties.</p>
+        </div>
+        <button class="btn btn-gold btn-sm" onclick="bqOpenStaffModal()">＋ Add</button>
+      </div>
+      <div id="bq-staff-grid" class="bq-staff-grid"></div>
+      <p class="bq-muted bq-footnote">Team members are saved on this device.</p>
+    </div>
+    <div class="scroll pad pad-b" id="b-staffstats-tab" style="display:none">
+      <div class="sa" id="sa-root">
+        <header class="sa-head">
+          <div>
+            <h2 class="sa-title">Staff Analytics</h2>
+            <p class="sa-sub">Performance insights for your team</p>
+          </div>
+          <div class="sa-head-r">
+            <label class="sa-range">
+              <svg class="sa-ic" viewBox="0 0 24 24">
+                <rect x="3" y="4" width="18" height="18" rx="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+              </svg>
+              <span id="sa-range-text">—</span>
+              <svg class="sa-ic sa-chev" viewBox="0 0 24 24">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+              <select id="sa-period" aria-label="Date range">
+                <option value="7">Last 7 days</option>
+                <option value="30">Last 30 days</option>
+                <option value="month">This month</option>
+              </select>
+            </label>
+            <button class="sa-bell" id="sa-bell" type="button" aria-label="Services not yet assigned to a barber">
+              <svg class="sa-ic" viewBox="0 0 24 24">
+                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+              </svg>
+              <i class="sa-dot" id="sa-bell-dot" hidden></i>
+            </button>
+            <div class="sa-avatar" id="sa-owner-av">B</div>
+          </div>
+        </header>
+
+        <section class="sa-kpis">
+          <article class="sa-kpi sa-k-blue">
+            <span class="sa-kico"><svg class="sa-ic" viewBox="0 0 24 24">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg></span>
+            <span class="sa-klabel">Total Staff</span>
+            <strong class="sa-kval" id="sa-k-staff">0</strong>
+            <span class="sa-ktrend" id="sa-k-staff-t"></span>
+          </article>
+          <article class="sa-kpi sa-k-teal">
+            <span class="sa-kico"><svg class="sa-ic" viewBox="0 0 24 24">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="8.5" cy="7" r="4" />
+                <polyline points="17 11 19 13 23 9" />
+              </svg></span>
+            <span class="sa-klabel">Active Today</span>
+            <strong class="sa-kval" id="sa-k-active">0</strong>
+            <span class="sa-ktrend" id="sa-k-active-t"></span>
+          </article>
+          <article class="sa-kpi sa-k-purple">
+            <span class="sa-kico"><svg class="sa-ic sa-fill" viewBox="0 0 24 24">
+                <polygon
+                  points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg></span>
+            <span class="sa-klabel">Avg. Rating</span>
+            <strong class="sa-kval" id="sa-k-rating">—</strong>
+            <span class="sa-ktrend" id="sa-k-rating-t"></span>
+          </article>
+          <article class="sa-kpi sa-k-gold">
+            <span class="sa-kico"><svg class="sa-ic" viewBox="0 0 24 24">
+                <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+                <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+                <path d="M4 22h16" />
+                <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
+                <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
+                <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+              </svg></span>
+            <span class="sa-klabel">Total Customers</span>
+            <strong class="sa-kval" id="sa-k-customers">0</strong>
+            <span class="sa-ktrend" id="sa-k-customers-t"></span>
+          </article>
+        </section>
+
+        <section class="sa-row sa-row-a">
+          <article class="sa-panel">
+            <h3 class="sa-ph">Staff Performance</h3>
+            <p class="sa-pd">Customers served by each staff member</p>
+            <div class="sa-chart-wrap">
+              <div class="sa-chart" id="sa-chart"></div>
+              <ul class="sa-legend" id="sa-chart-legend"></ul>
+            </div>
+          </article>
+          <article class="sa-panel">
+            <h3 class="sa-ph">Service Distribution</h3>
+            <p class="sa-pd">Services performed by staff (<span id="sa-dist-period">last 7 days</span>)</p>
+            <div class="sa-donut-wrap">
+              <div class="sa-donut" id="sa-donut"></div>
+              <ul class="sa-legend sa-legend-v" id="sa-donut-legend"></ul>
+            </div>
+          </article>
+        </section>
+
+        <section class="sa-row sa-row-b">
+          <article class="sa-panel">
+            <h3 class="sa-ph">Staff Details</h3>
+            <div class="sa-tscroll">
+              <table class="sa-table">
+                <thead>
+                  <tr>
+                    <th><span class="sa-thpill">Staff Member</span></th>
+                    <th>Role</th>
+                    <th>Customers Served</th>
+                    <th>Avg. Rating</th>
+                    <th>Status</th>
+                    <th title="Customers served compared with your busiest team member">Performance</th>
+                    <th>Payable</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="sa-tbody"></tbody>
+              </table>
+            </div>
+          </article>
+
+          <div class="sa-side">
+            <article class="sa-panel">
+              <h3 class="sa-ph sa-ph-ico"><svg class="sa-ic" viewBox="0 0 24 24" style="color:#f5b73b">
+                  <path d="M2 8l4 4 6-8 6 8 4-4-2 12H4z" />
+                </svg>Top Performer</h3>
+              <div class="sa-top" id="sa-top"></div>
+            </article>
+            <article class="sa-panel">
+              <h3 class="sa-ph sa-ph-ico"><svg class="sa-ic" viewBox="0 0 24 24" style="color:#f5b73b">
+                  <path d="M9 18h6" />
+                  <path d="M10 22h4" />
+                  <path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.2 1 2V17h6v-.3c0-.8.4-1.5 1-2A7 7 0 0 0 12 2z" />
+                </svg>Key Insights</h3>
+              <div class="sa-insights" id="sa-insights"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="sa-panel sa-unassigned" id="sa-unassigned" hidden></section>
+
+        <p class="sa-foot">
+          Payable = monthly salary × (days in range ÷ 30, max 1) + commission % of revenue brought in.
+          Figures come from completed bookings saved on this device.
+        </p>
+      </div>
+    </div>
+    <div class="scroll pad pad-b bq-new-tab" id="b-settings-tab" style="display:none">
+      <div class="bq-heading-row">
+        <div>
+          <p class="bq-eyebrow">WORKSPACE SETUP</p>
+          <h2 class="bq-title">Settings</h2>
+          <p class="bq-muted">Shop details, photo and payment QR code.</p>
+        </div>
+      </div>
+      <div class="bq-chip-nav">
+        <button onclick="bqJump('bq-sec-info')">Business info</button>
+        <button onclick="bqJump('bq-sec-photo')">Shop photo</button>
+        <button onclick="bqJump('bq-sec-pay')">Payments</button>
+      </div>
+      <div class="bq-panel" id="bq-sec-info">
+        <div class="bq-panel-head">
+          <div>
+            <h3>Business information</h3>
+            <p class="bq-muted">Your profile is the source of truth.</p>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="editBarberProfile()">Edit ↗</button>
+        </div>
+        <div class="bq-shop-info">
+          <div><span>Shop name</span><strong id="bq-settings-shop">Not set</strong></div>
+          <div><span>Owner / barber</span><strong id="bq-settings-owner">Not set</strong></div>
+          <div><span>Address</span><strong id="bq-settings-address">Not set</strong></div>
+          <div><span>Opening hours</span><strong id="bq-settings-hours">Not set</strong></div>
+        </div>
+      </div>
+      <div class="bq-panel" id="bq-sec-photo">
+        <div class="bq-panel-head">
+          <div>
+            <h3>Shop photo</h3>
+            <p class="bq-muted">Shown to customers on the shop list.</p>
+          </div>
+        </div>
+        <div class="bq-upload-area">
+          <img id="bq-shop-photo-preview" alt="Shop photo preview" hidden>
+          <label class="bq-upload-button" for="bq-shop-photo-file">＋ Choose shop photo</label>
+          <input id="bq-shop-photo-file" type="file" accept="image/png,image/jpeg,image/webp"
+            onchange="bqPreviewImage(this,'bq-shop-photo-preview')">
+          <p class="bq-muted">JPG, PNG or WebP, up to 5 MB.</p>
+        </div>
+      </div>
+
+      <div class="bq-panel" id="bq-sec-pay">
+        <div class="bq-panel-head">
+          <div>
+            <h3>UPI payment QR code</h3>
+            <p class="bq-muted">Your own QR code for customers to scan.</p>
+          </div>
+        </div>
+        <div class="bq-upload-area">
+          <img id="bq-upi-qr-preview" alt="UPI QR code preview" hidden>
+          <label class="bq-upload-button" for="bq-upi-qr-file">＋ Choose UPI QR code</label>
+          <input id="bq-upi-qr-file" type="file" accept="image/png,image/jpeg,image/webp"
+            onchange="bqPreviewImage(this,'bq-upi-qr-preview')">
+          <label for="bq-upi-id" class="bq-label">UPI ID</label>
+          <input class="inp" id="bq-upi-id" placeholder="yourname@bank" maxlength="60">
+        </div>
+      </div>
+
+      <button class="btn btn-gold btn-full" onclick="bqSaveSettings()">Save changes</button>
+      <p id="bq-settings-message" class="bq-muted" role="status" style="margin-top:10px"></p>
+      <div style="height:20px"></div>
+    </div>
+    <div class="tabs" id="b-tabs">
+      <button class="tab" data-tab="dashboard" onclick="bTab('dashboard',this)"><span
+          class="tab-ico">▦</span>Dashboard</button>
+      <button class="tab" data-tab="svc" onclick="bTab('svc',this)"><span class="tab-ico">✂️</span>Services</button>
+      <button class="tab on" data-tab="queue" onclick="bTab('queue',this)"><span class="tab-ico">📋</span>Queue</button>
+      <button class="tab" data-tab="analytics" onclick="bTab('analytics',this)"><span
+          class="tab-ico">📊</span>Analytics</button>
+      <button class="tab" data-tab="bookings" onclick="bTab('bookings',this)"><span
+          class="tab-ico">▤</span>Bookings</button>
+      <button class="tab" data-tab="calendar" onclick="bTab('calendar',this)"><span
+          class="tab-ico">📅</span>Calendar</button>
+      <button class="tab" data-tab="staff" onclick="bTab('staff',this)"><span class="tab-ico">♙</span>Staff</button>
+      <button class="tab" data-tab="staffstats" onclick="bTab('staffstats',this)"><span class="tab-ico">📈</span>Staff
+        Stats</button>
+      <button class="tab" data-tab="profile" onclick="bTab('profile',this)"><span
+          class="tab-ico">👤</span>Profile</button>
+      <button class="tab" data-tab="settings" onclick="bTab('settings',this)"><span
+          class="tab-ico">⚙</span>Settings</button>
     </div>
   </div>
-
-  <!-- ============ EXISTING: QUEUE ============ -->
-  <div class="scroll pad pad-b" id="b-queue-tab">
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px;">
-      <div class="stat">
-        <div style="font-size:20px;margin-bottom:4px">👥</div>
-        <div class="stat-n" style="color:var(--gold)" id="b-inq">0</div>
-        <div class="stat-l">In Queue</div>
+  <div class="overlay" id="m-editbarber">
+    <div class="modal">
+      <div style="font-size:20px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:18px;">Edit Barber Profile
       </div>
-      <div class="stat">
-        <div style="font-size:20px;margin-bottom:4px">✅</div>
-        <div class="stat-n" style="color:var(--green)" id="b-done">0</div>
-        <div class="stat-l">Done Today</div>
+      <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:20px;">
+        <div><label>Full Name</label><input class="inp" id="bp-name" type="text" placeholder="Your full name"
+            maxlength="50"></div>
+        <div><label>Phone Number</label><input class="inp" id="bp-phone" type="tel" maxlength="10" inputmode="numeric">
+        </div>
+        <div><label>Shop Name</label><input class="inp" id="bp-shop" type="text" placeholder="Your shop name"
+            maxlength="60"></div>
+        <div><label>Shop Address</label><input class="inp" id="bp-address" type="text" maxlength="120"></div>
+        <div><label>Opening Time</label><input class="inp" id="bp-open" type="time"></div>
+        <div><label>Closing Time</label><input class="inp" id="bp-close" type="time"></div>
+        <div><label>Bank Name</label><input class="inp" id="bp-bank" type="text" placeholder="e.g. HDFC Bank"
+            maxlength="50"></div>
+        <div><label>Account Last 4 Digits</label><input class="inp" id="bp-last4" type="tel" maxlength="4"
+            inputmode="numeric"></div>
       </div>
-      <div class="stat">
-        <div style="font-size:20px;margin-bottom:4px">💰</div>
-        <div class="stat-n" style="font-size:20px;color:var(--gold)" id="b-earn">₹0</div>
-        <div class="stat-l">Today's Earnings</div>
-        <div class="pbar"><div class="pfill" style="width:0%"></div></div>
+      <div
+        style="padding:10px 12px;margin-bottom:18px;border-radius:var(--r);background:var(--s2);color:var(--txt2);font-size:12px;line-height:1.5;">
+        Your rating is calculated from customer reviews and cannot be edited manually.</div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-outline" style="flex:1" onclick="closeModal('m-editbarber')">Cancel</button>
+        <button class="btn btn-gold" style="flex:1" onclick="saveBarberProfile()">Save Changes</button>
       </div>
-      <div class="stat">
-        <div style="font-size:20px;margin-bottom:4px">⏱️</div>
-        <div class="stat-n" id="b-wait">28</div>
-        <div class="stat-l">Avg Wait (min)</div>
-      </div>
-    </div>
-    <div style="font-size:18px;font-weight:700;font-family:'Syne',sans-serif;margin-bottom:14px;">Live Queue</div>
-    <div id="b-qlist"></div>
-    <button class="btn btn-outline btn-full" style="margin-top:4px" onclick="openWalkinModal()">Add Walk-in Customer</button>
-  </div>
-
-  <!-- ============ EXISTING: SERVICES ============ -->
-  <div class="scroll pad pad-b" id="b-svc-tab" style="display:none">
-    <div style="font-size:20px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:18px;">Services</div>
-    <div id="b-svclist"></div>
-    <button class="btn btn-outline btn-full" style="margin-top:12px" onclick="openModal('m-svc')">Add Service</button>
-  </div>
-
-  <!-- ============ EXISTING: ANALYTICS ============ -->
-  <div class="scroll pad pad-b" id="b-analytics-tab" style="display:none">
-    <div style="font-size:20px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:18px;">Analytics</div>
-    <div id="b-analytics"></div>
-    <div style="height:20px"></div>
-  </div>
-
-  <!-- ============ EXISTING: PROFILE ============ -->
-  <div class="scroll pad pad-b" id="b-profile-tab" style="display:none">
-    <div style="margin-bottom:20px;">
-      <button onclick="bTab('queue')" style="background:none;border:none;color:var(--txt2);font-size:14px;cursor:pointer;padding:0;">← Back</button>
-    </div>
-    <div style="text-align:center;margin-bottom:24px;">
-      <div id="barber-profile-photo" class="av"
-        style="width:82px;height:82px;margin:0 auto 12px;background:var(--cdim);border:2px solid var(--cyan);color:var(--cyan);font-size:28px;display:flex;align-items:center;justify-content:center;">B</div>
-      <div id="barber-profile-name" style="font-size:22px;font-weight:800;font-family:'Syne',sans-serif;">Not set</div>
-      <div id="barber-profile-shop" style="color:var(--txt2);margin-top:5px;">Shop name not set</div>
-    </div>
-
-    <div style="font-size:17px;font-weight:700;font-family:'Syne',sans-serif;margin-bottom:12px;">Personal Information</div>
-    <div class="card" style="margin-bottom:20px">
-      <div style="margin-bottom:16px">
-        <div class="stat-l">Full Name</div>
-        <div id="barber-profile-fullname" style="margin-top:4px;font-weight:600;">Not set</div>
-      </div>
-      <div>
-        <div class="stat-l">Phone Number</div>
-        <div id="barber-profile-phone" style="margin-top:4px;font-weight:600;">Not set</div>
-      </div>
-    </div>
-
-    <div style="font-size:17px;font-weight:700;font-family:'Syne',sans-serif;margin-bottom:12px;">Shop Information</div>
-    <div class="card" style="margin-bottom:20px">
-      <div style="margin-bottom:16px">
-        <div class="stat-l">Shop Name</div>
-        <div id="barber-profile-shopname" style="margin-top:4px;font-weight:600;">Not set</div>
-      </div>
-      <div style="margin-bottom:16px">
-        <div class="stat-l">Address</div>
-        <div id="barber-profile-address" style="margin-top:4px;font-weight:600;">Not set</div>
-      </div>
-      <div>
-        <div class="stat-l">Opening Hours</div>
-        <div id="barber-profile-hours" style="margin-top:4px;font-weight:600;">Not set</div>
-      </div>
-    </div>
-
-    <div style="font-size:17px;font-weight:700;font-family:'Syne',sans-serif;margin-bottom:12px;">Customer Rating</div>
-    <div class="card" style="margin-bottom:20px">
-      <div id="barber-profile-rating" style="font-size:20px;font-weight:800;">No ratings yet</div>
-      <div id="barber-profile-rating-count" style="color:var(--txt2);margin-top:5px;">0 reviews</div>
-      <div style="font-size:12px;color:var(--txt2);margin-top:10px;">Rating is calculated automatically from customer reviews.</div>
-    </div>
-
-    <div style="font-size:17px;font-weight:700;font-family:'Syne',sans-serif;margin-bottom:12px;">Payout Information</div>
-    <div class="card" style="margin-bottom:20px">
-      <div style="margin-bottom:16px">
-        <div class="stat-l">Bank Account</div>
-        <div id="barber-profile-bank" style="margin-top:4px;font-weight:600;">Not set</div>
-      </div>
-      <div>
-        <div class="stat-l">Online Payments Collected</div>
-        <div id="barber-profile-online" style="margin-top:4px;font-size:20px;font-weight:800;color:var(--gold);">₹0</div>
-      </div>
-    </div>
-
-    <div style="font-size:17px;font-weight:700;font-family:'Syne',sans-serif;margin-bottom:12px;">Account</div>
-    <button class="btn btn-outline btn-full" style="margin-bottom:10px" onclick="editBarberProfile()">Edit Profile</button>
-    <button class="btn btn-outline btn-full" style="margin-bottom:10px" onclick="updateShopPhoto()">Update Shop Photo</button>
-    <button class="btn btn-outline btn-full" style="margin-bottom:10px" onclick="logoutBarber()">Logout</button>
-    <button class="btn btn-outline btn-full" style="color:#ff6b6b;border-color:#ff6b6b" onclick="deleteBarberAccount()">Delete Account</button>
-  </div>
-
-  <!-- ============ NEW: DASHBOARD ============ -->
-  <div class="scroll pad pad-b bq-new-tab" id="b-dashboard-tab" style="display:none">
-    <div class="bq-heading-row">
-      <div>
-        <p class="bq-eyebrow">YOUR SHOP AT A GLANCE</p>
-        <h2 class="bq-title">Dashboard</h2>
-        <p class="bq-muted">Your daily overview and shop activity.</p>
-      </div>
-      <button class="btn btn-outline btn-sm" onclick="bqRefreshOverview()">↻ Refresh</button>
-    </div>
-
-    <div class="bq-stat-grid">
-      <article class="bq-stat-card bq-t-blue">
-        <div class="bq-stat-top"><span class="bq-stat-label">Customers in queue</span><span class="bq-stat-icon bq-blue">♙</span></div>
-        <strong id="bq-overview-queue">0</strong>
-        <small>Live queue</small>
-      </article>
-      <article class="bq-stat-card bq-t-green">
-        <div class="bq-stat-top"><span class="bq-stat-label">Completed today</span><span class="bq-stat-icon bq-green">✓</span></div>
-        <strong id="bq-overview-done">0</strong>
-        <small>Completed visits</small>
-      </article>
-      <article class="bq-stat-card bq-t-gold">
-        <div class="bq-stat-top"><span class="bq-stat-label">Today's earnings</span><span class="bq-stat-icon bq-gold">₹</span></div>
-        <strong id="bq-overview-revenue">₹0</strong>
-        <small>From completed services</small>
-      </article>
-      <article class="bq-stat-card bq-t-purple">
-        <div class="bq-stat-top"><span class="bq-stat-label">Average wait</span><span class="bq-stat-icon bq-purple">◷</span></div>
-        <strong><span id="bq-overview-wait">—</span><em> min</em></strong>
-        <small>Queue estimate</small>
-      </article>
-    </div>
-
-    <div class="bq-panel">
-      <div class="bq-panel-head">
-        <div><h3>Completed this week</h3><p class="bq-muted">Customers served per day.</p></div>
-      </div>
-      <div id="bq-week-chart" class="bq-bars"></div>
-    </div>
-
-    <div class="bq-panel">
-      <div class="bq-panel-head">
-        <div><h3>Service mix</h3><p class="bq-muted">Most booked services this week.</p></div>
-      </div>
-      <div class="bq-donut-wrap">
-        <div id="bq-donut" class="bq-donut"><span id="bq-donut-total">0</span></div>
-        <div id="bq-donut-legend" class="bq-legend"></div>
-      </div>
-    </div>
-
-    <div class="bq-panel">
-      <div class="bq-panel-head">
-        <div><h3>Live queue status</h3><p class="bq-muted">Customers currently waiting.</p></div>
-        <button class="btn btn-outline btn-sm" onclick="bTab('queue')">Manage →</button>
-      </div>
-      <div id="bq-overview-queue-list" class="bq-queue-list">
-        <p class="bq-muted">Loading your queue…</p>
-      </div>
-    </div>
-
-    <div class="bq-panel">
-      <div class="bq-panel-head">
-        <div><h3>Quick actions</h3><p class="bq-muted">Your most-used tools.</p></div>
-      </div>
-      <div class="bq-quick-grid">
-        <button class="bq-quick-action" onclick="bTab('queue')"><span>♙</span><strong>Manage queue</strong><small>Waiting customers</small></button>
-        <button class="bq-quick-action" onclick="bTab('bookings')"><span>▤</span><strong>View bookings</strong><small>Appointments list</small></button>
-        <button class="bq-quick-action" onclick="bTab('calendar')"><span>▦</span><strong>Open calendar</strong><small>Weekly schedule</small></button>
-        <button class="bq-quick-action" onclick="bTab('settings')"><span>⚙</span><strong>Shop settings</strong><small>Photo and UPI QR</small></button>
-      </div>
-    </div>
-    <div style="height:20px"></div>
-  </div>
-
-  <!-- ============ NEW: BOOKINGS ============ -->
-  <div class="scroll pad pad-b bq-new-tab" id="b-bookings-tab" style="display:none">
-    <div class="bq-heading-row">
-      <div>
-        <p class="bq-eyebrow">APPOINTMENT MANAGEMENT</p>
-        <h2 class="bq-title">Bookings</h2>
-        <p class="bq-muted">Review appointments and update their status.</p>
-      </div>
-      <button class="btn btn-outline btn-sm" onclick="bqLoadBookings()">↻ Refresh</button>
-    </div>
-
-    <div class="bq-filter-row">
-      <input class="inp" id="bq-booking-search" placeholder="Search customer or service..." oninput="bqRenderBookings()">
-      <select class="inp" id="bq-booking-filter" onchange="bqRenderBookings()">
-        <option value="all">All statuses</option>
-        <option value="pending">Pending</option>
-        <option value="confirmed">Confirmed</option>
-        <option value="completed">Completed</option>
-        <option value="cancelled">Cancelled</option>
-      </select>
-    </div>
-
-    <div class="bq-panel">
-      <div class="bq-table-wrap">
-        <table class="bq-table">
-          <thead>
-            <tr><th>Customer</th><th>Service</th><th>Date / Time</th><th>Status</th><th>Manage</th></tr>
-          </thead>
-          <tbody id="bq-bookings-body">
-            <tr><td colspan="5" class="bq-empty">No appointments yet.</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-    <p class="bq-muted bq-footnote">The live queue is separate from appointments and is managed in the Queue tab.</p>
-  </div>
-
-  <!-- ============ NEW: CALENDAR ============ -->
-  <div class="scroll pad pad-b bq-new-tab" id="b-calendar-tab" style="display:none">
-    <div class="bq-heading-row">
-      <div>
-        <p class="bq-eyebrow">PLAN YOUR DAY</p>
-        <h2 class="bq-title">Calendar</h2>
-        <p class="bq-muted">A weekly view of your scheduled appointments.</p>
-      </div>
-      <button class="btn btn-outline btn-sm" onclick="bqCalendarToday()">Today</button>
-    </div>
-
-    <div class="bq-panel">
-      <div class="bq-calendar-toolbar">
-        <button class="btn btn-outline btn-sm" onclick="bqChangeWeek(-1)">←</button>
-        <strong id="bq-calendar-range">This week</strong>
-        <button class="btn btn-outline btn-sm" onclick="bqChangeWeek(1)">→</button>
-      </div>
-      <div class="bq-cal-scroll">
-        <div id="bq-calendar-grid" class="bq-calendar-grid"></div>
-      </div>
-      <p class="bq-muted bq-footnote">Hours follow your shop's opening and closing time.</p>
     </div>
   </div>
-
-  <!-- ============ NEW: STAFF ============ -->
-  <div class="scroll pad pad-b bq-new-tab" id="b-staff-tab" style="display:none">
-    <div class="bq-heading-row">
-      <div>
-        <p class="bq-eyebrow">YOUR TEAM</p>
-        <h2 class="bq-title">Our Crew</h2>
-        <p class="bq-muted">Manage team members and their specialties.</p>
+  <div class="sa-overlay" id="sa-modal" hidden>
+    <div class="sa-modal" role="dialog" aria-modal="true" aria-labelledby="sa-m-title">
+      <h3 id="sa-m-title">Edit staff</h3>
+      <p class="sa-pd" id="sa-m-name"></p>
+      <div class="sa-m-grid">
+        <label>Monthly salary (₹)<input id="sa-m-salary" type="number" min="0" inputmode="numeric"
+            placeholder="0"></label>
+        <label>Commission (% of revenue)<input id="sa-m-pct" type="number" min="0" max="100" step="0.5"
+            inputmode="decimal" placeholder="0"></label>
+        <label>Average rating (0–5)<input id="sa-m-rating" type="number" min="0" max="5" step="0.1" inputmode="decimal"
+            placeholder="optional"></label>
+        <label>Status
+          <select id="sa-m-status">
+            <option>Available</option>
+            <option>With Customer</option>
+            <option>On Break</option>
+            <option>Off today</option>
+          </select>
+        </label>
       </div>
-      <button class="btn btn-gold btn-sm" onclick="bqOpenStaffModal()">＋ Add</button>
-    </div>
-    <div id="bq-staff-grid" class="bq-staff-grid"></div>
-    <p class="bq-muted bq-footnote">Team members are saved on this device.</p>
-  </div>
-
-  <!-- ============ NEW: SETTINGS ============ -->
-  <div class="scroll pad pad-b bq-new-tab" id="b-settings-tab" style="display:none">
-    <div class="bq-heading-row">
-      <div>
-        <p class="bq-eyebrow">WORKSPACE SETUP</p>
-        <h2 class="bq-title">Settings</h2>
-        <p class="bq-muted">Shop details, photo and payment QR code.</p>
+      <p class="sa-m-preview" id="sa-m-preview"></p>
+      <div class="sa-m-actions">
+        <button type="button" class="sa-btn" id="sa-m-cancel">Cancel</button>
+        <button type="button" class="sa-btn sa-btn-primary" id="sa-m-save">Save</button>
       </div>
-    </div>
-
-    <div class="bq-chip-nav">
-      <button onclick="bqJump('bq-sec-info')">Business info</button>
-      <button onclick="bqJump('bq-sec-photo')">Shop photo</button>
-      <button onclick="bqJump('bq-sec-pay')">Payments</button>
-    </div>
-
-    <div class="bq-panel" id="bq-sec-info">
-      <div class="bq-panel-head">
-        <div><h3>Business information</h3><p class="bq-muted">Your profile is the source of truth.</p></div>
-        <button class="btn btn-outline btn-sm" onclick="editBarberProfile()">Edit ↗</button>
-      </div>
-      <div class="bq-shop-info">
-        <div><span>Shop name</span><strong id="bq-settings-shop">Not set</strong></div>
-        <div><span>Owner / barber</span><strong id="bq-settings-owner">Not set</strong></div>
-        <div><span>Address</span><strong id="bq-settings-address">Not set</strong></div>
-        <div><span>Opening hours</span><strong id="bq-settings-hours">Not set</strong></div>
-      </div>
-    </div>
-
-    <div class="bq-panel" id="bq-sec-photo">
-      <div class="bq-panel-head">
-        <div><h3>Shop photo</h3><p class="bq-muted">Shown to customers on the shop list.</p></div>
-      </div>
-      <div class="bq-upload-area">
-        <img id="bq-shop-photo-preview" alt="Shop photo preview" hidden>
-        <label class="bq-upload-button" for="bq-shop-photo-file">＋ Choose shop photo</label>
-        <input id="bq-shop-photo-file" type="file" accept="image/png,image/jpeg,image/webp"
-          onchange="bqPreviewImage(this,'bq-shop-photo-preview')">
-        <p class="bq-muted">JPG, PNG or WebP, up to 5 MB.</p>
-      </div>
-    </div>
-
-    <div class="bq-panel" id="bq-sec-pay">
-      <div class="bq-panel-head">
-        <div><h3>UPI payment QR code</h3><p class="bq-muted">Your own QR code for customers to scan.</p></div>
-      </div>
-      <div class="bq-upload-area">
-        <img id="bq-upi-qr-preview" alt="UPI QR code preview" hidden>
-        <label class="bq-upload-button" for="bq-upi-qr-file">＋ Choose UPI QR code</label>
-        <input id="bq-upi-qr-file" type="file" accept="image/png,image/jpeg,image/webp"
-          onchange="bqPreviewImage(this,'bq-upi-qr-preview')">
-        <label for="bq-upi-id" class="bq-label">UPI ID</label>
-        <input class="inp" id="bq-upi-id" placeholder="yourname@bank" maxlength="60">
-      </div>
-    </div>
-
-    <button class="btn btn-gold btn-full" onclick="bqSaveSettings()">Save changes</button>
-    <p id="bq-settings-message" class="bq-muted" role="status" style="margin-top:10px"></p>
-    <div style="height:20px"></div>
-  </div>
-
-  <!-- ============ BOTTOM TABS ============ -->
-  <div class="tabs" id="b-tabs">
-    <button class="tab" data-tab="dashboard" onclick="bTab('dashboard',this)"><span class="tab-ico">▦</span>Dashboard</button>
-    <button class="tab" data-tab="svc" onclick="bTab('svc',this)"><span class="tab-ico">✂️</span>Services</button>
-    <button class="tab on" data-tab="queue" onclick="bTab('queue',this)"><span class="tab-ico">📋</span>Queue</button>
-    <button class="tab" data-tab="analytics" onclick="bTab('analytics',this)"><span class="tab-ico">📊</span>Analytics</button>
-    <button class="tab" data-tab="bookings" onclick="bTab('bookings',this)"><span class="tab-ico">▤</span>Bookings</button>
-    <button class="tab" data-tab="calendar" onclick="bTab('calendar',this)"><span class="tab-ico">📅</span>Calendar</button>
-    <button class="tab" data-tab="staff" onclick="bTab('staff',this)"><span class="tab-ico">♙</span>Staff</button>
-    <button class="tab" data-tab="profile" onclick="bTab('profile',this)"><span class="tab-ico">👤</span>Profile</button>
-    <button class="tab" data-tab="settings" onclick="bTab('settings',this)"><span class="tab-ico">⚙</span>Settings</button>
-  </div>
-</div>
-
-<!-- ============ MODAL: EDIT BARBER PROFILE ============ -->
-<div class="overlay" id="m-editbarber">
-  <div class="modal">
-    <div style="font-size:20px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:18px;">Edit Barber Profile</div>
-    <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:20px;">
-      <div><label>Full Name</label><input class="inp" id="bp-name" type="text" placeholder="Your full name" maxlength="50"></div>
-      <div><label>Phone Number</label><input class="inp" id="bp-phone" type="tel" maxlength="10" inputmode="numeric"></div>
-      <div><label>Shop Name</label><input class="inp" id="bp-shop" type="text" placeholder="Your shop name" maxlength="60"></div>
-      <div><label>Shop Address</label><input class="inp" id="bp-address" type="text" maxlength="120"></div>
-      <div><label>Opening Time</label><input class="inp" id="bp-open" type="time"></div>
-      <div><label>Closing Time</label><input class="inp" id="bp-close" type="time"></div>
-      <div><label>Bank Name</label><input class="inp" id="bp-bank" type="text" placeholder="e.g. HDFC Bank" maxlength="50"></div>
-      <div><label>Account Last 4 Digits</label><input class="inp" id="bp-last4" type="tel" maxlength="4" inputmode="numeric"></div>
-    </div>
-    <div style="padding:10px 12px;margin-bottom:18px;border-radius:var(--r);background:var(--s2);color:var(--txt2);font-size:12px;line-height:1.5;">
-      Your rating is calculated from customer reviews and cannot be edited manually.</div>
-    <div style="display:flex;gap:10px;">
-      <button class="btn btn-outline" style="flex:1" onclick="closeModal('m-editbarber')">Cancel</button>
-      <button class="btn btn-gold" style="flex:1" onclick="saveBarberProfile()">Save Changes</button>
     </div>
   </div>
-</div>
-
-<!-- ============ MODAL: WALK-IN ============ -->
-<div class="overlay" id="m-walkin">
-  <div class="modal">
-    <div style="font-size:20px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:18px;">Add Walk-in Customer</div>
-    <div style="margin-bottom:14px">
-      <label>Customer Name</label>
-      <input class="inp" id="walkin-name" type="text" placeholder="Enter customer name" maxlength="50">
-    </div>
-    <div style="margin-bottom:20px">
-      <label>Service</label>
-      <select class="inp" id="walkin-service"></select>
-    </div>
-    <div style="display:flex;gap:10px;">
-      <button class="btn btn-outline" style="flex:1" onclick="closeModal('m-walkin')">Cancel</button>
-      <button class="btn btn-gold" style="flex:1" onclick="addWalkinCustomer()">Add Customer</button>
-    </div>
-  </div>
-</div>
-
-<!-- ============ MODAL: ADD STAFF (new) ============ -->
-<div class="overlay" id="m-staff">
-  <div class="modal">
-    <div style="font-size:20px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:18px;">Add Team Member</div>
-    <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:20px;">
-      <div><label>Full Name</label><input class="inp" id="bq-staff-name" type="text" maxlength="50" placeholder="e.g. Rohit Verma"></div>
-      <div><label>Specialty</label><input class="inp" id="bq-staff-role" type="text" maxlength="50" placeholder="e.g. Haircut &amp; Styling"></div>
-      <div><label>Phone (optional)</label><input class="inp" id="bq-staff-phone" type="tel" maxlength="10" inputmode="numeric"></div>
-    </div>
-    <div style="display:flex;gap:10px;">
-      <button class="btn btn-outline" style="flex:1" onclick="closeModal('m-staff')">Cancel</button>
-      <button class="btn btn-gold" style="flex:1" onclick="bqAddStaff()">Add Member</button>
+  <div class="overlay" id="m-walkin">
+    <div class="modal">
+      <div style="font-size:20px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:18px;">Add Walk-in Customer
+      </div>
+      <div style="margin-bottom:14px">
+        <label>Customer Name</label>
+        <input class="inp" id="walkin-name" type="text" placeholder="Enter customer name" maxlength="50">
+      </div>
+      <div style="margin-bottom:20px">
+        <label>Service</label>
+        <select class="inp" id="walkin-service"></select>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-outline" style="flex:1" onclick="closeModal('m-walkin')">Cancel</button>
+        <button class="btn btn-gold" style="flex:1" onclick="addWalkinCustomer()">Add Customer</button>
+      </div>
     </div>
   </div>
-</div>
+  <div class="overlay" id="m-staff">
+    <div class="modal">
+      <div style="font-size:20px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:18px;">Add Team Member
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:20px;">
+        <div><label>Full Name</label><input class="inp" id="bq-staff-name" type="text" maxlength="50"
+            placeholder="e.g. Rohit Verma"></div>
+        <div><label>Specialty</label><input class="inp" id="bq-staff-role" type="text" maxlength="50"
+            placeholder="e.g. Haircut &amp; Styling"></div>
+        <div><label>Phone (optional)</label><input class="inp" id="bq-staff-phone" type="tel" maxlength="10"
+            inputmode="numeric"></div>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-outline" style="flex:1" onclick="closeModal('m-staff')">Cancel</button>
+        <button class="btn btn-gold" style="flex:1" onclick="bqAddStaff()">Add Member</button>
+      </div>
+    </div>
+  </div>
 
   <script src="script.js"></script>
+  <!-- <script src="qr_bridge.js"></script> -->
+  <script src="qr_upload.js"></script>
 
 </body>
+
 </html>
