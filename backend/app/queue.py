@@ -236,10 +236,6 @@ def register_service(name, price, duration):
     return service
 
 
-# --------------------------------------------------
-# DEMO DATA
-# --------------------------------------------------
-
 def ensure_demo_data():
     """Create demo shops, barbers and services if missing."""
 
@@ -319,10 +315,6 @@ def ensure_demo_data():
     db.session.commit()
 
 
-# --------------------------------------------------
-# SERIALIZATION
-# --------------------------------------------------
-
 def queue_item_json(item):
     return {
         "id": item.id,
@@ -379,9 +371,6 @@ def service_json(service):
     }
 
 
-# --------------------------------------------------
-# INITIALIZE DEMO DATA
-# --------------------------------------------------
 
 @queue_bp.route("/api/queue/initialize-demo", methods=["POST"])
 def initialize_demo():
@@ -400,10 +389,6 @@ def initialize_demo():
             500
         )
 
-
-# --------------------------------------------------
-# LIST SHOPS AND SERVICES
-# --------------------------------------------------
 
 @queue_bp.route("/api/shops", methods=["GET"])
 def get_shops():
@@ -437,29 +422,6 @@ def get_services():
         logging.exception("Could not fetch services")
         return error_response("Could not load services.", 500)
 
-
-# @queue_bp.route("/api/shops/sync", methods=["POST"])
-# @barber_required
-# def sync_shop():
-#     data = request.get_json(silent=True) or {}
-#     shop = g.barber.shop
-
-#     try:
-#         if "open" in data:
-#             shop.status = "open" if data["open"] else "closed"
-
-#         if data.get("address"):
-#             shop.address = safe_text(data["address"], 255)
-
-#         db.session.commit()
-#         return jsonify({
-#             "success": True,
-#             "shop": shop_json(shop)
-#         })
-
-#     except Exception:
-#         db.session.rollback()
-#         return error_response("Could not update the shop.", 500)
 @queue_bp.route("/api/shops/sync", methods=["POST"])
 @barber_required
 def sync_shop():
@@ -484,9 +446,6 @@ def sync_shop():
         return error_response("Could not update the shop.", 500)
 
 
-# --------------------------------------------------
-# REGISTER / SYNC A CUSTOM SERVICE
-# --------------------------------------------------
 
 @queue_bp.route("/api/services/sync", methods=["POST"])
 def sync_service():
@@ -539,11 +498,6 @@ def sync_service():
             "Could not save service. Check the Flask terminal.",
             500
         )
-
-
-# --------------------------------------------------
-# BARBER SHOP UPI QR CODE
-# --------------------------------------------------
 
 MAX_QR_BYTES = 5 * 1024 * 1024
 
@@ -617,10 +571,6 @@ def upload_shop_upi_qr():
         logging.exception("Shop UPI QR upload failed")
         return error_response("Could not save the QR image.", 500)
 
-
-# --------------------------------------------------
-# BARBER ACCOUNTS
-# --------------------------------------------------
 
 @queue_bp.route("/api/barbers/register", methods=["POST"])
 def barber_register():
@@ -781,9 +731,6 @@ def barber_me():
         return error_response("Could not save changes.", 500)
 
 
-# --------------------------------------------------
-# SHOP PHOTOS
-# --------------------------------------------------
 
 @queue_bp.route("/api/barbers/me/photos", methods=["POST"])
 @barber_required
@@ -874,9 +821,6 @@ def delete_shop_photo(photo_id):
     return jsonify({"success": True})
 
 
-# --------------------------------------------------
-# BARBER CONFIRMS A UPI-QR PAYMENT
-# --------------------------------------------------
 
 @queue_bp.route("/api/queue/<int:entry_id>/payment", methods=["POST"])
 @barber_required
@@ -901,9 +845,6 @@ def confirm_upi_payment(entry_id):
     })
 
 
-# --------------------------------------------------
-# GET QUEUE
-# --------------------------------------------------
 
 @queue_bp.route("/api/queue", methods=["GET"])
 def get_queue():
@@ -948,9 +889,6 @@ def get_queue():
         return error_response("Could not load queue.", 500)
 
 
-# --------------------------------------------------
-# CREATE QUEUE ENTRY
-# --------------------------------------------------
 
 @queue_bp.route("/api/queue", methods=["POST"])
 def create_queue_entry():
@@ -1064,11 +1002,6 @@ def create_queue_entry():
             500
         )
 
-
-# --------------------------------------------------
-# ADVANCE QUEUE
-# --------------------------------------------------
-
 def advance_queue(shop_id):
     """Serve the earliest waiting token when nobody is serving."""
 
@@ -1091,10 +1024,6 @@ def advance_queue(shop_id):
         next_entry.status = "serving"
         next_entry.started_at = datetime.utcnow()
 
-
-# --------------------------------------------------
-# COMPLETE TOKEN
-# --------------------------------------------------
 
 @queue_bp.route("/api/queue/<int:entry_id>/complete", methods=["POST"])
 @barber_required
@@ -1131,10 +1060,6 @@ def complete_queue_entry(entry_id):
         return error_response("Could not complete token.", 500)
 
 
-# --------------------------------------------------
-# SKIP TOKEN
-# --------------------------------------------------
-
 @queue_bp.route("/api/queue/<int:entry_id>/skip", methods=["POST"])
 @barber_required
 def skip_queue_entry(entry_id):
@@ -1168,10 +1093,6 @@ def skip_queue_entry(entry_id):
         logging.exception("Token skip failed")
         return error_response("Could not skip token.", 500)
 
-
-# --------------------------------------------------
-# STATUS OF ONE BOOKING (customer polls this)
-# --------------------------------------------------
 
 @queue_bp.route("/api/queue/<int:entry_id>/status", methods=["GET"])
 def queue_entry_status(entry_id):
@@ -1350,9 +1271,6 @@ def customer_history(phone):
     })
 
 
-# --------------------------------------------------
-# SUPPORT TICKETS
-# --------------------------------------------------
 
 def ticket_json(t):
     return {
@@ -1414,11 +1332,6 @@ def list_tickets():
         "success": True,
         "tickets": [ticket_json(t) for t in rows]
     })
-
-
-# --------------------------------------------------
-# REVIEW PHOTOS & VIDEOS
-# --------------------------------------------------
 
 MAX_IMAGE_BYTES = 5 * 1024 * 1024
 MAX_VIDEO_BYTES = 25 * 1024 * 1024
@@ -1603,10 +1516,6 @@ def shop_reviews():
     return jsonify({"success": True, "reviews": out[:20]})
 
 
-# --------------------------------------------------
-# RATINGS
-# --------------------------------------------------
-
 @queue_bp.route("/api/ratings", methods=["POST"])
 def add_rating():
     data = request.get_json(silent=True) or {}
@@ -1655,9 +1564,6 @@ def add_rating():
         return error_response("Could not save rating.", 500)
 
 
-# --------------------------------------------------
-# BARBER ANALYTICS
-# --------------------------------------------------
 
 @queue_bp.route("/api/analytics", methods=["GET"])
 def shop_analytics():
