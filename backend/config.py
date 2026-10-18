@@ -1,27 +1,12 @@
-# import os
-# from dotenv import load_dotenv
-
-# load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
-
-# class Config:
-#     SECRET_KEY = os.environ.get("SECRET_KEY","trimq-development-secret-key")
-
-#     SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL","sqlite:///trimq.db")
-    
-#     SQLALCHEMY_TRACK_MODIFICATIONS = False
-
-#     RAZORPAY_KEY_ID = os.environ.get("RAZORPAY_KEY_ID")
-#     RAZORPAY_KEY_SECRET = os.environ.get("RAZORPAY_KEY_SECRET")
-    
 import os
+import re
 from dotenv import load_dotenv
 
 load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 
-# Render/Heroku-style URLs start with "postgres://", but SQLAlchemy 2 needs "postgresql://"
 _db_url = os.environ.get("DATABASE_URL", "sqlite:///trimq.db")
-if _db_url.startswith("postgres://"):
-    _db_url = _db_url.replace("postgres://", "postgresql://", 1)
+# always use the psycopg2 driver that requirements.txt installs
+_db_url = re.sub(r"^postgres(ql)?(\+\w+)?://", "postgresql+psycopg2://", _db_url)
 
 
 class Config:
