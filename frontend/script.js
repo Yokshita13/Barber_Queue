@@ -1658,10 +1658,10 @@ function delSvc(i){
 }
 
 const serviceEmojis = [
-  '💇','💇‍♂️','💇‍♀️','💈','✂️','🧴','🧔','🪒','👨‍🦰','👨‍🦱','💆','🧖','🧖‍♂️','🧖‍♀️','✨','💅','🎨','🖌️','🌈','💄','👄','👁️','💋','🛁','🧼','🧽','🌸','🌺','🌹','😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗','🤔','🤭','🤫','🤥','😶','😐','😑','😬','🙄','😯','😦','😧','😮','😲','🥱',
-  '😴','🤤','😪','😵','🤐','🥴','🤢','🤮','🤧','😷','👶','🧒','👦','👧','🧑','👱','👨','👩','🧔','👴','👵','🙍','🙎','🙅','🙆','💁','🙋','🧏','🙇','🤦','🤷','👮','👷','💂','🕵️','👩‍⚕️','👨‍⚕️','👩‍🏫','👨‍🏫','👩‍💻','👨‍💻','👩‍🍳','👨‍🍳','👩‍🎨','👨‍🎨','👩‍🚀','👨‍🚀','🤵','👰','💅','💇','💇‍♂️','💇‍♀️','💈','✂️','🪮','🪒','🧔','🧴','💆','💆‍♂️','💆‍♀️','🧖','🧖‍♂️','🧖‍♀️','💅','💄','👄','👁️','👀','🪞','🛁','🧽','🎨','🖌️','💎','👑','⭐','🌟','🔥','💫','🌸','🌺','🌹','🌷','🌻','🌼','🌱','🌿','☘️','🍀','🌳','🌴','🌵','🌾','🍃','🍂',
-  '🍁','🍄','🌍','🌎','🌏','🌙','🌞','☀️','🌤️','⛅','🌧️','⛈️','🌩️','❄️','☃️','🌈','⚡','🔥','💧','🌊','⭐','🌟','🍎','🍐','🍊','🍋','🍌','🍉','🍇','🍓',
-  '🫐','🍒','🍑','🥭','🍍','🥥','🥝','🍅','❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖','💘','💝',
+  '💇','💇‍♂️','💇‍♀️','💈','✂️','🧴','🧔','🪒','👨‍🦰','👨‍🦱','💆','🧖','🧖‍♂️','🧖‍♀️','✨','💅','🎨','🖌️','🌈','💄','👄','💋','🧼','🧽','🌸','🌺','🌹','😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚','😋','🥳','🤗','🤭',
+  '😴','🤤','😷','👨','👩','🧔','👴','👵','🙍','👰','💅','💇','💇‍♂️','💇‍♀️','✂️',,'🧔','🧴','💆','💆‍♂️','💆‍♀️','🧖','🧖‍♂️','🧖‍♀️','💅','💄','👄','🪞','🛁','🧽','🎨','⭐','🌟','🔥','💫','🌸','🌺','🌹','🌷','🌻','🌼',
+  '🍁','🌈','⚡','🔥','💧','🌊','⭐','🌟','🍎','🍐','🍊','🍋','🍌','🍉','🍇','🍓',
+  '🫐','🍒','🍑','🥭','🍍','🥥','🥝','🍅','❤️','🧡','💛','💚','💙','💜','❣️','💕','💞','💓','💗','💖','💘','💝',
 ];
 function loadEmojiPicker(){
   const grid = document.getElementById('emoji-grid');
@@ -5275,4 +5275,3929 @@ window.S = S;   // expose the state object so the add-on code can read S.barber
     }
     return out;
   };
+})();
+
+/* =========================================================
+   BARBERQ — REAL "DELETE ACCOUNT" FOR BARBERS
+   Wipes the saved profile, public shop, services, team,
+   bookings and UPI details, so it differs from Logout.
+   ========================================================= */
+(function () {
+  "use strict";
+
+  const DEFAULT_SERVICES = [
+    { id: 1, name: "Hair Cut", price: 250, dur: 20, ico: "💇" },
+    { id: 2, name: "Beard Trim", price: 150, dur: 15, ico: "🧔" },
+    { id: 3, name: "Hair Color", price: 800, dur: 60, ico: "🎨" },
+    { id: 4, name: "Facial", price: 600, dur: 45, ico: "✨" },
+    { id: 5, name: "Hair Spa", price: 1200, dur: 90, ico: "💆" }
+  ];
+
+  window.deleteBarberAccount = function () {
+    const shop = S.barber && S.barber.shopName;
+    const msg = "Delete your barber account permanently?\n\n" +
+      "This removes your profile, shop listing, services, team, bookings " +
+      "and UPI details from this device. It cannot be undone.";
+    if (!confirm(msg)) return;
+
+    // 1) saved data on this browser
+    try {
+      ["barberProfile", "barberProfilePhoto", "barberServices",
+       "barberStaff", "barberUpi"].forEach(k => localStorage.removeItem(k));
+      Object.keys(localStorage)
+        .filter(k => k.indexOf("barberBookings:") === 0)
+        .forEach(k => localStorage.removeItem(k));
+      sessionStorage.removeItem("barberqView");
+    } catch (e) { console.warn("Could not clear saved data:", e); }
+
+    // 2) remove the shop customers see (also clears barberShopPublic)
+    unpublishBarberShop();
+
+    // 3) reset everything held in memory
+    S.barber = {
+      name: "", phone: "", shopName: "", address: "",
+      openingTime: "", closingTime: "", rating: 0, ratingCount: 0,
+      payoutBank: "", payoutLast4: "", photo: "", onlineCollected: 0, shopType: ""
+    };
+    S.services = DEFAULT_SERVICES.map(s => Object.assign({}, s));
+    S.bq = [];
+    S.earn = 0;
+    S.doneCnt = 0;
+    S.barberStats = null;
+    S.shopOpen = true;
+    window.bqAppointments = [];
+
+    S.role = null;
+    toast("Your barber account was deleted");
+    setTimeout(() => go("s-land"), 700);
+  };
+})();
+
+(function () {
+  'use strict';
+  const CREW = 'bqShopCrew:', ASSIGN = 'bqCrewAssign:';
+  const k = (p, n) => p + String(n || '').trim().toLowerCase();
+  const rd = (key, d) => { try { return JSON.parse(localStorage.getItem(key) || 'null') || d; } catch (e) { return d; } };
+  const wr = (key, v) => { try { localStorage.setItem(key, JSON.stringify(v)); } catch (e) { /* ignore */ } };
+  const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  /* ---------- barber side: publish crew list for this shop ---------- */
+  function publishCrew() {
+    try {
+      const b = S.barber || {};
+      if (!b.shopName) return;
+      const list = [];
+      if (b.name) list.push({ id: 'owner', name: b.name, role: 'Owner / Head barber' });
+      rd('barberStaff', []).forEach(m => list.push({ id: m.id, name: m.name, role: m.role || 'Barber' }));
+      wr(k(CREW, b.shopName), list);
+    } catch (e) { /* ignore */ }
+  }
+  setInterval(publishCrew, 3000); publishCrew();
+
+  /* ---------- customer side: chooser inside Join popup ---------- */
+  let picked = '';                 // '' = anyone
+  let pickedFor = null;
+
+  function renderPicker() {
+    const host = document.getElementById('m-svcs');
+    if (!host) return;
+    const s = S.shops[S.selectedShop];
+    let box = document.getElementById('bq-crew-pick');
+    if (!box) {
+      box = document.createElement('div');
+      box.id = 'bq-crew-pick';
+      box.style.cssText = 'margin:14px 0 4px';
+      host.insertAdjacentElement('afterend', box);
+      box.addEventListener('click', e => {
+        const c = e.target.closest('[data-crew]');
+        if (!c) return;
+        picked = c.getAttribute('data-crew');
+        renderPicker();
+      });
+    }
+    if (!s) { box.innerHTML = ''; return; }
+    if (pickedFor !== s.name) { pickedFor = s.name; picked = ''; }
+    const crew = rd(k(CREW, s.name), []);
+    const chip = (val, title, sub, on) =>
+      '<button type="button" data-crew="' + esc(val) + '" style="flex:0 0 auto;min-width:104px;text-align:left;padding:10px 12px;border-radius:12px;cursor:pointer;font:inherit;color:inherit;' +
+      'background:' + (on ? 'var(--gdim)' : 'var(--s2)') + ';border:1.5px solid ' + (on ? 'var(--gold)' : 'var(--b1)') + '">' +
+      '<div style="font-weight:600;font-size:13px">' + esc(title) + '</div>' +
+      '<div style="font-size:11px;color:var(--txt2);margin-top:2px">' + esc(sub) + '</div></button>';
+    box.innerHTML =
+      '<div style="font-size:13px;font-weight:600;margin-bottom:8px">Choose your barber</div>' +
+      '<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px">' +
+      chip('', 'Anyone', 'First available', picked === '') +
+      crew.map(m => chip(m.name, m.name, m.role, picked === m.name)).join('') +
+      '</div>';
+  }
+
+  const _build = window.buildJoinModal;
+  window.buildJoinModal = function () {
+    const r = _build.apply(this, arguments);
+    renderPicker();
+    return r;
+  };
+
+  /* send the choice with the booking and remember it per queue entry */
+  const _fin = window.finalizeJoin;
+  window.finalizeJoin = async function (p, s, paidOnline, extra) {
+    extra = Object.assign({}, extra || {});
+    const who = picked;
+    extra.staff_name = who || 'Anyone';
+    const before = S.myQueueEntryId;
+    const r = await _fin.call(this, p, s, paidOnline, extra);
+    try {
+      if (s && S.myQueueEntryId && S.myQueueEntryId !== before) {
+        const key = k(ASSIGN, s.name), m = rd(key, {});
+        m[String(S.myQueueEntryId)] = who || 'Anyone';
+        wr(key, m);
+      }
+    } catch (e) { /* ignore */ }
+    return r;
+  };
+
+  /* ---------- barber side: show the requested barber on queue rows ---------- */
+  const _bq = window.renderBQ;
+  window.renderBQ = function () {
+    const r = _bq.apply(this, arguments);
+    try {
+      const shop = S.barber && S.barber.shopName;
+      if (!shop) return r;
+      const m = rd(k(ASSIGN, shop), {});
+      const rows = document.querySelectorAll('#b-qlist .qi');
+      rows.forEach((row, i) => {
+        const q = S.bq[i];
+        if (!q) return;
+        const who = q.staff || m[String(q.id)];     // q.staff once backend returns it
+        if (!who) return;
+        const sub = row.querySelector('div[style*="font-size:12px"]');
+        if (sub && !sub.querySelector('.bq-crew-tag'))
+          sub.insertAdjacentHTML('beforeend', ' · <b class="bq-crew-tag" style="color:var(--gold)">' +
+            (who === 'Anyone' ? 'Any barber' : '✂ ' + esc(who)) + '</b>');
+      });
+    } catch (e) { /* ignore */ }
+    return r;
+  };
+})();
+
+(function () {
+  'use strict';
+
+  const $ = id => document.getElementById(id);
+  const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const rd = (key, d) => { try { return JSON.parse(localStorage.getItem(key) || 'null') || d; } catch (e) { return d; } };
+  const wr = (key, v) => { try { localStorage.setItem(key, JSON.stringify(v)); return true; } catch (e) { toast('⚠️', 'Could not save on this device'); return false; } };
+  const money = n => '₹' + Math.round(n || 0).toLocaleString('en-IN');
+  const pad = n => String(n).padStart(2, '0');
+  const iso = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  const fmtFull = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const fmtShort = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const fmtDay = d => d.toLocaleDateString('en-US', { weekday: 'short' });
+  const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+  const initials = n => String(n || '?').trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase();
+
+  const COLORS = ['#3b82f6', '#8b5cf6', '#14b8a6', '#ec4899', '#f59e0b', '#22d3ee', '#f87171', '#a3e635'];
+  const GRADS = ['#7c6cff,#4338ca', '#14b8a6,#0f766e', '#3b82f6,#1d4ed8', '#ec4899,#be185d',
+                 '#f59e0b,#b45309', '#22d3ee,#0e7490', '#f87171,#b91c1c', '#a3e635,#4d7c0f'];
+  const STATUS = { 'Available': 'av', 'With Customer': 'wc', 'On Break': 'br', 'Off today': 'off' };
+  const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+  const shopKey = () => String((S.barber && S.barber.shopName) || '').trim().toLowerCase();
+  const K_ASSIGN = () => 'bqCrewAssign:' + shopKey();   // written by crew_picker.js
+  const K_SERVED = () => 'bqServedBy:' + shopKey();     // owner's manual assignment
+  const K_SALARY = () => 'bqStaffSalary:' + shopKey();  // { name: {fixed, pct} }
+  const K_META = () => 'bqStaffMeta:' + shopKey();      // { name: {status, rating} }
+
+  const TAB_ID = 'b-staffstats-tab';
+  let period = '7';
+  let cache = null;
+  let chartGeom = null;
+  let editing = null;
+
+  /* ================= data ================= */
+  function team() {
+    const b = S.barber || {};
+    const list = [];
+    if (b.name) list.push({ name: b.name, role: 'Owner / Head barber' });
+    rd('barberStaff', []).forEach(m => {
+      if (m && m.name && !list.some(x => x.name === m.name)) list.push({ name: m.name, role: m.role || 'Barber' });
+    });
+    return list.map((m, i) => Object.assign(m, { i }));
+  }
+
+  function getRange() {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const from = period === 'month'
+      ? new Date(today.getFullYear(), today.getMonth(), 1)
+      : addDays(today, -(Number(period) - 1));
+    const days = [];
+    for (let d = new Date(from); d <= today; d = addDays(d, 1)) days.push(new Date(d));
+    const n = days.length;
+    return {
+      from, to: today, days, n,
+      prevFrom: addDays(from, -n), prevTo: addDays(from, -1),
+      label: period === '7' ? 'last 7 days' : period === '30' ? 'last 30 days' : 'this month',
+      factor: Math.min(1, n / 30)
+    };
+  }
+
+  const priceOf = a => {
+    const s = (S.services || []).find(x => x.name === a.service);
+    return s ? Number(s.price) || 0 : 0;
+  };
+
+  function compute() {
+    const members = team();
+    const meta = rd(K_META(), {}), salary = rd(K_SALARY(), {});
+    const served = rd(K_SERVED(), {}), asked = rd(K_ASSIGN(), {});
+    const r = getRange();
+    const f = iso(r.from), t = iso(r.to), pf = iso(r.prevFrom), pt = iso(r.prevTo);
+
+    const completed = (window.bqAppointments || []).filter(a => a && a.status === 'completed');
+    const done = completed.filter(a => a.date >= f && a.date <= t);
+    const prevCount = completed.filter(a => a.date >= pf && a.date <= pt).length;
+
+    const dayIdx = {};
+    r.days.forEach((d, i) => { dayIdx[iso(d)] = i; });
+
+    const stats = {};
+    members.forEach(m => { stats[m.name] = { count: 0, revenue: 0, daily: r.days.map(() => 0), svc: {} }; });
+    const svcTotals = {}, weekdays = [0, 0, 0, 0, 0, 0, 0], unassigned = [];
+    let revenue = 0;
+
+    done.forEach(a => {
+      const price = priceOf(a);
+      revenue += price;
+      svcTotals[a.service] = (svcTotals[a.service] || 0) + 1;
+      weekdays[new Date(a.date + 'T00:00:00').getDay()]++;
+      const key = String(a.id);
+      const asking = asked[key] && asked[key] !== 'Anyone' ? asked[key] : '';
+      const who = served[key] || asking;
+      if (who && stats[who]) {
+        const s = stats[who];
+        s.count++; s.revenue += price;
+        s.daily[dayIdx[a.date]]++;
+        s.svc[a.service] = (s.svc[a.service] || 0) + 1;
+      } else unassigned.push(a);
+    });
+
+    const maxCount = Math.max(0, ...members.map(m => stats[m.name].count));
+    const rows = members.map(m => {
+      const s = stats[m.name], sal = salary[m.name] || {}, mt = meta[m.name] || {};
+      const fixed = Number(sal.fixed) || 0, pct = Number(sal.pct) || 0;
+      const rating = Number(mt.rating) > 0 ? Number(mt.rating) : null;
+      return {
+        m, s, fixed, pct, rating,
+        payable: fixed * r.factor + s.revenue * pct / 100,
+        status: STATUS[mt.status] ? mt.status : 'Available',
+        perf: maxCount ? Math.round(s.count / maxCount * 100) : 0
+      };
+    });
+    return { r, rows, done, prevCount, revenue, svcTotals, weekdays, unassigned };
+  }
+
+  /* ================= render ================= */
+  const setText = (id, v) => { const n = $(id); if (n) n.textContent = v; };
+  const setTrend = (id, text, cls) => { const n = $(id); if (n) { n.textContent = text; n.className = 'sa-ktrend ' + (cls || ''); } };
+
+  function renderHeader(c) {
+    setText('sa-range-text', fmtFull(c.r.from) + ' - ' + fmtFull(c.r.to));
+    setText('sa-dist-period', c.r.label);
+    const sel = $('sa-period'); if (sel && sel.value !== period) sel.value = period;
+    const b = S.barber || {}, av = $('sa-owner-av');
+    if (av) {
+      if (b.photo) av.innerHTML = '<img alt="" src="' + esc(b.photo) + '">';
+      else av.textContent = initials(b.name || 'B');
+    }
+    const dot = $('sa-bell-dot'); if (dot) dot.hidden = !c.unassigned.length;
+  }
+
+  function renderKpis(c) {
+    const n = c.rows.length;
+    const active = c.rows.filter(x => x.status !== 'Off today').length;
+    const rated = c.rows.filter(x => x.rating !== null);
+    const avg = rated.length ? rated.reduce((t, x) => t + x.rating, 0) / rated.length : null;
+    const cur = c.done.length, prev = c.prevCount;
+
+    setText('sa-k-staff', n);
+    setTrend('sa-k-staff-t', n ? (n > 1 ? 'Owner + ' + (n - 1) + ' crew' : 'Just you so far') : 'Add team members', n ? 'up' : 'mu');
+    setText('sa-k-active', active);
+    setTrend('sa-k-active-t', n ? Math.round(active / n * 100) + '% of team' : '—', 'up');
+    setText('sa-k-rating', avg === null ? '—' : avg.toFixed(1));
+    setTrend('sa-k-rating-t', rated.length ? rated.length + ' of ' + n + ' rated' : 'Add ratings with ✎', rated.length ? 'up' : 'mu');
+    setText('sa-k-customers', cur);
+    if (prev > 0) {
+      const p = Math.round((cur - prev) / prev * 100);
+      setTrend('sa-k-customers-t', (p >= 0 ? '↑ ' : '↓ ') + Math.abs(p) + '% from last period', p >= 0 ? 'up' : 'dn');
+    } else setTrend('sa-k-customers-t', cur ? 'New activity this period' : 'No completed services yet', 'mu');
+  }
+
+  function smooth(pts, lo, hi) {
+    const cl = v => Math.max(lo, Math.min(hi, v));
+    let d = 'M' + pts[0][0].toFixed(1) + ',' + pts[0][1].toFixed(1);
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
+      d += ' C' + (p1[0] + (p2[0] - p0[0]) / 6).toFixed(1) + ',' + cl(p1[1] + (p2[1] - p0[1]) / 6).toFixed(1) +
+           ' ' + (p2[0] - (p3[0] - p1[0]) / 6).toFixed(1) + ',' + cl(p2[1] - (p3[1] - p1[1]) / 6).toFixed(1) +
+           ' ' + p2[0].toFixed(1) + ',' + p2[1].toFixed(1);
+    }
+    return d;
+  }
+
+  function renderChart(c) {
+    const host = $('sa-chart'), leg = $('sa-chart-legend');
+    if (!host) return;
+    if (!c.rows.length) { host.innerHTML = '<div class="sa-empty">Add your name and team members to see performance.</div>'; leg.innerHTML = ''; chartGeom = null; return; }
+
+    const n = c.r.n, W = 560, H = 240, L = 34, R = 12, T = 12, B = 40, pw = W - L - R, ph = H - T - B;
+    const dataMax = Math.max(0, ...c.rows.flatMap(x => x.s.daily));
+    const step = Math.max(1, Math.ceil(dataMax / 4)), max = step * 4;
+    const x = i => n < 2 ? L + pw / 2 : L + i * pw / (n - 1);
+    const y = v => T + ph - (v / max) * ph;
+
+    let grid = '';
+    for (let k = 0; k <= 4; k++) {
+      const yy = y(k * step);
+      grid += '<line class="sa-grid" x1="' + L + '" x2="' + (W - R) + '" y1="' + yy + '" y2="' + yy + '"/>' +
+              '<text class="sa-ax" x="' + (L - 8) + '" y="' + (yy + 4) + '" text-anchor="end">' + (k * step) + '</text>';
+    }
+    const every = Math.max(1, Math.ceil(n / 7));
+    c.r.days.forEach((d, i) => {
+      if (i % every) return;
+      if (n <= 7) grid += '<text class="sa-ax-s" x="' + x(i) + '" y="' + (H - 20) + '" text-anchor="middle">' + fmtDay(d) + '</text>' +
+                          '<text class="sa-ax-s" x="' + x(i) + '" y="' + (H - 6) + '" text-anchor="middle">' + fmtShort(d) + '</text>';
+      else grid += '<text class="sa-ax-s" x="' + x(i) + '" y="' + (H - 12) + '" text-anchor="middle">' + fmtShort(d) + '</text>';
+    });
+
+    let defs = '', series = '';
+    c.rows.forEach(row => {
+      const col = COLORS[row.m.i % COLORS.length];
+      const pts = row.s.daily.map((v, i) => [x(i), y(v)]);
+      defs += '<linearGradient id="sa-g' + row.m.i + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + col + '" stop-opacity=".28"/><stop offset="1" stop-color="' + col + '" stop-opacity="0"/></linearGradient>';
+      if (pts.length < 2) { series += '<circle cx="' + pts[0][0] + '" cy="' + pts[0][1] + '" r="4" fill="' + col + '"/>'; return; }
+      const d = smooth(pts, T, T + ph);
+      series += '<path d="' + d + ' L' + pts[n - 1][0] + ',' + (T + ph) + ' L' + pts[0][0] + ',' + (T + ph) + ' Z" fill="url(#sa-g' + row.m.i + ')"/>' +
+                '<path d="' + d + '" fill="none" stroke="' + col + '" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>';
+    });
+
+    host.innerHTML =
+      '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Customers served per day by each staff member"><defs>' + defs + '</defs>' +
+      grid + series + '<line class="sa-guide" id="sa-guide" x1="0" x2="0" y1="' + T + '" y2="' + (T + ph) + '"/></svg>' +
+      '<div class="sa-tip" id="sa-tip" hidden></div>';
+    chartGeom = { W, L, pw, n, x, days: c.r.days, rows: c.rows };
+
+    leg.innerHTML = c.rows.map(row =>
+      '<li><i style="background:' + COLORS[row.m.i % COLORS.length] + '"></i>' + esc(row.m.name.split(/\s+/)[0]) + '</li>').join('');
+  }
+
+  function onChartMove(e) {
+    const host = $('sa-chart'), g = chartGeom;
+    const svg = host && host.querySelector('svg'), tip = $('sa-tip'), guide = $('sa-guide');
+    if (!svg || !g || !tip || !guide) return;
+    const rc = svg.getBoundingClientRect();
+    const xv = (e.clientX - rc.left) / rc.width * g.W;
+    let i = g.n < 2 ? 0 : Math.round((xv - g.L) / g.pw * (g.n - 1));
+    i = Math.max(0, Math.min(g.n - 1, i));
+    const gx = g.x(i);
+    guide.setAttribute('x1', gx); guide.setAttribute('x2', gx); guide.style.opacity = 1;
+    tip.innerHTML = '<b>' + fmtDay(g.days[i]) + ', ' + fmtShort(g.days[i]) + '</b>' +
+      g.rows.map(r => '<span><i style="background:' + COLORS[r.m.i % COLORS.length] + '"></i>' +
+        esc(r.m.name.split(/\s+/)[0]) + ': <strong>' + r.s.daily[i] + '</strong></span>').join('');
+    tip.hidden = false;
+    const px = gx / g.W * rc.width;
+    tip.style.left = Math.max(70, Math.min(rc.width - 70, px)) + 'px';
+  }
+  function onChartLeave() {
+    const tip = $('sa-tip'), guide = $('sa-guide');
+    if (tip) tip.hidden = true;
+    if (guide) guide.style.opacity = 0;
+  }
+
+  function renderDonut(c) {
+    const host = $('sa-donut'), leg = $('sa-donut-legend');
+    if (!host) return;
+    const total = c.done.length;
+    let list = Object.entries(c.svcTotals).sort((a, b) => b[1] - a[1]);
+    const rest = list.slice(5).reduce((t, e) => t + e[1], 0);
+    list = list.slice(0, 5);
+    if (rest) list.push(['Other', rest]);
+
+    const R = 70, C = 2 * Math.PI * R, gap = list.length > 1 ? 3 : 0;
+    let cum = 0, segs = '';
+    list.forEach(([name, v], i) => {
+      const frac = v / total, len = Math.max(0, frac * C - gap);
+      segs += '<circle class="sa-seg" cx="90" cy="90" r="' + R + '" fill="none" stroke="' + COLORS[i % COLORS.length] +
+        '" stroke-width="22" stroke-dasharray="' + len.toFixed(2) + ' ' + (C - len).toFixed(2) +
+        '" stroke-dashoffset="' + (-cum * C).toFixed(2) + '" transform="rotate(-90 90 90)"><title>' + esc(name) + ': ' + v + '</title></circle>';
+      cum += frac;
+    });
+    host.innerHTML = '<svg viewBox="0 0 180 180" role="img" aria-label="Service distribution">' +
+      '<circle cx="90" cy="90" r="' + R + '" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="22"/>' + segs + '</svg>' +
+      '<div class="sa-donut-c"><span>Total</span><strong>' + total + '</strong></div>';
+    leg.innerHTML = list.length
+      ? list.map(([name, v], i) => '<li><i style="background:' + COLORS[i % COLORS.length] + '"></i><span>' + esc(name) + '</span><b>' + v + '</b></li>').join('')
+      : '<li class="sa-mute">No completed services in this range yet.</li>';
+  }
+
+  function renderTable(c) {
+    const body = $('sa-tbody');
+    if (!body) return;
+    if (!c.rows.length) { body.innerHTML = '<tr><td colspan="8" class="sa-empty">Add your name in Profile and team members in the Staff tab.</td></tr>'; return; }
+    body.innerHTML = c.rows.slice()
+      .sort((a, b) => b.s.count - a.s.count || a.m.name.localeCompare(b.m.name))
+      .map(row => {
+        const col = COLORS[row.m.i % COLORS.length], g = GRADS[row.m.i % GRADS.length], nm = esc(row.m.name);
+        return '<tr>' +
+          '<td><div class="sa-person"><span class="sa-av" style="background:linear-gradient(135deg,' + g + ')">' + esc(initials(row.m.name)) + '</span><strong>' + nm + '</strong></div></td>' +
+          '<td class="sa-mute sa-role">' + esc(row.m.i === 0 && /owner/i.test(row.m.role) ? 'Owner' : row.m.role) + '</td>' +
+          '<td class="sa-num"><strong>' + row.s.count + '</strong></td>' +
+          '<td>' + (row.rating !== null ? '<span class="sa-star">★</span> ' + row.rating.toFixed(1) : '<span class="sa-mute">—</span>') + '</td>' +
+          '<td><select class="sa-status s-' + STATUS[row.status] + '" data-status="' + nm + '" aria-label="Status of ' + nm + '">' +
+            Object.keys(STATUS).map(s => '<option' + (s === row.status ? ' selected' : '') + '>' + s + '</option>').join('') + '</select></td>' +
+          '<td><div class="sa-pbar"><i><b style="width:' + row.perf + '%;background:' + col + '"></b></i><span>' + row.perf + '%</span></div></td>' +
+          '<td><strong>' + money(row.payable) + '</strong></td>' +
+          '<td><button type="button" class="sa-edit" data-edit="' + nm + '" title="Edit pay, rating and status" aria-label="Edit ' + nm + '">✎</button></td></tr>';
+      }).join('');
+  }
+
+  function renderTop(c) {
+    const host = $('sa-top');
+    if (!host) return;
+    const best = c.rows.slice().sort((a, b) => b.s.count - a.s.count)[0];
+    if (!best || !best.s.count) { host.innerHTML = '<div class="sa-empty" style="padding:14px 0">No services assigned to a barber in this range yet.</div>'; return; }
+    const share = c.done.length ? Math.round(best.s.count / c.done.length * 100) : 0;
+    host.innerHTML =
+      '<div class="sa-top-h"><span class="sa-av" style="background:linear-gradient(135deg,' + GRADS[best.m.i % GRADS.length] + ')">' + esc(initials(best.m.name)) + '</span>' +
+      '<div><strong>' + esc(best.m.name) + '</strong><small>' + esc(best.m.role) + '</small>' +
+      (best.rating !== null ? '<em><span class="sa-star">★</span> ' + best.rating.toFixed(1) + '</em>' : '') + '</div></div>' +
+      '<div class="sa-top-stats"><div><strong>' + best.s.count + '</strong><span>Customers</span></div>' +
+      '<div><strong>' + share + '%</strong><span>Of all services</span></div>' +
+      '<div><strong>' + money(best.s.revenue) + '</strong><span>Earnings</span></div></div>';
+  }
+
+  const ICO = {
+    up: '<svg class="sa-ic" viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>',
+    cut: '<svg class="sa-ic" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>',
+    star: '<svg class="sa-ic sa-fill" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+    cal: '<svg class="sa-ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>'
+  };
+
+  function renderInsights(c) {
+    const host = $('sa-insights');
+    if (!host) return;
+    const total = c.done.length;
+    const best = c.rows.slice().sort((a, b) => b.s.count - a.s.count)[0];
+    const topSvc = Object.entries(c.svcTotals).sort((a, b) => b[1] - a[1])[0];
+    const rated = c.rows.filter(x => x.rating !== null);
+    const avg = rated.length ? rated.reduce((t, x) => t + x.rating, 0) / rated.length : null;
+    const wd = c.weekdays.indexOf(Math.max(...c.weekdays));
+
+    const tiles = [
+      ['up', '#2f6df6', best && best.s.count
+        ? esc(best.m.name.split(/\s+/)[0]) + ' served ' + best.s.count + ' customers (' + Math.round(best.s.count / total * 100) + '% of total).'
+        : 'Assign completed services to a barber to see who leads.'],
+      ['cut', '#0f9488', topSvc
+        ? esc(topSvc[0]) + ' remains the most booked service (' + Math.round(topSvc[1] / total * 100) + '%).'
+        : 'Service trends appear once bookings are completed.'],
+      ['star', '#6d4aff', avg !== null
+        ? 'Team average rating is ' + avg.toFixed(1) + ' across ' + rated.length + ' rated member' + (rated.length > 1 ? 's' : '') + '.'
+        : 'Add a rating to each member with ✎ to track team quality.'],
+      ['cal', '#a8730f', total
+        ? esc(WEEKDAYS[wd]) + ' is your busiest day. Consider extra staff availability.'
+        : 'Not enough data yet to find your busiest day.']
+    ];
+    host.innerHTML = tiles.map(t => '<div class="sa-ins"><span class="sa-ins-ico" style="background:' + t[1] + '">' + ICO[t[0]] + '</span><span>' + t[2] + '</span></div>').join('');
+  }
+
+  function renderUnassigned(c) {
+    const host = $('sa-unassigned');
+    if (!host) return;
+    if (!c.unassigned.length) { host.hidden = true; host.innerHTML = ''; return; }
+    host.hidden = false;
+    host.innerHTML =
+      '<h3 class="sa-ph">Unassigned services (' + c.unassigned.length + ')</h3>' +
+      '<p class="sa-pd" style="margin-bottom:8px">Booked as “Anyone”. Choose who served them so counts and pay are correct.</p>' +
+      c.unassigned.slice(-20).reverse().map(a =>
+        '<div class="sa-un-row"><div><strong>' + (a.token != null ? '#' + esc(a.token) + ' · ' : '') + esc(a.customer) + '</strong>' +
+        '<span>' + esc(a.service) + ' · ' + esc(a.date) + ' ' + esc(a.start) + '</span></div>' +
+        '<select data-assign="' + esc(a.id) + '"><option value="">Assign…</option>' +
+        c.rows.map(r => '<option value="' + esc(r.m.name) + '">' + esc(r.m.name) + '</option>').join('') + '</select></div>').join('');
+  }
+
+  function render() {
+    if (!$('sa-root')) return;
+    cache = compute();
+    renderHeader(cache); renderKpis(cache); renderChart(cache); renderDonut(cache);
+    renderTable(cache); renderTop(cache); renderInsights(cache); renderUnassigned(cache);
+  }
+
+  /* ================= edit popup ================= */
+  function previewPay() {
+    if (!cache || editing == null) return;
+    const row = cache.rows.find(x => x.m.name === editing); if (!row) return;
+    const fixed = Number($('sa-m-salary').value) || 0, pct = Number($('sa-m-pct').value) || 0;
+    const pay = fixed * cache.r.factor + row.s.revenue * pct / 100;
+    setText('sa-m-preview', 'Payable for ' + cache.r.label + ': ' + money(pay) +
+      ' (salary ' + money(fixed * cache.r.factor) + ' + commission ' + money(row.s.revenue * pct / 100) + ')');
+  }
+  function openEdit(name) {
+    const row = cache && cache.rows.find(x => x.m.name === name); if (!row) return;
+    editing = name;
+    setText('sa-m-name', name + ' · ' + row.m.role);
+    $('sa-m-salary').value = row.fixed || '';
+    $('sa-m-pct').value = row.pct || '';
+    $('sa-m-rating').value = row.rating !== null ? row.rating : '';
+    $('sa-m-status').value = row.status;
+    previewPay();
+    $('sa-modal').hidden = false;
+    $('sa-m-salary').focus();
+  }
+  function closeEdit() { editing = null; const m = $('sa-modal'); if (m) m.hidden = true; }
+  function saveEdit() {
+    if (editing == null) return;
+    const fixed = Number($('sa-m-salary').value) || 0;
+    const pct = Number($('sa-m-pct').value) || 0;
+    const rawRating = $('sa-m-rating').value.trim();
+    const rating = rawRating === '' ? 0 : Number(rawRating);
+    if (fixed < 0 || pct < 0 || pct > 100) { toast('⚠️', 'Salary must be 0 or more and commission 0–100%'); return; }
+    if (isNaN(rating) || rating < 0 || rating > 5) { toast('⚠️', 'Rating must be between 0 and 5'); return; }
+    const sal = rd(K_SALARY(), {}); sal[editing] = { fixed, pct };
+    const meta = rd(K_META(), {}); meta[editing] = { status: $('sa-m-status').value, rating };
+    if (wr(K_SALARY(), sal) && wr(K_META(), meta)) { toast('✅', 'Saved ' + editing); closeEdit(); render(); }
+  }
+
+  /* ================= events ================= */
+  function wire() {
+    const root = $('sa-root');
+    if (!root || root.dataset.wired) return !!root;
+    root.dataset.wired = '1';
+
+    root.addEventListener('change', e => {
+      const t = e.target;
+      if (t.id === 'sa-period') { period = t.value; render(); return; }
+      if (t.dataset.status !== undefined) {
+        const meta = rd(K_META(), {});
+        meta[t.dataset.status] = Object.assign({}, meta[t.dataset.status], { status: t.value });
+        if (wr(K_META(), meta)) render();
+        return;
+      }
+      if (t.dataset.assign !== undefined && t.value) {
+        const m = rd(K_SERVED(), {}); m[String(t.dataset.assign)] = t.value;
+        if (wr(K_SERVED(), m)) { toast('✅', 'Assigned to ' + t.value); render(); }
+      }
+    });
+    root.addEventListener('click', e => {
+      const ed = e.target.closest('[data-edit]');
+      if (ed) { openEdit(ed.getAttribute('data-edit')); return; }
+      if (e.target.closest('#sa-bell')) {
+        const u = $('sa-unassigned');
+        if (u && !u.hidden) u.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        else toast('✅', 'All completed services are assigned');
+      }
+    });
+    const chart = $('sa-chart');
+    chart.addEventListener('pointermove', onChartMove);
+    chart.addEventListener('pointerleave', onChartLeave);
+
+    const modal = $('sa-modal');
+    modal.addEventListener('click', e => { if (e.target === modal) closeEdit(); });
+    $('sa-m-cancel').addEventListener('click', closeEdit);
+    $('sa-m-save').addEventListener('click', saveEdit);
+    ['sa-m-salary', 'sa-m-pct'].forEach(id => $(id).addEventListener('input', previewPay));
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && !modal.hidden) closeEdit(); });
+    return true;
+  }
+
+  /* ================= tab switching ================= */
+  const baseBTab = window.bTab;
+  window.bTab = function (tab, el) {
+    const sec = $(TAB_ID);
+    if (tab === 'staffstats' && sec) {
+      document.querySelectorAll('[id^="b-"][id$="-tab"]').forEach(n => { n.style.display = 'none'; });
+      sec.style.display = 'block';
+      document.querySelectorAll('#b-tabs .tab').forEach(t => t.classList.remove('on'));
+      const b = el || document.querySelector('#b-tabs .tab[data-tab="staffstats"]');
+      if (b) b.classList.add('on');
+      wire(); render();
+      return;
+    }
+    if (sec) sec.style.display = 'none';
+    return baseBTab.apply(this, arguments);
+  };
+  window.bqRefreshStaffStats = render;
+
+  /* live refresh while visible (not while editing or using a control) */
+  setInterval(() => {
+    const sec = $(TAB_ID), root = $('sa-root');
+    if (!sec || sec.style.display !== 'block' || S.role !== 'barber') return;
+    if ($('sa-modal') && !$('sa-modal').hidden) return;
+    if (root && root.contains(document.activeElement) && /INPUT|SELECT/.test(document.activeElement.tagName)) return;
+    render();
+  }, 5000);
+
+  const ready = (typeof componentsReady !== 'undefined' ? componentsReady : Promise.resolve());
+  Promise.resolve(ready).then(wire).catch(() => {});
+})();
+
+(function () {
+  "use strict";
+
+  const $ = id => document.getElementById(id);
+  const esc = v => String(v == null ? "" : v).replace(/[&<>"']/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const enc = encodeURIComponent;
+  const pad = n => String(n).padStart(2, "0");
+  const iso = d => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+  const digits10 = p => String(p || "").replace(/\D/g, "").slice(-10);
+  const fmt12 = t => {
+    const [h, m] = String(t).split(":").map(Number);
+    return (h % 12 || 12) + ":" + pad(m) + " " + (h < 12 ? "AM" : "PM");
+  };
+  const fmtDate = s => new Date(s + "T00:00:00")
+    .toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
+  const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+  async function api(path, opts) {
+    const r = await fetch(BQ_BASE + path, opts);
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || !j.success) throw new Error(j.error || ("Server error " + r.status + " — booking is not available on the server yet"));
+    return j;
+  }
+  const send = (method, body) => ({
+    method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body)
+  });
+
+  const STATUS_TEXT = {
+    pending: "Waiting for barber", confirmed: "Confirmed ✅", rejected: "Declined",
+    cancelled: "Cancelled", expired: "Expired", completed: "Completed"
+  };
+  const STATUS_TAG = {
+    pending: "tg", confirmed: "tgreen", completed: "tgreen",
+    rejected: "tred", cancelled: "tgray", expired: "tgray"
+  };
+
+  /* =====================================================
+     CUSTOMER — slot picker
+     ===================================================== */
+  const B = { shop: null, cfg: null, svc: 0, date: "", slot: "", slots: [], reason: "", mine: [], sent: false };
+
+  const myPhone = () => digits10(S.user && S.user.phone) || digits10(localStorage.getItem("bqBookPhone"));
+  const myName = () => {
+    const n = S.user && S.user.name;
+    return (n && n !== "Customer") ? n : (localStorage.getItem("bqBookName") || "");
+  };
+  const currentSvc = () => {
+    const s = B.shop;
+    return s ? S.services[s.svcs[B.svc]] : null;
+  };
+  const chip = (on, off) =>
+    "flex:0 0 auto;padding:10px 12px;border-radius:12px;font:inherit;color:inherit;text-align:center;" +
+    "cursor:" + (off ? "not-allowed" : "pointer") + ";opacity:" + (off ? ".35" : "1") + ";" +
+    "background:" + (on ? "var(--gdim)" : "var(--s2)") + ";" +
+    "border:1.5px solid " + (on ? "var(--gold)" : "var(--b1)");
+  const label = t => '<div style="font-size:13px;font-weight:600;margin:16px 0 8px">' + t + "</div>";
+
+  function ensureModal() {
+    if ($("m-advbook")) return;
+    const wrap = document.createElement("div");
+    wrap.className = "overlay";
+    wrap.id = "m-advbook";
+    wrap.innerHTML = `
+      <div class="modal" style="max-height:90vh;overflow:auto">
+        <div style="font-size:20px;font-weight:800;font-family:'Syne',sans-serif">Book a time slot</div>
+        <div id="bk-shop" style="font-size:13px;color:var(--txt2);margin-top:2px"></div>
+        ${label("1. Choose a service")}
+        <div id="bk-svcs" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+        ${label("2. Choose a date")}
+        <div id="bk-dates" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:6px"></div>
+        ${label("3. Choose a time")}
+        <div id="bk-slots" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px"></div>
+        <div id="bk-who" style="margin-top:14px"></div>
+        <div id="bk-note" style="font-size:12px;color:var(--txt2);margin:14px 0;line-height:1.5"></div>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-outline" style="flex:1" type="button" id="bk-cancel">Close</button>
+          <button class="btn btn-gold" style="flex:1" type="button" id="bk-submit">Request booking</button>
+        </div>
+      </div>`;
+    document.body.appendChild(wrap);
+
+    wrap.addEventListener("click", e => {
+      const t = e.target;
+      if (t === wrap || t.closest("#bk-cancel")) { closeModal("m-advbook"); return; }
+      const svc = t.closest("[data-svc]");
+      if (svc) { B.svc = Number(svc.dataset.svc); B.slot = ""; paintSvcs(); loadSlots(); return; }
+      const dt = t.closest("[data-date]");
+      if (dt && !dt.disabled) { B.date = dt.dataset.date; B.slot = ""; paintDates(); loadSlots(); return; }
+      const sl = t.closest("[data-slot]");
+      if (sl && !sl.disabled) { B.slot = sl.dataset.slot; paintSlots(); paintNote(); return; }
+      if (t.closest("#bk-submit")) submitBooking();
+    });
+  }
+
+  function paintSvcs() {
+    const s = B.shop;
+    if (!s) return;
+    $("bk-svcs").innerHTML = s.svcs.map((si, i) => {
+      const sv = S.services[si];
+      if (!sv) return "";
+      return '<button type="button" data-svc="' + i + '" style="' + chip(i === B.svc, false) + '">' +
+        '<div style="font-size:20px">' + esc(sv.ico) + "</div>" +
+        '<div style="font-size:13px;font-weight:600">' + esc(sv.name) + "</div>" +
+        '<div style="font-size:11px;color:var(--txt2)">₹' + sv.price + " · " + sv.dur + " min</div></button>";
+    }).join("");
+  }
+
+  function paintDates() {
+    const cfg = B.cfg;
+    if (!cfg) return;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    let html = "";
+    for (let i = 0; i <= cfg.advance_days; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      const key = iso(d);
+      const off = cfg.days.indexOf((d.getDay() + 6) % 7) === -1 || cfg.off_dates.indexOf(key) !== -1;
+      html += '<button type="button" data-date="' + key + '" ' + (off ? "disabled " : "") +
+        'style="' + chip(key === B.date, off) + ';min-width:62px">' +
+        '<div style="font-size:11px;color:var(--txt2)">' + d.toLocaleDateString("en-IN", { weekday: "short" }) + "</div>" +
+        '<div style="font-size:18px;font-weight:700">' + d.getDate() + "</div>" +
+        '<div style="font-size:11px;color:var(--txt2)">' + d.toLocaleDateString("en-IN", { month: "short" }) + "</div></button>";
+    }
+    $("bk-dates").innerHTML = html;
+  }
+
+  function paintSlots() {
+    const box = $("bk-slots");
+    if (!B.date) {
+      box.style.display = "block";
+      box.innerHTML = '<span style="font-size:13px;color:var(--txt2)">Pick a date first.</span>';
+      return;
+    }
+    if (!B.slots.length) {
+      box.style.display = "block";
+      box.innerHTML = '<span style="font-size:13px;color:var(--txt2)">' +
+        esc(B.reason || "No free slots on this day.") + "</span>";
+      return;
+    }
+    box.style.display = "grid";
+    box.innerHTML = B.slots.map(s =>
+      '<button type="button" data-slot="' + s.time + '" ' + (s.available ? "" : "disabled ") +
+      'style="' + chip(s.time === B.slot, !s.available) + ';font-size:13px;font-weight:600">' +
+      fmt12(s.time) + "</button>").join("");
+  }
+
+  function paintWho() {
+    const need = myPhone().length !== 10;
+    $("bk-who").innerHTML = need ? `
+      <div style="font-size:13px;font-weight:600;margin-bottom:8px">Your details</div>
+      <input class="inp" id="bk-name" type="text" maxlength="50" placeholder="Your name" value="${esc(myName())}" style="margin-bottom:8px">
+      <input class="inp" id="bk-phone" type="tel" maxlength="10" inputmode="numeric" placeholder="10-digit mobile number">` : "";
+    const ph = $("bk-phone");
+    if (ph) ph.addEventListener("input", () => { ph.value = ph.value.replace(/\D/g, "").slice(0, 10); });
+  }
+
+  function paintNote() {
+    const sv = currentSvc();
+    $("bk-note").textContent = (B.date && B.slot && sv)
+      ? fmtDate(B.date) + " · " + fmt12(B.slot) + " · " + sv.name + " · ₹" + sv.price +
+        ". The barber must confirm your request. Pay at the shop."
+      : "The barber confirms your request. You can cancel from My Bookings.";
+  }
+
+  async function loadSlots() {
+    const sv = currentSvc();
+    if (!B.date) { paintSlots(); return; }
+    $("bk-slots").style.display = "block";
+    $("bk-slots").innerHTML = '<span style="font-size:13px;color:var(--txt2)">Loading…</span>';
+    try {
+      const j = await api("/api/bookings/slots?shop_name=" + enc(B.shop.name) +
+        "&date=" + B.date + "&duration=" + (sv ? sv.dur : 30));
+      B.slots = j.slots;
+      B.reason = j.reason || "";
+    } catch (e) {
+      B.slots = [];
+      B.reason = e.message;
+    }
+    paintSlots();
+    paintNote();
+  }
+
+  window.bkOpen = async function () {
+    const s = S.shops[S.selectedShop];
+    if (!s) return;
+    ensureModal();
+    Object.assign(B, { shop: s, cfg: null, svc: 0, date: "", slot: "", slots: [], reason: "" });
+    $("bk-shop").textContent = s.name;
+    $("bk-dates").innerHTML = '<span style="font-size:13px;color:var(--txt2)">Loading…</span>';
+    paintSvcs(); paintSlots(); paintWho(); paintNote();
+    openModal("m-advbook");
+    try {
+      B.cfg = (await api("/api/bookings/availability?shop_name=" + enc(s.name))).config;
+    } catch (e) {
+      closeModal("m-advbook");
+      toast("⚠️", e.message || "Booking is not available for this shop yet");
+      return;
+    }
+    paintDates();
+  };
+
+  async function submitBooking() {
+    const sv = currentSvc();
+    if (!sv) { toast("⚠️", "Choose a service"); return; }
+    if (!B.date || !B.slot) { toast("⚠️", "Choose a date and a time"); return; }
+
+    let name = myName(), phone = myPhone();
+    if (phone.length !== 10) {
+      name = ($("bk-name") ? $("bk-name").value : "").trim();
+      phone = digits10($("bk-phone") ? $("bk-phone").value : "");
+      if (name.length < 2) { toast("⚠️", "Please enter your name"); return; }
+      if (phone.length !== 10) { toast("⚠️", "Enter a valid 10-digit phone number"); return; }
+    }
+
+    const btn = $("bk-submit");
+    btn.disabled = true;
+    try {
+      await api("/api/bookings", send("POST", {
+        shop_name: B.shop.name, customer_name: name || "Customer", customer_phone: phone,
+        service_name: sv.name, duration: sv.dur, price: sv.price, date: B.date, start: B.slot
+      }));
+      try {
+        localStorage.setItem("bqBookPhone", phone);
+        if (name) localStorage.setItem("bqBookName", name);
+      } catch (e) { /* ignore */ }
+      closeModal("m-advbook");
+      toast("📅", "Request sent. You will see it in My Bookings once the barber confirms.");
+      refreshMine();
+    } catch (e) {
+      toast("⚠️", e.message || "Could not book");
+      loadSlots();           // slot may have been taken meanwhile
+    }
+    btn.disabled = false;
+  }
+
+  /* ---- "Book for later" button on the shop page ---- */
+  const baseOpenShop = window.openShop;
+  window.openShop = function () {
+    const out = baseOpenShop.apply(this, arguments);
+    const body = $("sh-body");
+    if (body) {
+      const btn = document.createElement("button");
+      btn.id = "bk-open-btn";
+      btn.type = "button";
+      btn.className = "btn btn-outline btn-full";
+      btn.style.cssText = "height:48px;margin-top:10px";
+      btn.textContent = "📅 Book for later";
+      btn.addEventListener("click", window.bkOpen);
+      const join = Array.prototype.find.call(body.querySelectorAll("button"),
+        b => /Join Queue|Shop is Closed/.test(b.textContent));
+      if (join) join.insertAdjacentElement("afterend", btn);
+      else body.appendChild(btn);
+    }
+    return out;
+  };
+
+  /* ---- My Bookings (inside the My Queue tab) ---- */
+  function myBookingsHtml() {
+    if (!B.mine.length) return "";
+    const today = iso(new Date());
+    const rows = B.mine
+      .filter(b => b.date >= today || b.status === "pending")
+      .concat(B.mine.filter(b => b.date < today && b.status !== "pending").reverse().slice(0, 3));
+    if (!rows.length) return "";
+    return '<div style="margin-top:24px"><div style="font-size:17px;font-weight:700;font-family:\'Syne\',sans-serif;margin-bottom:10px">My Bookings</div>' +
+      rows.map(b => {
+        const canCancel = (b.status === "pending" || b.status === "confirmed") &&
+          (b.date + " " + b.start) > (iso(new Date()) + " " + pad(new Date().getHours()) + ":" + pad(new Date().getMinutes()));
+        return '<div class="card card-p" style="margin-bottom:10px">' +
+          '<div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">' +
+          '<div><div style="font-weight:600;font-size:14px">' + esc(b.service_name) + " · " + esc(b.shop_name) + "</div>" +
+          '<div style="font-size:12px;color:var(--txt2);margin-top:2px">' + fmtDate(b.date) + " · " + fmt12(b.start) + "</div></div>" +
+          '<span class="tag ' + (STATUS_TAG[b.status] || "tgray") + '" style="flex-shrink:0">' + (STATUS_TEXT[b.status] || esc(b.status)) + "</span></div>" +
+          (canCancel ? '<button class="btn btn-red btn-sm" style="margin-top:10px" onclick="bkCancel(' + b.id + ')">Cancel booking</button>' : "") +
+          "</div>";
+      }).join("") + "</div>";
+  }
+
+  const baseMyQ = window.renderMyQ;
+  window.renderMyQ = function () {
+    const out = baseMyQ.apply(this, arguments);
+    const el = $("my-q");
+    const html = myBookingsHtml();
+    if (el && html) el.insertAdjacentHTML("beforeend", html);
+    return out;
+  };
+
+  window.bkCancel = async function (id) {
+    if (!confirm("Cancel this booking?")) return;
+    try {
+      await api("/api/bookings/" + id, send("PATCH", { action: "cancel", by: "customer", phone: myPhone() }));
+      toast("✅", "Booking cancelled");
+    } catch (e) {
+      toast("⚠️", e.message || "Could not cancel");
+    }
+    refreshMine();
+  };
+
+  async function refreshMine() {
+    if (S.role !== "customer") return;
+    const phone = myPhone();
+    if (phone.length !== 10) return;
+    try {
+      const j = await api("/api/bookings?phone=" + phone);
+      const old = {};
+      B.mine.forEach(b => { old[b.id] = b.status; });
+      j.bookings.forEach(b => {
+        if (B.sent && old[b.id] === "pending" && b.status === "confirmed") {
+          toast("✅", "Your booking at " + b.shop_name + " is confirmed for " + fmtDate(b.date) + ", " + fmt12(b.start));
+        } else if (B.sent && old[b.id] === "pending" && b.status === "rejected") {
+          toast("ℹ️", "The barber could not take your booking at " + b.shop_name);
+        }
+      });
+      B.mine = j.bookings;
+      B.sent = true;
+      const el = $("my-q");
+      if (el && el.offsetParent !== null) window.renderMyQ();
+    } catch (e) { /* offline: keep what is shown */ }
+  }
+  setInterval(refreshMine, 20000);
+  setTimeout(refreshMine, 2500);
+
+  const A = { list: [], first: true, seen: {}, auto: {}, dirty: false, off: [] };
+  const shopName = () => (S.barber && S.barber.shopName) || "";
+
+  const calStatus = s => (s === "rejected" || s === "expired") ? "cancelled" : s;
+  const toAppt = b => ({
+    id: "adv-" + b.id, token: null, customer: b.customer_name,
+    service: b.service_name + " · advance", date: b.date, start: b.start, end: b.end,
+    dur: b.duration, status: calStatus(b.status), source: "advance", phone: b.customer_phone
+  });
+
+  const visible = id => { const n = $(id); return !!n && n.style.display === "block"; };
+
+  function renderRequests() {
+    const tab = $("b-bookings-tab");
+    if (!tab) return;
+    let box = $("bk-requests");
+    if (!box) {
+      box = document.createElement("div");
+      box.id = "bk-requests";
+      tab.insertBefore(box, tab.firstChild);
+    }
+    const pend = A.list.filter(b => b.status === "pending");
+    if (!pend.length) { box.innerHTML = ""; return; }
+    box.innerHTML = '<div class="card card-p" style="margin-bottom:14px;border:1px solid var(--gold)">' +
+      '<div style="font-weight:700;margin-bottom:10px">📅 Booking requests (' + pend.length + ")</div>" +
+      pend.map(b =>
+        '<div style="padding:10px 0;border-top:1px solid var(--b1)">' +
+        '<div style="font-weight:600;font-size:14px">' + esc(b.customer_name) +
+        ' <span style="font-weight:400;color:var(--txt2);font-size:12px">· ' + esc(b.customer_phone) + "</span></div>" +
+        '<div style="font-size:12px;color:var(--txt2);margin:2px 0 8px">' + esc(b.service_name) + " · " +
+        fmtDate(b.date) + " · " + fmt12(b.start) + " – " + fmt12(b.end) + " · ₹" + Math.round(b.price) + "</div>" +
+        '<div style="display:flex;gap:8px">' +
+        '<button class="btn btn-green btn-sm" onclick="bkDecide(' + b.id + ',\'confirm\')">Confirm ✓</button>' +
+        '<button class="btn btn-red btn-sm" onclick="bkDecide(' + b.id + ',\'reject\')">Reject</button></div></div>'
+      ).join("") + "</div>";
+  }
+
+  window.bkDecide = async function (id, action) {
+    try {
+      await api("/api/bookings/" + id, send("PATCH", { action, by: "barber", shop_name: shopName() }));
+      toast("✅", action === "confirm" ? "Booking confirmed" : "Booking rejected");
+    } catch (e) {
+      toast("⚠️", e.message || "Could not update the booking");
+    }
+    pullBarber();
+  };
+
+  async function autoConfigure() {
+    const shop = shopName();
+    if (!shop || A.auto[shop]) return;
+    A.auto[shop] = true;
+    try {
+      const cfg = (await api("/api/bookings/availability?shop_name=" + enc(shop))).config;
+      const b = S.barber || {};
+      if (!cfg.configured && b.openingTime && b.closingTime) {
+        await api("/api/bookings/availability", send("POST", {
+          shop_name: shop, days: cfg.days, open: b.openingTime, close: b.closingTime,
+          slot_minutes: cfg.slot_minutes, advance_days: cfg.advance_days,
+          cancel_hours: cfg.cancel_hours, off_dates: cfg.off_dates
+        }));
+      }
+    } catch (e) { A.auto[shop] = false; }
+  }
+
+  async function pullBarber() {
+    if (S.role !== "barber" || !shopName()) return;
+    autoConfigure();
+    try {
+      const j = await api("/api/bookings?shop_name=" + enc(shopName()));
+      A.list = j.bookings;
+      const keep = (window.bqAppointments || []).filter(a => String(a.id).indexOf("adv-") !== 0);
+      window.bqAppointments = keep.concat(j.bookings.map(toAppt));
+
+      j.bookings.forEach(b => {
+        if (b.status === "pending" && !A.seen[b.id]) {
+          A.seen[b.id] = true;
+          if (!A.first) toast("📅", "New booking request from " + b.customer_name);
+        }
+      });
+      A.first = false;
+
+      renderRequests();
+      if (visible("b-bookings-tab") && window.bqRenderBookings) window.bqRenderBookings();
+      if (visible("b-calendar-tab") && window.bqRenderCalendar) window.bqRenderCalendar();
+    } catch (e) { /* offline or shop not registered yet */ }
+  }
+  setInterval(pullBarber, 10000);
+  setTimeout(pullBarber, 2500);
+
+  const baseLoad = window.bqLoadBookings;
+  window.bqLoadBookings = async function () {
+    const out = await baseLoad.apply(this, arguments);
+    pullBarber();
+    return out;
+  };
+  const baseRender = window.bqRenderBookings;
+  window.bqRenderBookings = function () {
+    const out = baseRender.apply(this, arguments);
+    renderRequests();
+    return out;
+  };
+  const baseSet = window.bqSetStatus;
+  window.bqSetStatus = async function (id, status) {
+    if (String(id).indexOf("adv-") !== 0) return baseSet.apply(this, arguments);
+    const action = { confirmed: "confirm", completed: "complete", cancelled: "cancel" }[status];
+    if (!action) { toast("ℹ️", "A request can only be confirmed or rejected"); pullBarber(); return; }
+    try {
+      await api("/api/bookings/" + String(id).slice(4), send("PATCH", { action, by: "barber", shop_name: shopName() }));
+      toast("✅", "Booking marked " + status);
+    } catch (e) {
+      toast("⚠️", e.message || "Could not update the booking");
+    }
+    pullBarber();
+  };
+
+  function ensureSettingsCard() {
+    const tab = $("b-settings-tab");
+    if (!tab) return;
+    if (!$("bk-settings")) {
+      const card = document.createElement("div");
+      card.id = "bk-settings";
+      card.className = "card pad";
+      card.style.cssText = "margin-top:14px";
+      card.innerHTML = `
+        <div style="font-weight:700;font-size:16px;margin-bottom:4px">📅 Advance booking</div>
+        <div class="muted" style="margin-bottom:12px">Customers can book time slots within these hours.</div>
+        <div style="font-size:13px;font-weight:600;margin-bottom:6px">Working days</div>
+        <div id="bk-days" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+          ${DAYS.map((d, i) => '<label style="display:flex;align-items:center;gap:4px;font-size:13px"><input type="checkbox" value="' + i + '"> ' + d + "</label>").join("")}
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+          <div><label>Opens</label><input class="inp" type="time" id="bk-open"></div>
+          <div><label>Closes</label><input class="inp" type="time" id="bk-close"></div>
+          <div><label>Slot length</label><select class="inp" id="bk-slot">
+            <option value="15">15 min</option><option value="20">20 min</option><option value="30">30 min</option>
+            <option value="45">45 min</option><option value="60">60 min</option></select></div>
+          <div><label>Book ahead</label><select class="inp" id="bk-ahead">
+            <option value="7">7 days</option><option value="14">14 days</option>
+            <option value="30">30 days</option><option value="60">60 days</option></select></div>
+          <div style="grid-column:1/-1"><label>Customers can cancel until</label><select class="inp" id="bk-cutoff">
+            <option value="0">Any time before the slot</option><option value="1">1 hour before</option>
+            <option value="2">2 hours before</option><option value="4">4 hours before</option>
+            <option value="12">12 hours before</option><option value="24">24 hours before</option></select></div>
+        </div>
+        <div style="font-size:13px;font-weight:600;margin-bottom:6px">Days off</div>
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <input class="inp" type="date" id="bk-offdate" style="flex:1">
+          <button type="button" class="btn btn-outline btn-sm" id="bk-addoff">Add</button>
+        </div>
+        <div id="bk-offlist" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px"></div>
+        <button type="button" class="btn btn-gold btn-full" id="bk-savecfg">Save booking settings</button>
+        <div class="muted" id="bk-cfgmsg" style="margin-top:8px"></div>`;
+      tab.appendChild(card);
+
+      card.addEventListener("input", () => { A.dirty = true; });
+      card.addEventListener("change", () => { A.dirty = true; });
+      $("bk-addoff").addEventListener("click", () => {
+        const v = $("bk-offdate").value;
+        if (!v) return;
+        if (A.off.indexOf(v) === -1) A.off.push(v);
+        A.off.sort();
+        A.dirty = true;
+        $("bk-offdate").value = "";
+        paintOff();
+      });
+      $("bk-offlist").addEventListener("click", e => {
+        const x = e.target.closest("[data-off]");
+        if (!x) return;
+        A.off = A.off.filter(d => d !== x.dataset.off);
+        A.dirty = true;
+        paintOff();
+      });
+      $("bk-savecfg").addEventListener("click", saveCfg);
+      A.dirty = false;
+      loadCfg(true);
+    } else if (!A.dirty) {
+      loadCfg(false);
+    }
+  }
+
+  function paintOff() {
+    $("bk-offlist").innerHTML = A.off.map(d =>
+      '<span class="tag tgray" style="cursor:pointer" data-off="' + d + '">' + fmtDate(d) + " ✕</span>").join("") ||
+      '<span class="muted">No days off added.</span>';
+  }
+
+  async function loadCfg(force) {
+    if (!shopName()) return;
+    try {
+      const c = (await api("/api/bookings/availability?shop_name=" + enc(shopName()))).config;
+      if (A.dirty && !force) return;
+      document.querySelectorAll("#bk-days input").forEach(i => { i.checked = c.days.indexOf(Number(i.value)) !== -1; });
+      const b = S.barber || {};
+      $("bk-open").value = c.configured ? c.open : (b.openingTime || c.open);
+      $("bk-close").value = c.configured ? c.close : (b.closingTime || c.close);
+      $("bk-slot").value = String(c.slot_minutes);
+      $("bk-ahead").value = String(c.advance_days);
+      $("bk-cutoff").value = String(c.cancel_hours);
+      A.off = c.off_dates.slice();
+      paintOff();
+    } catch (e) {
+      const m = $("bk-cfgmsg");
+      if (m) m.textContent = "Save your shop details in Profile first, then come back here.";
+    }
+  }
+
+  async function saveCfg() {
+    const days = Array.prototype.filter.call(document.querySelectorAll("#bk-days input"), i => i.checked).map(i => Number(i.value));
+    if (!days.length) { toast("⚠️", "Choose at least one working day"); return; }
+    if (!$("bk-open").value || !$("bk-close").value || $("bk-open").value >= $("bk-close").value) {
+      toast("⚠️", "Closing time must be after opening time"); return;
+    }
+    try {
+      await api("/api/bookings/availability", send("POST", {
+        shop_name: shopName(), days, open: $("bk-open").value, close: $("bk-close").value,
+        slot_minutes: Number($("bk-slot").value), advance_days: Number($("bk-ahead").value),
+        cancel_hours: Number($("bk-cutoff").value), off_dates: A.off
+      }));
+      A.dirty = false;
+      $("bk-cfgmsg").textContent = "Saved. Customers will now see these slots.";
+      toast("✅", "Booking settings saved");
+    } catch (e) {
+      $("bk-cfgmsg").textContent = e.message;
+      toast("⚠️", e.message || "Could not save");
+    }
+  }
+
+  const baseSettings = window.bqRenderSettings;
+  window.bqRenderSettings = function () {
+    const out = baseSettings.apply(this, arguments);
+    ensureSettingsCard();
+    return out;
+  };
+})();
+
+(function () {
+  "use strict";
+
+  const css = document.createElement("style");
+  css.textContent = `
+  #b-analytics-tab > div[style*="Syne"]:first-child{display:none}
+  .an{--an-bg:#0a1230;--an-card:#0d1738;--an-line:rgba(120,140,255,.18);--an-txt:#eef1ff;--an-mute:#8f9bc4;
+      --an-green:#22e39a;--an-gold:#f5b73b;color:var(--an-txt);font-family:'DM Sans',sans-serif}
+  .an *{box-sizing:border-box}
+  .an-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+  .an-badge{width:48px;height:48px;border-radius:12px;background:#17206b;border:1px solid #3b4bd6;display:grid;place-items:center;color:#8da0ff}
+  .an-head h2{margin:0;font:800 22px 'Syne',sans-serif}
+  .an-head p{margin:2px 0 0;font-size:13px;color:var(--an-mute)}
+  .an-head-r{margin-left:auto;display:flex;gap:8px}
+  .an-pill{display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:10px;background:var(--an-card);
+      border:1px solid var(--an-line);color:var(--an-txt);font:600 12px 'DM Sans',sans-serif;cursor:default}
+  button.an-pill{cursor:pointer}
+  button.an-pill:hover{border-color:#5b6cff}
+  .an-ic{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .an-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:14px}
+  .an-kpi{position:relative;display:grid;grid-template-columns:auto 1fr;gap:4px 12px;align-items:center;padding:16px;
+      border-radius:16px;overflow:hidden;border:1px solid var(--c);
+      background:linear-gradient(135deg,color-mix(in srgb,var(--c) 22%,#0a1230),#0a1230 70%);
+      box-shadow:0 0 22px -10px var(--c)}
+  .an-kico{grid-row:1/3;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;
+      background:color-mix(in srgb,var(--c) 55%,#0a1230);color:#fff}
+  .an-kl{font-size:12px;color:#c3cbf0}
+  .an-kv{font:800 26px 'Syne',sans-serif;line-height:1.1}
+  .an-kn{grid-column:1/3;font-size:12px;color:var(--an-mute);margin-top:4px}
+  .an-kn.up{color:var(--an-green)}.an-kn.dn{color:#ff7b7b}
+  .an-spark{position:absolute;right:10px;bottom:10px;width:90px;height:40px;opacity:.9}
+  .an-k1{--c:#6a4bff}.an-k2{--c:#12b8a0}.an-k3{--c:#2f6df6}.an-k4{--c:#d9a02c}
+  .an-grid{display:grid;grid-template-columns:1fr;gap:14px}
+  .an-col{display:flex;flex-direction:column;gap:14px;min-width:0}
+  .an-panel{padding:16px;border-radius:16px;background:var(--an-card);border:1px solid var(--an-line)}
+  .an-ph{display:flex;align-items:flex-start;gap:10px;margin-bottom:12px}
+  .an-ph h3{margin:0;font:700 15px 'Syne',sans-serif}
+  .an-ph p{margin:2px 0 0;font-size:12px;color:var(--an-mute)}
+  .an-ph .an-ic{color:#7f93ff;margin-top:2px}
+  .an-seg{margin-left:auto;display:flex;background:#0a1230;border-radius:9px;padding:3px}
+  .an-seg button{border:0;background:none;color:var(--an-mute);font:600 12px 'DM Sans',sans-serif;padding:6px 12px;border-radius:7px;cursor:pointer}
+  .an-seg button.on{background:#3340ff;color:#fff}
+  .an-tag{margin-left:auto;font-size:12px;padding:5px 9px;border-radius:8px;background:#141f55;color:#9fb0ff;white-space:nowrap}
+  .an-bars{position:relative;display:grid;gap:6px;align-items:end;height:190px;padding-left:22px;
+      background:repeating-linear-gradient(to top,rgba(120,140,255,.12) 0 1px,transparent 1px 25%)}
+  .an-bar{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;font-size:11px;color:var(--an-mute);min-width:0}
+  .an-bar i{display:block;width:60%;max-width:34px;border-radius:5px 5px 0 0;background:#f5b73b;box-shadow:0 0 14px -2px #f5b73b88;min-height:0}
+  .an-bar b{color:var(--an-txt);font-weight:600;margin-bottom:3px}
+  .an-bar span{margin-top:6px;text-align:center;line-height:1.25}
+  .an-yax{position:absolute;left:0;top:0;bottom:46px;display:flex;flex-direction:column;justify-content:space-between;font-size:10px;color:var(--an-mute)}
+  .an-svc{display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;background:#111c47;margin-bottom:8px}
+  .an-svc-ico{width:42px;height:42px;border-radius:50%;background:#3340ff;display:grid;place-items:center;flex:none}
+  .an-svc-m{flex:1;min-width:0}
+  .an-svc-t{display:flex;justify-content:space-between;font-size:13px;gap:8px}
+  .an-svc-t small{display:block;color:var(--an-mute);font-size:11px}
+  .an-track{height:6px;border-radius:6px;background:#0a1230;margin-top:6px;overflow:hidden}
+  .an-track b{display:block;height:100%;background:linear-gradient(90deg,#3340ff,#6a7bff)}
+  .an-ins{display:flex;align-items:center;gap:12px;padding:10px 4px;border-top:1px solid var(--an-line);font-size:13px}
+  .an-ins:first-of-type{border-top:0}
+  .an-ins-ico{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;flex:none;color:#fff}
+  .an-ins small{display:block;color:var(--an-mute);font-size:11px}
+  .an-empty{padding:18px 0;text-align:center;color:var(--an-mute);font-size:13px}
+  @media(min-width:720px){.an-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}}
+  @media(min-width:900px){.an-grid{grid-template-columns:minmax(0,1.9fr) minmax(0,1fr)}}`;
+  document.head.appendChild(css);
+
+  /* ---------- helpers ---------- */
+  const esc = v => String(v == null ? "" : v).replace(/[&<>"']/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const inr = n => "₹" + Math.round(n || 0).toLocaleString("en-IN");
+  const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const ic = p => '<svg class="an-ic" viewBox="0 0 24 24">' + p + "</svg>";
+  const ICON = {
+    bars: '<rect x="4" y="12" width="4" height="8"/><rect x="10" y="5" width="4" height="15"/><rect x="16" y="9" width="4" height="11"/>',
+    cal: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+    dl: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
+    rupee: '<path d="M6 4h12M6 9h12M9 4c6 0 6 9 0 9H6l8 7"/>',
+    card: '<rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>',
+    check: '<circle cx="12" cy="12" r="9"/><polyline points="8 12 11 15 16 9"/>',
+    star: '<polygon points="12 2 15.1 8.3 22 9.3 17 14.1 18.2 21 12 17.8 5.8 21 7 14.1 2 9.3 8.9 8.3"/>',
+    trend: '<polyline points="3 17 9 11 13 15 21 6"/><polyline points="15 6 21 6 21 12"/>',
+    users: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>',
+    bulb: '<path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.2 1 2V17h6v-.3c0-.8.4-1.5 1-2A7 7 0 0 0 12 2z"/>',
+    cut: '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.1" y2="15.9"/><line x1="14.5" y1="14.5" x2="20" y2="20"/><line x1="8.1" y1="8.1" x2="12" y2="12"/>'
+  };
+
+  let mode = "week";
+
+  function weekRange() {
+    const t = new Date(); t.setHours(0, 0, 0, 0);
+    const mon = new Date(t); mon.setDate(t.getDate() - ((t.getDay() + 6) % 7));
+    return Array.from({ length: 7 }, (_, i) => { const d = new Date(mon); d.setDate(mon.getDate() + i); return d; });
+  }
+  const fmtS = d => d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const fmtF = d => d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+
+  function line(vals, W, H, pad) {
+    const max = Math.max(1, ...vals);
+    const x = i => pad + i * (W - 2 * pad) / (vals.length - 1);
+    const y = v => H - pad - v / max * (H - 2 * pad);
+    const pts = vals.map((v, i) => [x(i), y(v)]);
+    const d = pts.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" ");
+    return { pts, d, base: H - pad, x, y, max };
+  }
+
+  /* ---------- main render ---------- */
+  window.renderAnalytics = function () {
+    const box = document.getElementById("b-analytics");
+    if (!box) return;
+    if (typeof refreshBarberStats === "function") refreshBarberStats();
+
+    const st = S.barberStats || {
+      today: { done: 0, earnings: 0, avg_wait: null },
+      week: { daily: [0, 0, 0, 0, 0, 0, 0], done: 0, revenue: 0, services: [] },
+      rating: { average: 0, count: 0 }
+    };
+    const week = st.week || {};
+    const dates = weekRange();
+    const todayStr = new Date().toDateString();
+
+    /* online collected today (same logic as before) */
+    const now = new Date(), t0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const online = (S.payments || []).filter(p => {
+      if (p.method !== "Online" || p.status !== "Paid") return false;
+      const d = new Date(p.createdAt || p.timestamp || "");
+      return !isNaN(d) && d >= t0 && d <= now;
+    }).reduce((t, p) => t + Number(p.amount || 0), 0);
+
+    /* series for the charts */
+    const useMonth = mode === "month" && st.month && Array.isArray(st.month.daily);
+    const counts = useMonth ? st.month.daily : (week.daily || [0, 0, 0, 0, 0, 0, 0]);
+    const labels = useMonth
+      ? counts.map((_, i) => ({ a: String(i + 1), b: "" }))
+      : dates.map(d => ({ a: d.toLocaleDateString("en-US", { weekday: "short" }), b: fmtS(d) }));
+    const totalDone = counts.reduce((t, n) => t + n, 0);
+    const revenue = Number(week.revenue) || 0;
+
+    /* daily revenue: backend value if present, else split weekly revenue by daily counts */
+    const wkCount = (week.daily || []).reduce((t, n) => t + n, 0);
+    const revDaily = Array.isArray(week.daily_revenue) ? week.daily_revenue
+      : (week.daily || []).map(n => wkCount ? revenue * n / wkCount : 0);
+
+    /* week-over-week % (shown only when the backend sends last week's numbers) */
+    const pct = (cur, prev) => prev > 0 ? Math.round((cur - prev) / prev * 100) : null;
+    const revPct = pct(revenue, Number(week.prev_revenue));
+    const donePct = pct(Number(week.done) || 0, Number(week.prev_done));
+    const trendNote = (p, fallback) => p === null
+      ? '<div class="an-kn">' + fallback + "</div>"
+      : '<div class="an-kn ' + (p >= 0 ? "up" : "dn") + '">' + (p >= 0 ? "↑ " : "↓ ") + Math.abs(p) + "% from last week</div>";
+
+    const rated = st.rating && st.rating.count > 0;
+
+    /* sparkline in revenue card */
+    const sp = line(revDaily.length > 1 ? revDaily : [0, 0], 90, 40, 3);
+    const spark = '<svg class="an-spark" viewBox="0 0 90 40"><defs><linearGradient id="an-sg" x1="0" y1="0" x2="0" y2="1">' +
+      '<stop offset="0" stop-color="#8b7bff" stop-opacity=".35"/><stop offset="1" stop-color="#8b7bff" stop-opacity="0"/></linearGradient></defs>' +
+      '<path d="' + sp.d + " L87," + sp.base + " L3," + sp.base + ' Z" fill="url(#an-sg)"/>' +
+      '<path d="' + sp.d + '" fill="none" stroke="#8b7bff" stroke-width="1.8" stroke-linejoin="round"/></svg>';
+
+    /* bar chart */
+    const bmax = Math.max(1, ...counts);
+    const ymax = Math.max(5, Math.ceil(bmax / 5) * 5);
+    const bars = counts.map((n, i) =>
+      '<div class="an-bar"><b>' + n + '</b><i style="height:' + (n ? Math.max(6, n / ymax * 130) : 0) + 'px"></i>' +
+      "<span>" + esc(labels[i].a) + (labels[i].b ? "<br>" + esc(labels[i].b) : "") + "</span></div>").join("");
+    const yax = [ymax, Math.round(ymax * .8), Math.round(ymax * .6), Math.round(ymax * .4), Math.round(ymax * .2), 0]
+      .map(v => "<span>" + v + "</span>").join("");
+
+    /* revenue line */
+    const W = 560, H = 170, L = 34, ln = line(revDaily, W, H - 34, 14);
+    const rmax = Math.max(1, ...revDaily);
+    const peak = revDaily.indexOf(Math.max(...revDaily));
+    let rGrid = "";
+    [0, .5, 1].forEach(f => {
+      const yy = ln.base - f * (ln.base - 14);
+      rGrid += '<line x1="' + L + '" x2="' + (W - 8) + '" y1="' + yy + '" y2="' + yy + '" stroke="rgba(120,140,255,.14)"/>' +
+        '<text x="' + (L - 6) + '" y="' + (yy + 3) + '" text-anchor="end" font-size="10" fill="#8f9bc4">' + Math.round(rmax * f) + "</text>";
+    });
+    const px = i => L + i * (W - L - 14) / 6;
+    const rpts = revDaily.map((v, i) => [px(i), ln.base - v / rmax * (ln.base - 14)]);
+    const rd = rpts.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" ");
+    const rLabels = dates.map((d, i) =>
+      '<text x="' + px(i) + '" y="' + (H - 16) + '" text-anchor="middle" font-size="10" fill="#8f9bc4">' + d.toLocaleDateString("en-US", { weekday: "short" }) + "</text>" +
+      '<text x="' + px(i) + '" y="' + (H - 4) + '" text-anchor="middle" font-size="10" fill="#8f9bc4">' + fmtS(d) + "</text>").join("");
+    const rdots = rpts.map((p, i) =>
+      '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + (i === peak && revDaily[i] > 0 ? 5 : 3.5) + '" fill="' +
+      (i === peak && revDaily[i] > 0 ? "#f5b73b" : "#5b6cff") + '"/>').join("");
+    const revChart = '<svg viewBox="0 0 ' + W + " " + H + '" width="100%" role="img" aria-label="Daily revenue this week"><defs>' +
+      '<linearGradient id="an-rg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f5b73b" stop-opacity=".3"/><stop offset="1" stop-color="#f5b73b" stop-opacity="0"/></linearGradient></defs>' +
+      rGrid + '<path d="' + rd + " L" + rpts[6][0] + "," + ln.base + " L" + rpts[0][0] + "," + ln.base + ' Z" fill="url(#an-rg)"/>' +
+      '<path d="' + rd + '" fill="none" stroke="#f5b73b" stroke-width="2" stroke-linejoin="round"/>' + rdots + rLabels + "</svg>";
+
+    /* top services */
+    const svcs = (week.services || []).slice(0, 5);
+    const svcTotal = svcs.reduce((t, s) => t + Number(s[1] || 0), 0);
+    const svcHtml = svcs.length ? svcs.map(([name, n]) => {
+      const p = svcTotal ? Math.round(n / svcTotal * 100) : 0;
+      return '<div class="an-svc"><span class="an-svc-ico">' + ic(ICON.cut) + "</span>" +
+        '<div class="an-svc-m"><div class="an-svc-t"><span>' + esc(name) + "<small>" + n + " booking" + (n === 1 ? "" : "s") + "</small></span><span>" + p + "%</span></div>" +
+        '<div class="an-track"><b style="width:' + p + '%"></b></div></div></div>';
+    }).join("") : '<div class="an-empty">No completed services recorded this week yet.</div>';
+
+    /* quick insights */
+    const insights = [];
+    if (revPct !== null) insights.push(["#12b8a0", ICON.trend, "Revenue " + (revPct >= 0 ? "increased" : "dropped") + " by " + Math.abs(revPct) + "%", "Compared to last week"]);
+    else if (revenue > 0) insights.push(["#12b8a0", ICON.trend, "You earned " + inr(revenue) + " this week", "From completed services"]);
+    insights.push(["#5b4bd6", ICON.users, (week.done || 0) + " customer" + ((week.done || 0) === 1 ? "" : "s") + " completed" + ((week.done || 0) === 1 ? " a visit" : " visits"), "This week"]);
+    if (counts.some(n => n)) {
+      const bi = counts.indexOf(Math.max(...counts));
+      if (!useMonth) insights.push(["#2f6df6", ICON.cal, DAYS[bi] + " was your busiest day", counts[bi] + " completed visit" + (counts[bi] === 1 ? "" : "s")]);
+    }
+    insights.push(svcs.length > 2
+      ? ["#d9a02c", ICON.star, esc(svcs[0][0]) + " leads your services", "Most booked this week"]
+      : ["#d9a02c", ICON.star, "Focus on more services", "Add more services to increase revenue"]);
+    const insHtml = insights.slice(0, 4).map(i =>
+      '<div class="an-ins"><span class="an-ins-ico" style="background:' + i[0] + '">' + ic(i[1]) + "</span><div>" + i[2] + "<small>" + i[3] + "</small></div></div>").join("");
+
+    box.innerHTML = `
+    <div class="an">
+      <div class="an-head">
+        <span class="an-badge">${ic(ICON.bars)}</span>
+        <div><h2>Analytics</h2><p>Track your performance and grow your business.</p></div>
+        <div class="an-head-r">
+          <span class="an-pill">${ic(ICON.cal)}${fmtS(dates[0])}, ${dates[0].getFullYear()} - ${fmtS(dates[6])}, ${dates[6].getFullYear()}</span>
+          <button type="button" class="an-pill" data-an="export">${ic(ICON.dl)}Export</button>
+        </div>
+      </div>
+
+      <div class="an-kpis">
+        <div class="an-kpi an-k1"><span class="an-kico">${ic(ICON.rupee)}</span>
+          <span class="an-kl">Total Revenue (This Week)</span><span class="an-kv">${inr(revenue)}</span>${trendNote(revPct, "Completed services this week")}${spark}</div>
+        <div class="an-kpi an-k2"><span class="an-kico">${ic(ICON.card)}</span>
+          <span class="an-kl">Collected Online (Today)</span><span class="an-kv">${inr(online)}</span>
+          <div class="an-kn">${online ? "Paid through the app" : "No online collections yet"}</div></div>
+        <div class="an-kpi an-k3"><span class="an-kico">${ic(ICON.check)}</span>
+          <span class="an-kl">Completed Visits This Week</span><span class="an-kv">${week.done || 0}</span>${trendNote(donePct, "Since Monday")}</div>
+        <div class="an-kpi an-k4"><span class="an-kico">${ic(ICON.star)}</span>
+          <span class="an-kl">Average Rating</span><span class="an-kv">${rated ? Number(st.rating.average).toFixed(1) + " ★" : "—"}</span>
+          <div class="an-kn">${rated ? st.rating.count + " review" + (st.rating.count === 1 ? "" : "s") : "No ratings yet"}</div></div>
+      </div>
+
+      <div class="an-grid">
+        <div class="an-col">
+          <div class="an-panel">
+            <div class="an-ph">${ic(ICON.bars)}<div><h3>Completed Customers This ${useMonth ? "Month" : "Week"}</h3><p>Number of customers who completed their visits.</p></div>
+              <div class="an-seg"><button type="button" data-an="week" class="${mode === "week" ? "on" : ""}">Week</button><button type="button" data-an="month" class="${mode === "month" ? "on" : ""}">Month</button></div></div>
+            <div class="an-bars" style="grid-template-columns:repeat(${counts.length},minmax(0,1fr))"><div class="an-yax">${yax}</div>${bars}</div>
+          </div>
+          <div class="an-panel">
+            <div class="an-ph">${ic(ICON.trend)}<div><h3>Revenue Trend</h3><p>Daily revenue for this week.</p></div><span class="an-tag">Total: ${inr(revenue)}</span></div>
+            ${revChart}
+          </div>
+        </div>
+        <div class="an-col">
+          <div class="an-panel"><div class="an-ph">${ic(ICON.star)}<div><h3>Top Services This Week</h3><p>Most popular services based on completed visits.</p></div></div>${svcHtml}</div>
+          <div class="an-panel"><div class="an-ph">${ic(ICON.bulb)}<div><h3>Quick Insights</h3></div></div>${insHtml}</div>
+        </div>
+      </div>
+    </div>`;
+
+    /* store for export */
+    box._an = { dates, counts: week.daily || [], revDaily, services: week.services || [], revenue };
+  };
+
+  /* ---------- clicks: Week/Month toggle + Export ---------- */
+  document.addEventListener("click", e => {
+    const b = e.target.closest && e.target.closest("#b-analytics [data-an]");
+    if (!b) return;
+    const act = b.dataset.an;
+    if (act === "week" || act === "month") {
+      if (act === "month" && !(S.barberStats && S.barberStats.month)) {
+        toast("ℹ️", "Month view needs a 'month.daily' list from the analytics API");
+      }
+      mode = act;
+      window.renderAnalytics();
+      return;
+    }
+    if (act === "export") {
+      const d = document.getElementById("b-analytics")._an;
+      if (!d) return;
+      const rows = [["Date", "Completed customers", "Revenue (INR)"]]
+        .concat(d.dates.map((x, i) => [x.toISOString().slice(0, 10), d.counts[i] || 0, Math.round(d.revDaily[i] || 0)]))
+        .concat([[], ["Top services"], ["Service", "Bookings"]], d.services);
+      const csv = rows.map(r => r.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(",")).join("\n");
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+      a.download = "glowora-analytics-" + new Date().toISOString().slice(0, 10) + ".csv";
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      toast("✅", "Analytics exported");
+    }
+  });
+
+  /* repaint if the tab is already open when this file loads */
+  const tab = document.getElementById("b-analytics-tab");
+  if (tab && tab.style.display === "block") window.renderAnalytics();
+})();
+
+(function () {
+  "use strict";
+
+  const $ = id => document.getElementById(id);
+  const esc = v => String(v == null ? "" : v).replace(/[&<>"']/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const rd = (k, d) => { try { return JSON.parse(localStorage.getItem(k) || "null") || d; } catch (e) { return d; } };
+  const wr = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { toast("⚠️", "Could not save on this device"); return false; } };
+  const pad = n => String(n).padStart(2, "0");
+  const iso = d => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+  const shop = () => String((S.barber && S.barber.shopName) || "").trim().toLowerCase();
+  const K_META = () => "bqStaffMeta:" + shop();      // shared with Staff Stats
+  const K_BIO = () => "bqStaffBio:" + shop();
+  const K_SERVED = () => "bqServedBy:" + shop();
+  const K_ASSIGN = () => "bqCrewAssign:" + shop();
+
+  const GRADS = ["#8b5cf6,#5b21b6", "#14b8a6,#0f766e", "#d946ef,#86198f", "#3b82f6,#1d4ed8", "#8b5cf6,#4338ca", "#f59e0b,#b45309"];
+  const FRAMES = ["#a23df0", "#18c7a8", "#c94bf0", "#4f6dff", "#7b4bff", "#e0a23a"];
+  const STATUS = {
+    "Available": ["Active", "ok"], "With Customer": ["With customer", "bl"],
+    "On Break": ["On break", "wa"], "Off today": ["On leave", "wa"]
+  };
+  const ic = p => '<svg class="st-ic" viewBox="0 0 24 24">' + p + "</svg>";
+  const ICON = {
+    users: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9"/><path d="M16 3.1a4 4 0 0 1 0 7.8"/>',
+    user: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+    star: '<polygon points="12 2 15.1 8.3 22 9.3 17 14.1 18.2 21 12 17.8 5.8 21 7 14.1 2 9.3 8.9 8.3"/>',
+    cup: '<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/>',
+    plus: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+    search: '<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.7" y2="16.7"/>',
+    cal: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+    cut: '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.1" y2="15.9"/><line x1="14.5" y1="14.5" x2="20" y2="20"/><line x1="8.1" y1="8.1" x2="12" y2="12"/>',
+    chev: '<polyline points="9 18 15 12 9 6"/>'
+  };
+
+  /* ---------- styles ---------- */
+  const css = document.createElement("style");
+  css.textContent = `
+  #b-staff-tab > .bq-heading-row,#b-staff-tab > #bq-staff-grid,#b-staff-tab > .bq-footnote{display:none!important}
+  .st{--card:#0b1030;--line:rgba(130,120,255,.22);--mute:#97a0c9;color:#eef1ff;font-family:'DM Sans',sans-serif}
+  .st *{box-sizing:border-box}
+  .st-ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .st-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+  .st-badge{width:56px;height:56px;border-radius:14px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,#7c3aed,#3b1fa8);box-shadow:0 0 22px -6px #7c3aed}
+  .st-head h2{margin:0;font:800 28px 'Syne',sans-serif;background:linear-gradient(90deg,#b08cff,#4cc3ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .st-head p{margin:2px 0 0;font-size:13px;color:var(--mute)}
+  .st-tools{margin-left:auto;display:flex;gap:10px;flex-wrap:wrap;flex:1 1 320px;justify-content:flex-end}
+  .st-add{display:flex;align-items:center;gap:8px;border:0;border-radius:12px;padding:12px 18px;color:#fff;cursor:pointer;font:700 14px 'DM Sans',sans-serif;
+      background:linear-gradient(90deg,#8b2fff,#2d7bff);box-shadow:0 0 20px -6px #7c3aed}
+  .st-search{display:flex;align-items:center;gap:8px;flex:1 1 200px;max-width:360px;padding:0 14px;border-radius:12px;background:var(--card);border:1px solid var(--line);color:var(--mute)}
+  .st-search input{flex:1;min-width:0;background:none;border:0;outline:0;color:#eef1ff;font:14px 'DM Sans',sans-serif;padding:12px 0}
+  .st-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:18px}
+  .st-kpi{display:flex;align-items:center;gap:14px;padding:16px;border-radius:16px;border:1px solid var(--c);
+      background:linear-gradient(135deg,color-mix(in srgb,var(--c) 20%,#080c26),#080c26 70%);box-shadow:0 0 22px -12px var(--c)}
+  .st-kico{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;flex:none;color:#fff;background:color-mix(in srgb,var(--c) 60%,#080c26)}
+  .st-kico .st-ic{width:26px;height:26px}
+  .st-kl{font-size:13px;color:#d4daf7}.st-kv{font:800 30px 'Syne',sans-serif;line-height:1.1}.st-kn{font-size:12px;color:var(--mute)}
+  .st-k1{--c:#a23df0}.st-k2{--c:#18c7a8}.st-k3{--c:#3b6dff}.st-k4{--c:#e0a23a}
+  .st-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}
+  .st-card{position:relative;padding:18px 16px 16px;border-radius:18px;border:1px solid var(--f);
+      background:linear-gradient(160deg,color-mix(in srgb,var(--f) 10%,#080c26),#080c26 60%);box-shadow:0 0 22px -14px var(--f);display:flex;flex-direction:column}
+  .st-tag{position:absolute;top:16px;right:14px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:7px}
+  .st-tag.ok{color:#2de2b5;background:rgba(24,199,168,.16);border:1px solid rgba(24,199,168,.35)}
+  .st-tag.wa{color:#f0b64a;background:rgba(224,162,58,.14);border:1px solid rgba(224,162,58,.4)}
+  .st-tag.bl{color:#7ea6ff;background:rgba(59,109,255,.16);border:1px solid rgba(59,109,255,.4)}
+  .st-av{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;font:700 22px 'Syne',sans-serif;color:#fff;overflow:hidden;margin-bottom:12px;
+      background:linear-gradient(135deg,var(--g));box-shadow:0 0 18px -4px var(--f)}
+  .st-av img{width:100%;height:100%;object-fit:cover}
+  .st-name{font:700 17px 'Syne',sans-serif}
+  .st-role{font-size:13px;color:#8fa4ff;margin:2px 0 6px}
+  .st-rate{font-size:12px;color:var(--mute)}.st-rate b{color:#f5b73b;font-weight:700;font-size:13px}.st-rate span{color:#6f8cff}
+  .st-met{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin:14px 0 12px;padding-top:12px;border-top:1px solid var(--line);text-align:center}
+  .st-met div{display:flex;flex-direction:column;align-items:center;gap:1px}
+  .st-met .st-ic{width:15px;height:15px;color:#6f8cff}
+  .st-met strong{font:700 16px 'DM Sans',sans-serif}.st-met small{font-size:11px;color:var(--mute)}
+  .st-bio{font-size:12.5px;line-height:1.5;color:#c3caea;flex:1;margin-bottom:14px}
+  .st-view{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:11px;border-radius:12px;cursor:pointer;color:#eef1ff;
+      font:600 13px 'DM Sans',sans-serif;background:linear-gradient(90deg,#10184a,#0b1030);border:1px solid var(--f)}
+  .st-view .st-ic{width:14px;height:14px}
+  .st-empty{grid-column:1/-1;text-align:center;padding:40px 10px;color:var(--mute);font-size:14px}
+  .st-pm .row{margin-bottom:12px}.st-pm label{display:block;font-size:12px;color:var(--mute);margin-bottom:4px}
+  @media(min-width:720px){.st-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}}`;
+  document.head.appendChild(css);
+
+  /* ---------- data ---------- */
+  function weekBounds() {
+    const t = new Date(); t.setHours(0, 0, 0, 0);
+    const mon = new Date(t); mon.setDate(t.getDate() - ((t.getDay() + 6) % 7));
+    const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+    return [iso(mon), iso(sun)];
+  }
+
+  function build() {
+    const b = S.barber || {};
+    const meta = rd(K_META(), {}), bios = rd(K_BIO(), {});
+    const served = rd(K_SERVED(), {}), asked = rd(K_ASSIGN(), {});
+    const [from, to] = weekBounds();
+    const appts = (window.bqAppointments || []).filter(a => a && a.date >= from && a.date <= to);
+
+    const members = [];
+    if (b.name) members.push({ key: b.name, name: b.name, role: "Owner / Head barber", owner: true, photo: b.photo, shopName: b.shopName });
+    rd("barberStaff", []).forEach(m => {
+      if (m && m.name && !members.some(x => x.key === m.name))
+        members.push({ key: m.name, id: m.id, name: m.name, role: m.role || "Barber", phone: m.phone });
+    });
+
+    members.forEach((m, i) => {
+      m.i = i;
+      const mt = meta[m.key] || {};
+      m.status = STATUS[mt.status] ? mt.status : "Available";
+      const own = Number(b.rating) > 0 && b.ratingCount > 0;
+      m.rating = m.owner && own ? Number(b.rating) : (Number(mt.rating) > 0 ? Number(mt.rating) : null);
+      m.reviews = m.owner && own ? Number(b.ratingCount) : 0;
+      m.bio = bios[m.key] || (m.owner
+        ? "Owner and head barber" + (m.shopName ? " at " + m.shopName + "." : ".")
+        : "Specialist in " + String(m.role).toLowerCase() + ".");
+      m.bookings = 0; m.services = 0;
+    });
+    appts.forEach(a => {
+      const id = String(a.id), pick = asked[id] && asked[id] !== "Anyone" ? asked[id] : "";
+      const who = members.find(m => m.key === (served[id] || pick));
+      if (!who || a.status === "cancelled") return;
+      who.bookings++;
+      if (a.status === "completed") who.services++;
+    });
+    const totalServices = appts.filter(a => a.status === "completed").length;
+    return { members, totalServices };
+  }
+
+  /* ---------- render ---------- */
+  function shell() {
+    const tab = $("b-staff-tab");
+    if (!tab) return null;
+    let root = $("st-root");
+    if (root) return root;
+    root = document.createElement("div");
+    root.id = "st-root";
+    root.className = "st";
+    root.innerHTML = `
+      <div class="st-head">
+        <span class="st-badge">${ic(ICON.users)}</span>
+        <div><h2>Our Crew</h2><p>Meet the talented people who make your experience special.</p></div>
+        <div class="st-tools">
+          <button type="button" class="st-add" data-st="add">${ic(ICON.plus)}Add Staff Member</button>
+          <label class="st-search">${ic(ICON.search)}<input id="st-q" type="search" placeholder="Search staff..." autocomplete="off"></label>
+        </div>
+      </div>
+      <div class="st-kpis" id="st-kpis"></div>
+      <div class="st-grid" id="st-grid"></div>
+      <p class="bq-muted" style="margin-top:14px;font-size:12px">Team members are saved on this device. Bookings and services count this week's appointments assigned to each person.</p>`;
+    tab.insertBefore(root, tab.firstChild);
+
+    $("st-q").addEventListener("input", paint);
+    root.addEventListener("click", e => {
+      if (e.target.closest("[data-st='add']")) { window.bqOpenStaffModal(); return; }
+      const v = e.target.closest("[data-view]");
+      if (v) openProfile(v.dataset.view);
+    });
+    return root;
+  }
+
+  function paint() {
+    if (!$("st-root")) return;
+    const { members, totalServices } = build();
+    const q = ($("st-q").value || "").trim().toLowerCase();
+    const rated = members.filter(m => m.rating !== null);
+    const avg = rated.length ? rated.reduce((t, m) => t + m.rating, 0) / rated.length : null;
+    const active = members.filter(m => m.status !== "Off today").length;
+
+    const k = (cls, icon, label, val, note) =>
+      '<div class="st-kpi ' + cls + '"><span class="st-kico">' + ic(icon) + '</span><div><div class="st-kl">' + label +
+      '</div><div class="st-kv">' + val + '</div><div class="st-kn">' + note + "</div></div></div>";
+    $("st-kpis").innerHTML =
+      k("st-k1", ICON.users, "Total Staff", members.length, "Active members") +
+      k("st-k2", ICON.user, "Active Today", active, "On duty") +
+      k("st-k3", ICON.star, "Avg. Rating", avg === null ? "—" : avg.toFixed(1), "Across all staff") +
+      k("st-k4", ICON.cup, "Total Services", totalServices, "This week");
+
+    const list = members.filter(m => !q || (m.name + " " + m.role).toLowerCase().includes(q));
+    $("st-grid").innerHTML = list.length ? list.map(m => {
+      const [label, cls] = STATUS[m.status];
+      const g = GRADS[m.i % GRADS.length], f = FRAMES[m.i % FRAMES.length];
+      const rateLine = m.rating !== null
+        ? "<b>★ " + m.rating.toFixed(1) + "</b>" + (m.reviews ? " <span>(" + m.reviews + " review" + (m.reviews === 1 ? "" : "s") + ")</span>" : "")
+        : '<span style="color:#97a0c9">No rating yet</span>';
+      return '<div class="st-card" style="--f:' + f + '"><span class="st-tag ' + cls + '">' + label + "</span>" +
+        '<div class="st-av" style="--g:' + g + '">' + (m.photo ? '<img alt="" src="' + esc(m.photo) + '">' : esc(m.name.charAt(0).toUpperCase())) + "</div>" +
+        '<div class="st-name">' + esc(m.name) + '</div><div class="st-role">' + esc(m.role) + '</div><div class="st-rate">' + rateLine + "</div>" +
+        '<div class="st-met"><div>' + ic(ICON.cal) + "<strong>" + m.bookings + "</strong><small>Bookings</small></div>" +
+        "<div>" + ic(ICON.cut) + "<strong>" + m.services + "</strong><small>Services</small></div>" +
+        "<div>" + ic(ICON.star) + "<strong>" + (m.rating !== null ? m.rating.toFixed(1) : "—") + "</strong><small>Rating</small></div></div>" +
+        '<div class="st-bio">' + esc(m.bio) + "</div>" +
+        '<button type="button" class="st-view" data-view="' + esc(m.key) + '">View Profile' + ic(ICON.chev) + "</button></div>";
+    }).join("") : '<div class="st-empty">' + (members.length
+      ? "No team members match your search."
+      : "No team members yet. Tap “Add Staff Member” to add your first one.") + "</div>";
+  }
+
+  window.bqLoadStaff = function () { if (shell()) paint(); };
+
+  /* ---------- profile popup ---------- */
+  function ensureProfileModal() {
+    if ($("m-stprofile")) return;
+    const w = document.createElement("div");
+    w.className = "overlay";
+    w.id = "m-stprofile";
+    w.innerHTML = `
+      <div class="modal st st-pm" style="max-height:90vh;overflow:auto">
+        <div id="stp-head" style="display:flex;align-items:center;gap:12px;margin-bottom:16px"></div>
+        <div class="row"><label>Status</label>
+          <select class="inp" id="stp-status">${Object.keys(STATUS).map(s => "<option>" + s + "</option>").join("")}</select></div>
+        <div class="row"><label>Rating (0–5)</label><input class="inp" id="stp-rating" type="number" min="0" max="5" step="0.1" inputmode="decimal" placeholder="optional"></div>
+        <div class="row"><label>About</label><textarea class="inp" id="stp-bio" rows="3" maxlength="140" placeholder="Short description shown on the card"></textarea></div>
+        <div id="stp-phone" style="font-size:12px;color:var(--mute);margin-bottom:14px"></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-outline" style="flex:1" type="button" id="stp-close">Close</button>
+          <button class="btn btn-gold" style="flex:1" type="button" id="stp-save">Save</button>
+        </div>
+        <button class="btn btn-outline btn-full" style="margin-top:10px;color:#ff6b6b;border-color:#ff6b6b" type="button" id="stp-remove">Remove from team</button>
+      </div>`;
+    document.body.appendChild(w);
+    w.addEventListener("click", e => { if (e.target === w) closeModal("m-stprofile"); });
+    $("stp-close").addEventListener("click", () => closeModal("m-stprofile"));
+  }
+
+  function openProfile(key) {
+    const m = build().members.find(x => x.key === key);
+    if (!m) return;
+    ensureProfileModal();
+    const g = GRADS[m.i % GRADS.length];
+    $("stp-head").innerHTML =
+      '<div class="st-av" style="--g:' + g + ';--f:' + FRAMES[m.i % FRAMES.length] + ';margin:0">' +
+      (m.photo ? '<img alt="" src="' + esc(m.photo) + '">' : esc(m.name.charAt(0).toUpperCase())) + "</div>" +
+      '<div><div class="st-name">' + esc(m.name) + '</div><div class="st-role" style="margin:0">' + esc(m.role) + "</div></div>";
+    $("stp-status").value = m.status;
+    $("stp-rating").value = m.rating !== null ? m.rating : "";
+    $("stp-rating").disabled = !!(m.owner && m.reviews);
+    $("stp-bio").value = rd(K_BIO(), {})[m.key] || "";
+    $("stp-phone").textContent = m.phone ? "Phone: +91 " + m.phone : (m.owner ? "Edit your details in Profile." : "");
+    $("stp-remove").style.display = m.owner ? "none" : "block";
+
+    $("stp-save").onclick = () => {
+      const raw = $("stp-rating").value.trim(), r = raw === "" ? 0 : Number(raw);
+      if (isNaN(r) || r < 0 || r > 5) { toast("⚠️", "Rating must be between 0 and 5"); return; }
+      const mt = rd(K_META(), {});
+      mt[m.key] = Object.assign({}, mt[m.key], { status: $("stp-status").value });
+      if (!$("stp-rating").disabled) mt[m.key].rating = r;
+      const bios = rd(K_BIO(), {}); bios[m.key] = $("stp-bio").value.trim();
+      if (wr(K_META(), mt) && wr(K_BIO(), bios)) {
+        closeModal("m-stprofile");
+        paint();
+        toast("✅", "Saved " + m.name);
+      }
+    };
+    $("stp-remove").onclick = () => {
+      closeModal("m-stprofile");
+      window.bqDeleteStaff(m.id);
+    };
+    openModal("m-stprofile");
+  }
+
+  /* ---------- "About" field in the Add popup ---------- */
+  function ensureBioField() {
+    if ($("bq-staff-bio")) return;
+    const role = $("bq-staff-role");
+    if (!role) return;
+    const d = document.createElement("div");
+    d.innerHTML = '<label>About (optional)</label><textarea class="inp" id="bq-staff-bio" rows="2" maxlength="140" placeholder="e.g. Expert in modern cuts and beard styling"></textarea>';
+    role.parentElement.insertAdjacentElement("afterend", d);
+  }
+  const baseOpen = window.bqOpenStaffModal;
+  window.bqOpenStaffModal = function () {
+    ensureBioField();
+    const out = baseOpen.apply(this, arguments);
+    const bio = $("bq-staff-bio"); if (bio) bio.value = "";
+    return out;
+  };
+  const baseAdd = window.bqAddStaff;
+  window.bqAddStaff = function () {
+    const name = ($("bq-staff-name") || {}).value ? $("bq-staff-name").value.trim() : "";
+    const bio = ($("bq-staff-bio") || {}).value ? $("bq-staff-bio").value.trim() : "";
+    const before = rd("barberStaff", []).length;
+    const out = baseAdd.apply(this, arguments);
+    if (bio && name && rd("barberStaff", []).length > before) {
+      const bios = rd(K_BIO(), {}); bios[name] = bio; wr(K_BIO(), bios);
+      paint();
+    }
+    return out;
+  };
+
+  /* repaint now if the tab is already open */
+  const tab = $("b-staff-tab");
+  if (tab && tab.style.display === "block") window.bqLoadStaff();
+})();
+
+(function () {
+  "use strict";
+
+  const $ = id => document.getElementById(id);
+  const esc = v => String(v == null ? "" : v).replace(/[&<>"']/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const rd = (k, d) => { try { return JSON.parse(localStorage.getItem(k) || "null") || d; } catch (e) { return d; } };
+  const ic = p => '<svg class="pf-ic" viewBox="0 0 24 24">' + p + "</svg>";
+  const ICON = {
+    user: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+    phone: '<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/>',
+    mail: '<rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22 6 12 13 2 6"/>',
+    shop: '<path d="M3 9l1-5h16l1 5"/><path d="M4 9v11h16V9"/><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/><rect x="10" y="14" width="4" height="6"/>',
+    pen: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+    users: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9"/><path d="M16 3.1a4 4 0 0 1 0 7.8"/>',
+    cut: '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.1" y2="15.9"/><line x1="14.5" y1="14.5" x2="20" y2="20"/><line x1="8.1" y1="8.1" x2="12" y2="12"/>',
+    star: '<polygon points="12 2 15.1 8.3 22 9.3 17 14.1 18.2 21 12 17.8 5.8 21 7 14.1 2 9.3 8.9 8.3"/>',
+    id: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="11" r="2.5"/><path d="M5.5 17a3.5 3.5 0 0 1 7 0"/><line x1="15" y1="10" x2="19" y2="10"/><line x1="15" y1="14" x2="19" y2="14"/>'
+  };
+
+  const css = document.createElement("style");
+  css.textContent = `
+  #b-profile-tab > *:not(#pf-root){display:none!important}
+  .pf{--card:#0a0f33;--line:rgba(110,110,255,.22);--mute:#97a0c9;color:#eef1ff;font-family:'DM Sans',sans-serif}
+  .pf *{box-sizing:border-box}
+  .pf-ic{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .pf-head{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+  .pf-badge{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;color:#c9b8ff;background:#241a6b;border:1px solid #5a43d8}
+  .pf-head h2{margin:0;font:800 24px 'Syne',sans-serif}
+  .pf-head p{margin:2px 0 0;font-size:13px;color:var(--mute)}
+  .pf-grid{display:grid;grid-template-columns:1fr;gap:14px}
+  .pf-col{display:flex;flex-direction:column;gap:14px;min-width:0}
+  .pf-card{border-radius:18px;padding:18px;background:var(--card);border:1px solid var(--line)}
+  .pf-hero{text-align:center;padding:28px 18px 22px;border-color:#5b3df0;
+      background:radial-gradient(120% 90% at 50% 0%,#2a1f8f 0%,#0a0f33 62%);box-shadow:0 0 30px -12px #6a4bff}
+  .pf-av{position:relative;width:104px;height:104px;margin:0 auto 14px;border-radius:50%;display:grid;place-items:center;
+      border:2px solid #38e1ff;box-shadow:0 0 24px -2px #38e1ff99,inset 0 0 18px -6px #38e1ff;
+      font:700 42px 'Syne',sans-serif;color:#38e1ff;background:#0a1240}
+  .pf-av img{width:100%;height:100%;border-radius:50%;object-fit:cover}
+  .pf-pen{position:absolute;right:-2px;bottom:4px;width:30px;height:30px;border-radius:50%;border:0;cursor:pointer;
+      display:grid;place-items:center;color:#fff;background:#5b3df0;box-shadow:0 0 0 3px #0a0f33}
+  .pf-name{font:700 24px 'Syne',sans-serif}
+  .pf-role{font-size:13px;color:var(--mute);margin:2px 0 8px}
+  .pf-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:8px;font-size:12px;font-weight:600;
+      color:#d9cfff;background:#2a1f8f;border:1px solid #6a4bff}
+  .pf-contact{margin-top:16px;display:inline-flex;flex-direction:column;gap:8px;text-align:left;font-size:13.5px}
+  .pf-contact div{display:flex;align-items:center;gap:10px}
+  .pf-contact .pf-ic{color:#8da0ff}
+  .pf-h3{margin:0 0 12px;font:700 15px 'Syne',sans-serif;display:flex;align-items:center;gap:8px}
+  .pf-btn{margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:9px;cursor:pointer;
+      font:600 12px 'DM Sans',sans-serif;color:#eef1ff;background:#141b55;border:1px solid #3b46c8}
+  .pf-shop{display:flex;gap:14px}
+  .pf-shop-ico{width:52px;height:52px;border-radius:14px;flex:none;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,#6a4bff,#3a2cc0)}
+  .pf-shop-ico .pf-ic{width:26px;height:26px}
+  .pf-shop h4{margin:0 0 4px;font:700 16px 'Syne',sans-serif}
+  .pf-shop p{margin:0 0 4px;font-size:12.5px;line-height:1.5;color:#c3caea}
+  .pf-pill{display:inline-flex;align-items:center;gap:6px;margin-top:6px;padding:5px 12px;border-radius:8px;font-size:12px;font-weight:600}
+  .pf-pill.on{color:#2de2b5;background:rgba(24,199,168,.14);border:1px solid rgba(24,199,168,.4)}
+  .pf-pill.off{color:#ff8b8b;background:rgba(255,107,107,.12);border:1px solid rgba(255,107,107,.4)}
+  .pf-pill i{width:7px;height:7px;border-radius:50%;background:currentColor}
+  .pf-row{display:flex;justify-content:space-between;gap:16px;padding:14px 0;border-top:1px solid var(--line);font-size:13.5px}
+  .pf-row:first-of-type{border-top:0}
+  .pf-row span{color:var(--mute);flex:none}
+  .pf-row strong{font-weight:600;text-align:right;overflow-wrap:anywhere}
+  .pf-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;text-align:center}
+  .pf-stat .pf-si{width:54px;height:54px;margin:0 auto 8px;border-radius:14px;display:grid;place-items:center;color:#fff;background:var(--c)}
+  .pf-stat .pf-si .pf-ic{width:24px;height:24px}
+  .pf-stat strong{display:block;font:700 22px 'Syne',sans-serif}
+  .pf-stat small{font-size:12px;color:var(--mute)}
+  .pf-foot{display:flex;gap:10px;flex-wrap:wrap}
+  .pf-foot button{flex:1 1 140px;padding:11px;border-radius:11px;cursor:pointer;font:600 13px 'DM Sans',sans-serif;color:#eef1ff;background:#141b55;border:1px solid #3b46c8}
+  .pf-foot button.danger{color:#ff8b8b;border-color:#ff6b6b;background:transparent}
+  @media(min-width:820px){.pf-grid{grid-template-columns:minmax(0,1fr) minmax(0,1.1fr)}}`;
+  document.head.appendChild(css);
+
+  function shell() {
+    const tab = $("b-profile-tab");
+    if (!tab) return null;
+    let root = $("pf-root");
+    if (root) return root;
+    root = document.createElement("div");
+    root.id = "pf-root";
+    root.className = "pf";
+    tab.insertBefore(root, tab.firstChild);
+    root.addEventListener("click", e => {
+      const a = e.target.closest("[data-pf]");
+      if (!a) return;
+      const act = a.dataset.pf;
+      if (act === "photo") window.updateShopPhoto();
+      else if (act === "edit") window.editBarberProfile();
+      else if (act === "logout") window.logoutBarber();
+      else if (act === "delete") window.deleteBarberAccount();
+    });
+    return root;
+  }
+
+  function paint() {
+    const root = shell();
+    if (!root) return;
+    const b = S.barber || {};
+
+    /* remember when the account was first seen, so "Date of Joining" is stable */
+    if (b.name && !b.joinedAt) {
+      b.joinedAt = new Date().toISOString();
+      if (typeof saveBarberProfileLocal === "function") saveBarberProfileLocal();
+    }
+    const joined = b.joinedAt
+      ? new Date(b.joinedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "—";
+    const staffCount = (b.name ? 1 : 0) + rd("barberStaff", []).length;
+    const weekDone = S.barberStats && S.barberStats.week ? Number(S.barberStats.week.done) || 0 : 0;
+    const rating = Number(b.rating) > 0 ? Number(b.rating).toFixed(1) : "—";
+    const hours = b.openingTime && b.closingTime ? b.openingTime + " – " + b.closingTime : "";
+    const bank = b.payoutBank && b.payoutLast4 ? b.payoutBank + " ••••" + b.payoutLast4 : "Not set";
+    const open = S.shopOpen !== false;
+    const nm = b.name || "Not set";
+
+    const row = (l, v) => '<div class="pf-row"><span>' + l + "</span><strong>" + esc(v) + "</strong></div>";
+    const stat = (c, icon, n, l) =>
+      '<div class="pf-stat" style="--c:' + c + '"><div class="pf-si">' + ic(icon) + "</div><strong>" + n + "</strong><small>" + l + "</small></div>";
+
+    root.innerHTML = `
+      <div class="pf-head"><span class="pf-badge">${ic(ICON.user)}</span>
+        <div><h2>Profile</h2><p>Manage your personal and shop information.</p></div></div>
+      <div class="pf-grid">
+        <div class="pf-col">
+          <div class="pf-card pf-hero">
+            <div class="pf-av">${b.photo ? '<img alt="" src="' + esc(b.photo) + '">' : esc(nm.charAt(0).toUpperCase())}
+              <button type="button" class="pf-pen" data-pf="photo" aria-label="Change photo">${ic(ICON.pen)}</button></div>
+            <div class="pf-name">${esc(nm)}</div>
+            <div class="pf-role">Owner</div>
+            <span class="pf-chip">${ic(ICON.id)}Shop Owner</span>
+            <div><div class="pf-contact">
+              <div>${ic(ICON.phone)}${esc(b.phone || "Phone not set")}</div>
+              <div>${ic(ICON.mail)}${esc(b.email || "Email not set")}</div></div></div>
+          </div>
+          <div class="pf-card">
+            <h3 class="pf-h3">Shop Information<button type="button" class="pf-btn" data-pf="edit">${ic(ICON.pen)}Edit</button></h3>
+            <div class="pf-shop"><span class="pf-shop-ico">${ic(ICON.shop)}</span>
+              <div><h4>${esc(b.shopName || "Shop name not set")}</h4>
+                <p>${esc(b.address || "Address not set")}</p>
+                ${hours ? "<p>Hours: " + esc(hours) + "</p>" : ""}
+                <span class="pf-pill ${open ? "on" : "off"}"><i></i>${open ? "Open" : "Closed"}</span></div></div>
+          </div>
+        </div>
+        <div class="pf-col">
+          <div class="pf-card">
+            <h3 class="pf-h3">Personal Information</h3>
+            ${row("Full Name", nm)}${row("Phone Number", b.phone || "Not set")}${row("Email Address", b.email || "Not set")}
+            ${row("Role", "Owner / Head Barber")}${row("Date of Joining", joined)}${row("Payout Account", bank)}
+          </div>
+          <div class="pf-card">
+            <h3 class="pf-h3">Quick Stats</h3>
+            <div class="pf-stats">
+              ${stat("#4b3fd8", ICON.users, staffCount, "Total Staff")}
+              ${stat("#8a3fd1", ICON.cut, weekDone, "Services This Week")}
+              ${stat("#2f5fd6", ICON.star, rating, "Avg. Rating")}
+            </div>
+          </div>
+          <div class="pf-foot">
+            <button type="button" data-pf="logout">Logout</button>
+            <button type="button" class="danger" data-pf="delete">Delete Account</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  /* keep every existing caller working: run the old render, then ours */
+  const baseRender = window.renderBarberProfile;
+  window.renderBarberProfile = function () {
+    const out = typeof baseRender === "function" ? baseRender.apply(this, arguments) : undefined;
+    paint();
+    return out;
+  };
+
+  /* ---------- Email field in the Edit popup ---------- */
+  function ensureEmailField() {
+    if ($("bp-email")) return;
+    const phone = $("bp-phone");
+    if (!phone) return;
+    const d = document.createElement("div");
+    d.innerHTML = '<label>Email Address</label><input class="inp" id="bp-email" type="email" maxlength="80" placeholder="you@example.com">';
+    phone.parentElement.insertAdjacentElement("afterend", d);
+  }
+  const baseEdit = window.editBarberProfile;
+  window.editBarberProfile = function () {
+    ensureEmailField();
+    const out = baseEdit.apply(this, arguments);
+    const el = $("bp-email"); if (el) el.value = (S.barber && S.barber.email) || "";
+    return out;
+  };
+  const baseSave = window.saveBarberProfile;
+  window.saveBarberProfile = function () {
+    const el = $("bp-email"), email = el ? el.value.trim() : "";
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+      toast("⚠️", "Please enter a valid email address");
+      if (el) el.focus();
+      return;
+    }
+    const out = baseSave.apply(this, arguments);
+    const modal = $("m-editbarber");
+    if (!(modal && modal.classList.contains("open"))) {      // base accepted the save
+      S.barber.email = email;
+      if (typeof saveBarberProfileLocal === "function") saveBarberProfileLocal();
+      window.renderBarberProfile();
+    }
+    return out;
+  };
+
+  /* repaint now, and when the shop is toggled open/closed */
+  paint();
+  const baseToggle = window.toggleShop;
+  if (typeof baseToggle === "function") {
+    window.toggleShop = function () {
+      const out = baseToggle.apply(this, arguments);
+      paint();
+      return out;
+    };
+  }
+})();
+/* remember Open/Closed across reloads */
+(function () {
+  const KEY = "barberShopOpen";
+  const paintBtn = () => {
+    const el = document.getElementById("shop-status");
+    if (!el) return;
+    el.textContent = S.shopOpen ? "● Open" : "● Closed";
+    el.className = "tag " + (S.shopOpen ? "tgreen pulse" : "tred");
+  };
+
+  const base = window.toggleShop;
+  window.toggleShop = function () {
+    const out = base.apply(this, arguments);
+    try { localStorage.setItem(KEY, S.shopOpen ? "1" : "0"); } catch (e) {}
+    return out;
+  };
+
+  const saved = localStorage.getItem(KEY);
+  if (saved !== null) {
+    S.shopOpen = saved === "1";
+    paintBtn();
+    if (typeof syncShopStats === "function") syncShopStats();   // tell customers
+  }
+})();
+/* auto open / close by the shop's opening hours */
+(function () {
+  const toMin = t => { const [h, m] = String(t || "").split(":").map(Number); return h * 60 + (m || 0); };
+
+  function insideHours() {
+    const b = S.barber || {};
+    if (!b.openingTime || !b.closingTime) return null;          // hours not set
+    const n = new Date(), now = n.getHours() * 60 + n.getMinutes();
+    const o = toMin(b.openingTime), c = toMin(b.closingTime);
+    return o < c ? (now >= o && now < c) : (now >= o || now < c); // handles past-midnight hours
+  }
+
+  let last = null;
+  function tick() {
+    if (S.role !== "barber") return;
+    if (localStorage.getItem("bqAutoHours") === "0") return;     // set to "0" to turn this off
+    const inside = insideHours();
+    if (inside === null) return;
+    if (inside !== last) {                                       // only act when the clock crosses open/close time
+      last = inside;
+      if (S.shopOpen !== inside) window.toggleShop();            // updates button, toast and customers
+    }
+  }
+
+  setInterval(tick, 30000);
+  setTimeout(tick, 3000);
+})();
+
+(function () {
+  "use strict";
+
+  const $ = id => document.getElementById(id);
+  const rd = (k, d) => { try { return JSON.parse(localStorage.getItem(k) || "null") || d; } catch (e) { return d; } };
+  const PREF_KEY = "bqPrefs";
+  const prefs = Object.assign({ compact: false, noMotion: false, bookingAlerts: true }, rd(PREF_KEY, {}));
+  const savePrefs = () => { try { localStorage.setItem(PREF_KEY, JSON.stringify(prefs)); } catch (e) {} };
+  const ic = p => '<svg class="sx-ic" viewBox="0 0 24 24">' + p + "</svg>";
+  const ICON = {
+    shop: '<path d="M3 9l1-5h16l1 5"/><path d="M4 9v11h16V9"/><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/>',
+    clock: '<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/>',
+    scissors: '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.1" y2="15.9"/><line x1="14.5" y1="14.5" x2="20" y2="20"/><line x1="8.1" y1="8.1" x2="12" y2="12"/>',
+    card: '<rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>',
+    cal: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+    user: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+    logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>',
+    bell: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>',
+    grid: '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>',
+    zap: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+    help: '<circle cx="12" cy="12" r="9"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12" y2="17"/>',
+    chat: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+    chev: '<polyline points="9 18 15 12 9 6"/>',
+    back: '<polyline points="15 18 9 12 15 6"/>'
+  };
+
+  const css = document.createElement("style");
+  css.textContent = `
+  #b-settings-tab:not(.sx-detail) > :not(#sx-root){display:none!important}
+  #b-settings-tab.sx-detail > :not(#sx-root):not(.sx-show){display:none!important}
+  #b-settings-tab.sx-detail #sx-home{display:none}
+  #b-settings-tab:not(.sx-detail) #sx-back{display:none}
+  .sx{--card:#0a0f33;--line:rgba(110,110,255,.22);--mute:#97a0c9;color:#eef1ff;font-family:'DM Sans',sans-serif}
+  .sx *{box-sizing:border-box}
+  .sx-ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .sx h2{margin:0;font:800 26px 'Syne',sans-serif}
+  .sx-sub{margin:4px 0 18px;font-size:13px;color:var(--mute)}
+  .sx-grid{display:grid;grid-template-columns:1fr;gap:14px}
+  .sx-col{display:flex;flex-direction:column;gap:14px;min-width:0}
+  .sx-card{border-radius:18px;padding:18px;background:var(--card);border:1px solid var(--line)}
+  .sx-card h3{margin:0;font:700 16px 'Syne',sans-serif}
+  .sx-card > p{margin:3px 0 10px;font-size:12px;color:var(--mute)}
+  .sx-row{display:flex;align-items:center;gap:14px;width:100%;padding:13px 0;border:0;border-top:1px solid var(--line);background:none;
+      color:inherit;text-align:left;cursor:pointer;font:inherit}
+  .sx-row:first-of-type{border-top:0}
+  .sx-row:hover .sx-ch{color:#fff}
+  .sx-ico{width:42px;height:42px;border-radius:12px;flex:none;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,#6a4bff,#3a2cc0)}
+  .sx-ico .sx-ic{width:20px;height:20px}
+  .sx-t{flex:1;min-width:0}.sx-t b{display:block;font-weight:600;font-size:14px}.sx-t small{font-size:11.5px;color:var(--mute)}
+  .sx-ch{color:var(--mute)}
+  .sx-sw{position:relative;width:42px;height:24px;border-radius:14px;border:0;cursor:pointer;flex:none;background:#2a3070;transition:background .15s}
+  .sx-sw::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .15s}
+  .sx-sw[aria-checked="true"]{background:#1f7bff}.sx-sw[aria-checked="true"]::after{transform:translateX(18px)}
+  .sx-back{display:inline-flex;align-items:center;gap:6px;margin-bottom:14px;padding:8px 12px;border-radius:10px;cursor:pointer;
+      font:600 13px 'DM Sans',sans-serif;color:#eef1ff;background:#141b55;border:1px solid #3b46c8}
+  .sx-detail-title{margin:0 0 14px;font:800 20px 'Syne',sans-serif}
+  .sx-compact .pad{padding-left:10px!important;padding-right:10px!important}
+  .sx-compact .card,.sx-compact .stat,.sx-compact .qi{padding:10px!important}
+  .sx-compact .sx-card,.sx-compact .an-panel,.sx-compact .st-card,.sx-compact .pf-card,.sx-compact .bq-panel{padding:12px!important}
+  .sx-compact .sx-row{padding:8px 0}
+  .sx-nomo *,.sx-nomo *::before,.sx-nomo *::after{animation:none!important;transition:none!important}
+  @media(min-width:820px){.sx-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}`;
+  document.head.appendChild(css);
+
+  function applyPrefs() {
+    document.documentElement.classList.toggle("sx-compact", !!prefs.compact);
+    document.documentElement.classList.toggle("sx-nomo", !!prefs.noMotion);
+  }
+  applyPrefs();
+
+  /* booking-request alerts can be switched off */
+  const baseToast = window.toast;
+  if (typeof baseToast === "function") {
+    window.toast = function (a, b) {
+      if (prefs.bookingAlerts === false && /New booking request/.test(String(b || a))) return;
+      return baseToast.apply(this, arguments);
+    };
+  }
+
+  const tabBtn = () => $("b-settings-tab");
+  const row = (id, icon, title, sub) =>
+    '<button type="button" class="sx-row" data-sx="' + id + '"><span class="sx-ico">' + ic(icon) + '</span><span class="sx-t"><b>' +
+    title + "</b><small>" + sub + '</small></span><span class="sx-ch">' + ic(ICON.chev) + "</span></button>";
+  const sw = (id, icon, title, sub, on) =>
+    '<div class="sx-row" style="cursor:default"><span class="sx-ico">' + ic(icon) + '</span><span class="sx-t"><b>' + title +
+    "</b><small>" + sub + '</small></span><button type="button" class="sx-sw" role="switch" data-sw="' + id +
+    '" aria-label="' + title + '" aria-checked="' + (on ? "true" : "false") + '"></button></div>';
+
+  let shown = [];
+  function clearShown() {
+    shown.forEach(n => n && n.classList.remove("sx-show"));
+    shown = [];
+  }
+  function showDetail(title, nodes, notif) {
+    const tab = tabBtn();
+    clearShown();
+    shown = nodes.filter(Boolean);
+    shown.forEach(n => n.classList.add("sx-show"));
+    $("sx-detail-title").textContent = title;
+    $("sx-notif").style.display = notif ? "block" : "none";
+    tab.classList.add("sx-detail");
+    tab.scrollTop = 0;
+  }
+  function home() {
+    clearShown();
+    const tab = tabBtn();
+    if (!tab) return;
+    tab.classList.remove("sx-detail");
+    if ($("sx-notif")) $("sx-notif").style.display = "none";
+  }
+
+  const saveParts = () => [
+    document.querySelector("#b-settings-tab > button.btn-gold"),
+    $("bq-settings-message")
+  ];
+
+  const ACTIONS = {
+    info: () => showDetail("Shop Information", [$("bq-sec-info"), $("bq-sec-photo")].concat(saveParts())),
+    hours: () => window.editBarberProfile(),
+    services: () => window.bTab("svc"),
+    pay: () => showDetail("UPI & Payment Settings", [$("bq-sec-pay")].concat(saveParts())),
+    booking: () => {
+      if (typeof window.bqRenderSettings === "function") window.bqRenderSettings();   // creates the card
+      showDetail("Advance Booking", [$("bk-settings")]);
+    },
+    profile: () => window.bTab("profile"),
+    logout: () => window.logoutBarber(),
+    notif: () => showDetail("Notification Preferences", [], true),
+    help: () => window.go("s-support"),
+    contact: () => { window.location.href = "mailto:support@barberq.app?subject=Glowora%20support"; }
+  };
+
+  function shell() {
+    const tab = tabBtn();
+    if (!tab) return null;
+    let root = $("sx-root");
+    if (root) return root;
+    root = document.createElement("div");
+    root.id = "sx-root";
+    root.className = "sx";
+    root.innerHTML = `
+      <div id="sx-back"><button type="button" class="sx-back" data-sx="back">${ic(ICON.back)}Back to settings</button>
+        <h3 class="sx-detail-title" id="sx-detail-title"></h3></div>
+      <div id="sx-notif" style="display:none"><div class="sx-card">
+        ${sw("bookingAlerts", ICON.cal, "New booking requests", "Show an alert when a customer asks for a time slot", prefs.bookingAlerts)}
+        <p style="margin:12px 0 0">Saved on this device.</p></div></div>
+      <div id="sx-home">
+        <h2>Settings</h2>
+        <p class="sx-sub">Manage your shop, preferences and account settings.</p>
+        <div class="sx-grid">
+          <div class="sx-col">
+            <div class="sx-card"><h3>Shop Settings</h3><p>Update your shop details, timings and services.</p>
+              ${row("info", ICON.shop, "Shop Information", "Edit name, address, photo")}
+              ${row("hours", ICON.clock, "Opening Hours", "Set your shop timings")}
+              ${row("services", ICON.scissors, "Services &amp; Pricing", "Manage services and rates")}
+              ${row("pay", ICON.card, "UPI &amp; Payment Settings", "Configure payment methods")}
+              ${row("booking", ICON.cal, "Advance Booking", "Days, slots and days off")}</div>
+            <div class="sx-card"><h3>Appearance</h3><p>Customise your dashboard look.</p>
+              ${sw("compact", ICON.grid, "Compact View", "Tighter spacing on every page", prefs.compact)}
+              ${sw("noMotion", ICON.zap, "Reduce Motion", "Turn off animations", prefs.noMotion)}</div>
+          </div>
+          <div class="sx-col">
+            <div class="sx-card"><h3>Account Settings</h3><p>Manage your profile and security.</p>
+              ${row("profile", ICON.user, "Profile Information", "Update your personal details")}
+              ${row("notif", ICON.bell, "Notification Preferences", "Choose what you want to receive")}
+              ${row("logout", ICON.logout, "Logout", "Sign out of this device")}</div>
+            <div class="sx-card"><h3>Support &amp; Help</h3><p>Get help or contact our support team.</p>
+              ${row("help", ICON.help, "Help Center", "FAQs and guides")}
+              ${row("contact", ICON.chat, "Contact Support", "We're here to help")}</div>
+          </div>
+        </div>
+      </div>`;
+    tab.insertBefore(root, tab.firstChild);
+
+    root.addEventListener("click", e => {
+      const s = e.target.closest("[data-sw]");
+      if (s) {
+        const k = s.dataset.sw;
+        prefs[k] = !prefs[k];
+        savePrefs();
+        applyPrefs();
+        root.querySelectorAll('[data-sw="' + k + '"]').forEach(x => x.setAttribute("aria-checked", prefs[k] ? "true" : "false"));
+        return;
+      }
+      const r = e.target.closest("[data-sx]");
+      if (!r) return;
+      if (r.dataset.sx === "back") { home(); return; }
+      const fn = ACTIONS[r.dataset.sx];
+      if (fn) fn();
+    });
+    return root;
+  }
+
+  /* opening the Settings tab always starts on the home grid */
+  const baseBTab = window.bTab;
+  window.bTab = function (tab) {
+    const out = baseBTab.apply(this, arguments);
+    if (tab === "settings") { shell(); home(); }
+    else if (tabBtn()) tabBtn().classList.remove("sx-detail");
+    return out;
+  };
+
+  shell();
+  const t = tabBtn();
+  if (t && t.style.display === "block") home();
+})();
+
+(function () {
+  "use strict";
+
+  const $ = id => document.getElementById(id);
+  const esc = v => String(v == null ? "" : v).replace(/[&<>"']/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const pad = n => String(n).padStart(2, "0");
+  const iso = d => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+  const mins = t => { const [h, m] = String(t || "").split(":").map(Number); return isNaN(h) ? NaN : h * 60 + (m || 0); };
+  const hhmm = m => pad(Math.floor(m / 60)) + ":" + pad(m % 60);
+  const ic = p => '<svg class="cl-ic" viewBox="0 0 24 24">' + p + "</svg>";
+  const ICON = {
+    cal: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+    left: '<polyline points="15 18 9 12 15 6"/>', right: '<polyline points="9 18 15 12 9 6"/>',
+    plus: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+    user: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+    shop: '<path d="M3 9l1-5h16l1 5"/><path d="M4 9v11h16V9"/><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/>'
+  };
+  const COLORS = ["#8b5cf6", "#14b8a6", "#f59e0b", "#3b82f6", "#ec4899", "#22d3ee"];
+  const PX = 58;                                   // pixels per hour
+  const cleanSvc = s => String(s || "").replace(/\s·\sadvance$/, "");
+  const colorOf = name => {
+    const i = (S.services || []).findIndex(s => s.name === name);
+    if (i >= 0) return COLORS[i % COLORS.length];
+    let h = 0; for (const ch of String(name)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    return COLORS[h % COLORS.length];
+  };
+  const monday = d => { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; };
+
+  let ws = monday(new Date());                      // week start shown
+  let miniM = new Date(ws.getFullYear(), ws.getMonth(), 1);
+
+  const css = document.createElement("style");
+  css.textContent = `
+  #b-calendar-tab > :not(#cl-root){display:none!important}
+  .cl{--card:#0a0f33;--line:rgba(110,110,255,.2);--mute:#97a0c9;color:#eef1ff;font-family:'DM Sans',sans-serif}
+  .cl *{box-sizing:border-box}
+  .cl-ic{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .cl-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+  .cl-badge{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:#c9b8ff;background:#241a6b;border:1px solid #5a43d8}
+  .cl-head h2{margin:0;font:800 24px 'Syne',sans-serif}.cl-head p{margin:2px 0 0;font-size:13px;color:var(--mute)}
+  .cl-tools{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .cl-btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;cursor:pointer;color:#eef1ff;
+      font:600 13px 'DM Sans',sans-serif;background:var(--card);border:1px solid var(--line)}
+  .cl-btn:hover{border-color:#5b6cff}
+  .cl-range{display:inline-flex;align-items:center;gap:10px;padding:6px 8px 6px 12px;border-radius:10px;background:var(--card);border:1px solid var(--line);font:600 13px 'DM Sans',sans-serif}
+  .cl-range button{border:0;background:none;color:inherit;cursor:pointer;display:grid;place-items:center;padding:4px}
+  .cl-add{border:0;background:linear-gradient(90deg,#7c3aed,#4f46e5);box-shadow:0 0 18px -6px #7c3aed}
+  .cl-layout{display:grid;grid-template-columns:1fr;gap:14px}
+  .cl-side{display:flex;flex-direction:column;gap:14px}
+  .cl-box{border-radius:16px;padding:14px;background:var(--card);border:1px solid var(--line)}
+  .cl-mh{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;font:700 15px 'Syne',sans-serif}
+  .cl-mh button{border:0;background:none;color:inherit;cursor:pointer;display:grid;place-items:center;padding:4px}
+  .cl-mg{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;font-size:12px}
+  .cl-mg .w{color:var(--mute);font-size:11px;padding:4px 0}
+  .cl-mg button{border:0;background:none;color:#eef1ff;height:30px;border-radius:50%;cursor:pointer;font:inherit}
+  .cl-mg button.o{color:#5f6896}
+  .cl-mg button.in{background:rgba(110,100,255,.16);border-radius:0}
+  .cl-mg button.t{background:#6a4bff;color:#fff;font-weight:700;border-radius:50%}
+  .cl-leg div{display:flex;align-items:center;gap:10px;padding:8px 2px;font-size:13px}
+  .cl-leg i{width:10px;height:10px;border-radius:50%;flex:none}
+  .cl-leg b{margin-left:auto;font-weight:600}
+  .cl-main{border-radius:16px;background:var(--card);border:1px solid var(--line);overflow:auto;max-height:74vh;min-width:0}
+  .cl-grid{display:grid;grid-template-columns:54px repeat(7,minmax(104px,1fr));min-width:820px}
+  .cl-dh{position:sticky;top:0;z-index:4;padding:10px 4px;text-align:center;font-size:13px;background:var(--card);border-bottom:1px solid var(--line)}
+  .cl-dh b{display:block;font-weight:700}.cl-dh small{color:var(--mute);font-size:11px}
+  .cl-dh.today{background:#5b3df0;border-radius:10px;margin:6px 4px 0;border-bottom:0}
+  .cl-dh.today small{color:#dcd3ff}
+  .cl-times div{height:${PX}px;font-size:11px;color:var(--mute);text-align:right;padding-right:8px;transform:translateY(-7px)}
+  .cl-times{padding-top:8px}
+  .cl-col{position:relative;border-left:1px solid var(--line);
+      background:repeating-linear-gradient(to bottom,transparent 0,transparent ${PX - 1}px,rgba(110,110,255,.14) ${PX - 1}px,rgba(110,110,255,.14) ${PX}px)}
+  .cl-col.today{background-color:rgba(91,61,240,.1)}
+  .cl-ev{position:absolute;padding:6px 8px;border-radius:9px;overflow:hidden;cursor:pointer;font-size:11px;line-height:1.3;border:1px solid var(--c);
+      background:color-mix(in srgb,var(--c) 28%,#0a0f33);box-shadow:0 0 14px -8px var(--c);text-align:left;color:#eef1ff;font-family:inherit}
+  .cl-ev:hover{filter:brightness(1.2);z-index:3}
+  .cl-ev .t{font-size:10.5px;color:#dfe4ff;display:flex;align-items:center;gap:5px}
+  .cl-ev .t span{display:grid;place-items:center;width:16px;height:16px;border-radius:50%;background:var(--c);color:#fff;flex:none}
+  .cl-ev .t .cl-ic{width:10px;height:10px}
+  .cl-ev strong{display:block;font-size:12px;font-weight:600;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cl-ev em{font-style:normal;color:#c3caea;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+  .cl-ev.pending{border-style:dashed}
+  .cl-ev.cancelled{opacity:.4;text-decoration:line-through}
+  .cl-now{position:absolute;left:0;right:0;height:2px;background:#ff5d8f;z-index:2;pointer-events:none}
+  .cl-now::before{content:"";position:absolute;left:-4px;top:-3px;width:8px;height:8px;border-radius:50%;background:#ff5d8f}
+  .cl-pm{display:grid;gap:10px;font-size:14px}.cl-pm span{color:var(--mute);font-size:12px;display:block}
+  @media(min-width:1000px){.cl-layout{grid-template-columns:270px minmax(0,1fr)}}`;
+  document.head.appendChild(css);
+
+  function shell() {
+    const tab = $("b-calendar-tab");
+    if (!tab) return null;
+    let root = $("cl-root");
+    if (root) return root;
+    root = document.createElement("div");
+    root.id = "cl-root";
+    root.className = "cl";
+    root.innerHTML = `
+      <div class="cl-head"><span class="cl-badge">${ic(ICON.shop)}</span>
+        <div><h2>Calendar</h2><p>View and manage your appointments and schedule.</p></div>
+        <div class="cl-tools">
+          <div class="cl-range">${ic(ICON.cal)}<span id="cl-range"></span>
+            <button type="button" data-cl="prev" aria-label="Previous week">${ic(ICON.left)}</button>
+            <button type="button" data-cl="next" aria-label="Next week">${ic(ICON.right)}</button></div>
+          <button type="button" class="cl-btn" data-cl="today">Today</button>
+          <button type="button" class="cl-btn cl-add" data-cl="add">${ic(ICON.plus)}Add Walk-in</button>
+        </div>
+      </div>
+      <div class="cl-layout">
+        <div class="cl-side"><div class="cl-box" id="cl-mini"></div><div class="cl-box cl-leg" id="cl-leg"></div></div>
+        <div class="cl-main" id="cl-main"></div>
+      </div>`;
+    tab.insertBefore(root, tab.firstChild);
+
+    root.addEventListener("click", e => {
+      const a = e.target.closest("[data-cl]");
+      if (a) {
+        const k = a.dataset.cl;
+        if (k === "prev") window.bqChangeWeek(-1);
+        else if (k === "next") window.bqChangeWeek(1);
+        else if (k === "today") window.bqCalendarToday();
+        else if (k === "add") window.openWalkinModal();
+        else if (k === "mprev" || k === "mnext") { miniM = new Date(miniM.getFullYear(), miniM.getMonth() + (k === "mnext" ? 1 : -1), 1); paint(); }
+        return;
+      }
+      const d = e.target.closest("[data-day]");
+      if (d) { ws = monday(new Date(d.dataset.day + "T00:00:00")); miniM = new Date(ws.getFullYear(), ws.getMonth(), 1); paint(); return; }
+      const ev = e.target.closest("[data-ev]");
+      if (ev) openEvent(ev.dataset.ev);
+    });
+    return root;
+  }
+
+  function layout(evs) {                              // side-by-side lanes for overlapping events
+    evs.sort((a, b) => a.s - b.s || a.e - b.e);
+    let cluster = [], cols = [], end = -1;
+    const close = () => { cluster.forEach(x => { x.n = Math.max(1, cols.length); }); cluster = []; cols = []; end = -1; };
+    evs.forEach(ev => {
+      if (ev.s >= end && cluster.length) close();
+      let i = cols.findIndex(c => c <= ev.s);
+      if (i < 0) { i = cols.length; cols.push(0); }
+      cols[i] = ev.e; ev.lane = i; cluster.push(ev);
+      end = Math.max(end, ev.e);
+    });
+    close();
+  }
+
+  function paint() {
+    const root = shell();
+    if (!root) return;
+    const all = window.bqAppointments || [];
+    const today = new Date(), todayIso = iso(today);
+    const days = Array.from({ length: 7 }, (_, i) => { const d = new Date(ws); d.setDate(ws.getDate() + i); return d; });
+    const wkIso = new Set(days.map(iso));
+
+    /* header range */
+    const f = d => d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    $("cl-range").textContent = f(days[0]) + " - " + f(days[6]) + ", " + days[6].getFullYear();
+
+    /* events this week */
+    const week = all.filter(a => a && wkIso.has(a.date) && !isNaN(mins(a.start)))
+      .map(a => {
+        const s = mins(a.start);
+        let e = mins(a.end); if (isNaN(e) || e <= s) e = s + (Number(a.dur) || 30);
+        return { a, s, e, svc: cleanSvc(a.service) };
+      });
+
+    /* hour range */
+    const b = S.barber || {};
+    let h0 = parseInt(String(b.openingTime || "09:00").split(":")[0], 10);
+    let h1 = parseInt(String(b.closingTime || "20:00").split(":")[0], 10);
+    if (!(h0 >= 0 && h1 > h0)) { h0 = 9; h1 = 20; }
+    week.forEach(x => { h0 = Math.min(h0, Math.floor(x.s / 60)); h1 = Math.max(h1, Math.ceil(x.e / 60)); });
+    h1 = Math.min(24, h1);
+    const hours = h1 - h0;
+
+    /* main grid */
+    let html = '<div class="cl-grid"><div class="cl-dh" style="background:var(--card)"></div>' + days.map(d => {
+      const t = iso(d) === todayIso;
+      return '<div class="cl-dh' + (t ? " today" : "") + '"><b>' + d.toLocaleDateString("en-US", { weekday: "short" }) + "</b><small>" +
+        d.getDate() + " " + d.toLocaleDateString("en-US", { month: "short" }) + "</small></div>";
+    }).join("");
+    html += '<div class="cl-times">' + Array.from({ length: hours }, (_, i) => "<div>" + pad(h0 + i) + ":00</div>").join("") + "</div>";
+
+    days.forEach(d => {
+      const key = iso(d), isToday = key === todayIso;
+      const evs = week.filter(x => x.a.date === key);
+      layout(evs);
+      html += '<div class="cl-col' + (isToday ? " today" : "") + '" style="height:' + (hours * PX + 8) + 'px;margin-top:0">';
+      evs.forEach(x => {
+        const top = (x.s - h0 * 60) / 60 * PX + 8;
+        const ht = Math.max(40, (x.e - x.s) / 60 * PX - 3);
+        const w = 100 / x.n;
+        html += '<button type="button" class="cl-ev ' + esc(x.a.status) + '" data-ev="' + esc(x.a.id) + '" style="--c:' + colorOf(x.svc) +
+          ";top:" + top + "px;height:" + ht + "px;left:calc(" + (x.lane * w) + "% + 3px);width:calc(" + w + '% - 6px)">' +
+          '<span class="t"><span>' + ic(ICON.user) + "</span>" + hhmm(x.s) + " - " + hhmm(x.e) + "</span>" +
+          "<strong>" + (x.a.status === "completed" ? "✓ " : "") + esc(x.a.customer) + "</strong><em>" + esc(x.svc) + "</em></button>";
+      });
+      if (isToday) {
+        const nm = today.getHours() * 60 + today.getMinutes();
+        if (nm >= h0 * 60 && nm <= h1 * 60) html += '<div class="cl-now" style="top:' + ((nm - h0 * 60) / 60 * PX + 8) + 'px"></div>';
+      }
+      html += "</div>";
+    });
+    html += "</div>";
+    const main = $("cl-main"), keepTop = main.scrollTop, keepLeft = main.scrollLeft;
+    main.innerHTML = html;
+    main.scrollTop = keepTop; main.scrollLeft = keepLeft;
+
+    /* mini month */
+    const first = new Date(miniM.getFullYear(), miniM.getMonth(), 1);
+    const gridStart = monday(first);
+    let cells = "";
+    for (let i = 0; i < 42; i++) {
+      const d = new Date(gridStart); d.setDate(gridStart.getDate() + i);
+      if (i >= 35 && d.getMonth() !== miniM.getMonth()) break;
+      const k = iso(d);
+      const cls = (d.getMonth() !== miniM.getMonth() ? "o " : "") + (wkIso.has(k) ? "in " : "") + (k === todayIso ? "t" : "");
+      cells += '<button type="button" class="' + cls + '" data-day="' + k + '">' + d.getDate() + "</button>";
+    }
+    $("cl-mini").innerHTML =
+      '<div class="cl-mh"><span>' + miniM.toLocaleDateString("en-US", { month: "long", year: "numeric" }) + "</span><span>" +
+      '<button type="button" data-cl="mprev" aria-label="Previous month">' + ic(ICON.left) + '</button><button type="button" data-cl="mnext" aria-label="Next month">' + ic(ICON.right) + "</button></span></div>" +
+      '<div class="cl-mg">' + ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(w => '<div class="w">' + w + "</div>").join("") + cells + "</div>";
+
+    /* service legend (this week, cancelled ignored) */
+    const counts = {};
+    week.filter(x => x.a.status !== "cancelled" && x.a.status !== "rejected").forEach(x => { counts[x.svc] = (counts[x.svc] || 0) + 1; });
+    const rows = Object.entries(counts).sort((p, q) => q[1] - p[1]);
+    $("cl-leg").innerHTML = rows.length
+      ? rows.map(([n, c]) => '<div><i style="background:' + colorOf(n) + '"></i>' + esc(n) + "<b>" + c + "</b></div>").join("")
+      : '<div style="color:var(--mute)">No appointments this week.</div>';
+  }
+
+  /* ---------- appointment popup ---------- */
+  function openEvent(id) {
+    const a = (window.bqAppointments || []).find(x => String(x.id) === String(id));
+    if (!a) return;
+    let w = $("m-clev");
+    if (!w) {
+      w = document.createElement("div");
+      w.className = "overlay"; w.id = "m-clev";
+      w.innerHTML = '<div class="modal cl"><div id="clev-body" class="cl-pm"></div><div style="display:flex;gap:10px;margin-top:16px">' +
+        '<button class="btn btn-outline" style="flex:1" type="button" id="clev-close">Close</button></div></div>';
+      document.body.appendChild(w);
+      w.addEventListener("click", e => { if (e.target === w) closeModal("m-clev"); });
+      $("clev-close").addEventListener("click", () => closeModal("m-clev"));
+    }
+    const e = a.end ? " – " + a.end : "";
+    $("clev-body").innerHTML =
+      '<div style="font:800 20px \'Syne\',sans-serif">' + (a.token != null ? "#" + esc(a.token) + " · " : "") + esc(a.customer) + "</div>" +
+      "<div><span>Service</span>" + esc(cleanSvc(a.service)) + "</div>" +
+      "<div><span>When</span>" + esc(a.date) + " · " + esc(a.start) + esc(e) + "</div>" +
+      (a.phone ? "<div><span>Phone</span>" + esc(a.phone) + "</div>" : "") +
+      '<div><span>Status</span><select class="inp" id="clev-status">' +
+      ["pending", "confirmed", "completed", "cancelled"].map(s => "<option" + (s === a.status ? " selected" : "") + ">" + s + "</option>").join("") + "</select></div>";
+    $("clev-status").onchange = ev => { closeModal("m-clev"); window.bqSetStatus(a.id, ev.target.value); };
+    openModal("m-clev");
+  }
+
+  /* ---------- public hooks used by the rest of the app ---------- */
+  window.bqRenderCalendar = paint;
+  window.bqChangeWeek = function (dir) {
+    ws = new Date(ws.getFullYear(), ws.getMonth(), ws.getDate() + 7 * (Number(dir) || 0));
+    miniM = new Date(ws.getFullYear(), ws.getMonth(), 1);
+    paint();
+  };
+  window.bqCalendarToday = function () {
+    ws = monday(new Date());
+    miniM = new Date(ws.getFullYear(), ws.getMonth(), 1);
+    paint();
+  };
+
+  setInterval(() => {                                 
+    const t = $("b-calendar-tab");
+    if (t && t.style.display === "block") paint();
+  }, 60000);
+
+  shell();
+  const t = $("b-calendar-tab");
+  if (t && t.style.display === "block") paint();
+})();
+
+(function () {
+  "use strict";
+
+  const $ = id => document.getElementById(id);
+  const esc = v => String(v == null ? "" : v).replace(/[&<>"']/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const pad = n => String(n).padStart(2, "0");
+  const iso = d => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+  const inr = n => "₹" + Math.round(n || 0).toLocaleString("en-IN");
+  const ic = p => '<svg class="sv-ic" viewBox="0 0 24 24">' + p + "</svg>";
+  const ICON = {
+    cut: '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.1" y2="15.9"/><line x1="14.5" y1="14.5" x2="20" y2="20"/><line x1="8.1" y1="8.1" x2="12" y2="12"/>',
+    search: '<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.7" y2="16.7"/>',
+    clock: '<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/>',
+    edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+    trash: '<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>',
+    plus: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+    bars: '<rect x="4" y="12" width="4" height="8"/><rect x="10" y="5" width="4" height="15"/><rect x="16" y="9" width="4" height="11"/>',
+    rupee: '<path d="M6 4h12M6 9h12M9 4c6 0 6 9 0 9H6l8 7"/>',
+    users: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+    star: '<polygon points="12 2 15.1 8.3 22 9.3 17 14.1 18.2 21 12 17.8 5.8 21 7 14.1 2 9.3 8.9 8.3"/>',
+    cup: '<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/>',
+    bulb: '<path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.2 1 2V17h6v-.3c0-.8.4-1.5 1-2A7 7 0 0 0 12 2z"/>',
+    crown: '<path d="M2 8l4 4 6-8 6 8 4-4-2 12H4z"/>',
+    gem: '<polygon points="6 3 18 3 22 9 12 21 2 9"/>',
+    coin: '<circle cx="12" cy="12" r="9"/><path d="M9 9h6M9 12h6M11 12c3 0 3 5-1 5"/>'
+  };
+  const FRAMES = ["#5b6cff", "#14b8a6", "#e0459a", "#3b82f6", "#e0a23a", "#a23df0"];
+  const EMOJIS = ['💇','💇‍♂️','💇‍♀️','✂️','🧴','🧔','🪒','👨‍🦰','👨‍🦱','💆','🧖','🧖‍♂️','🧖‍♀️','✨','💅','🎨','🖌️','🌈','💄','👄','🧼','🧽','🌸','🌺','🌹','😀','😄','😊','😇','😉','😌','😍','🥰','🥳','🤗','🤭','👨','👩','🧔','👴','👵','🙍','👰','🧴','💆','💆‍♂️','💆‍♀️','🧖','🧖‍♂️','🧖‍♀️','💅','🪞','🛁','⭐','🌟','🔥','💫','🌸','🌺','🌹','🌷','🌻','🌼','🍁','🫐','🍒','🍑','🥭','🍍','🥥','🥝','🍅','❤️','🧡','💛','💚','💙','💜','❣️','💕','💞','💓','💗','💖','💘','💝'];
+  const BADGE = {
+    popular: ["Popular", ICON.star], luxury: ["Luxury", ICON.star], value: ["Best Value", ICON.crown], premium: ["Premium", ICON.gem]
+  };
+  let query = "";
+  let editing = -1;                                   
+
+  const css = document.createElement("style");
+  css.textContent = `
+  #b-svc-tab > :not(#sv-root){display:none!important}
+  .sv{--card:#0a0f33;--line:rgba(110,110,255,.2);--mute:#97a0c9;color:#eef1ff;font-family:'DM Sans',sans-serif}
+  .sv *{box-sizing:border-box}
+  .sv-ic{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .sv-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+  .sv-badge{width:56px;height:56px;border-radius:14px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,#6a4bff,#3a2cc0);border:1px solid #8b7bff}
+  .sv-badge .sv-ic{width:28px;height:28px}
+  .sv-head h2{margin:0;font:800 26px 'Syne',sans-serif}.sv-head p{margin:3px 0 0;font-size:13px;color:var(--mute)}
+  .sv-search{margin-left:auto;display:flex;align-items:center;gap:8px;flex:1 1 220px;max-width:340px;padding:0 14px;border-radius:12px;background:var(--card);border:1px solid var(--line);color:var(--mute)}
+  .sv-search input{flex:1;min-width:0;background:none;border:0;outline:0;color:#eef1ff;font:14px 'DM Sans',sans-serif;padding:12px 0}
+  .sv-layout{display:grid;grid-template-columns:1fr;gap:16px}
+  .sv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;align-content:start}
+  .sv-card{position:relative;display:flex;flex-direction:column;padding:18px;border-radius:18px;border:1.5px solid var(--f);min-height:200px;
+      background:linear-gradient(160deg,color-mix(in srgb,var(--f) 14%,#080c26),#080c26 62%);box-shadow:0 0 24px -12px var(--f)}
+  .sv-tag{position:absolute;top:14px;right:14px;display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:8px;font-size:11.5px;font-weight:600;
+      color:#fff;background:color-mix(in srgb,var(--f) 35%,#0a0f33);border:1px solid color-mix(in srgb,var(--f) 70%,transparent)}
+  .sv-tag .sv-ic{width:12px;height:12px}
+  .sv-ico{width:58px;height:58px;border-radius:50%;display:grid;place-items:center;font-size:28px;margin-bottom:12px;
+      background:linear-gradient(135deg,color-mix(in srgb,var(--f) 80%,#fff),color-mix(in srgb,var(--f) 70%,#000));box-shadow:0 0 18px -4px var(--f)}
+  .sv-name{font:700 20px 'Syne',sans-serif;margin-bottom:6px}
+  .sv-desc{font-size:13px;line-height:1.5;color:#c8cfee;flex:1;margin-bottom:14px}
+  .sv-foot{display:flex;align-items:center;gap:12px}
+  .sv-dur{display:flex;align-items:center;gap:6px;font-size:13px;color:#d4daf7;padding-right:12px;border-right:1px solid var(--line)}
+  .sv-price{font:700 20px 'Syne',sans-serif;color:#f5b73b}
+  .sv-act{margin-left:auto;display:flex;gap:8px}
+  .sv-act button{width:34px;height:34px;border-radius:50%;cursor:pointer;display:grid;place-items:center;color:#7fb2ff;background:rgba(59,109,255,.18);border:1px solid rgba(59,109,255,.55)}
+  .sv-act button.del{color:#ff6b8b;background:rgba(255,80,120,.14);border-color:rgba(255,80,120,.5)}
+  .sv-add{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px;padding:20px;border-radius:18px;min-height:200px;
+      border:1.5px dashed #4a55d8;background:rgba(40,40,140,.12)}
+  .sv-add .c{width:62px;height:62px;border-radius:50%;display:grid;place-items:center;color:#8da0ff;border:2px solid #4a55d8;margin-bottom:6px}
+  .sv-add .c .sv-ic{width:30px;height:30px}
+  .sv-add b{font:700 18px 'Syne',sans-serif}.sv-add small{font-size:12.5px;color:var(--mute);max-width:200px}
+  .sv-addbtn{margin-top:10px;display:inline-flex;align-items:center;gap:8px;border:0;border-radius:999px;padding:12px 26px;cursor:pointer;color:#fff;font:700 14px 'DM Sans',sans-serif;
+      background:linear-gradient(90deg,#8b2fff,#2d7bff);box-shadow:0 0 20px -6px #7c3aed}
+  .sv-side{display:flex;flex-direction:column;gap:14px;min-width:0}
+  .sv-box{border-radius:18px;padding:16px;background:var(--card);border:1px solid var(--line)}
+  .sv-box h3{margin:0 0 12px;display:flex;align-items:center;gap:8px;font:700 15px 'Syne',sans-serif}
+  .sv-box h3 .sv-ic{color:#7f93ff}
+  .sv-ov{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .sv-st{padding:12px;border-radius:14px;border:1px solid var(--c);background:linear-gradient(135deg,color-mix(in srgb,var(--c) 18%,#080c26),#080c26 75%)}
+  .sv-st .i{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;color:#fff;background:var(--c);margin-bottom:6px}
+  .sv-st strong{display:block;font:800 22px 'Syne',sans-serif}.sv-st small{font-size:11.5px;color:var(--mute)}
+  .sv-top{display:flex;align-items:center;gap:10px;padding:8px 0;font-size:13px}
+  .sv-top .e{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-size:17px;flex:none;background:linear-gradient(135deg,#5b6cff,#3a2cc0)}
+  .sv-top .m{flex:1;min-width:0}.sv-top .m b{display:block;font-weight:600}.sv-top .m small{color:var(--mute);font-size:11px}
+  .sv-bar{width:70px;height:6px;border-radius:6px;background:#0d1440;overflow:hidden;flex:none}.sv-bar i{display:block;height:100%;background:var(--c)}
+  .sv-top .p{width:34px;text-align:right;font-size:12px;color:#d4daf7}
+  .sv-tip{display:flex;gap:10px;font-size:12px;color:#c8cfee;line-height:1.5}.sv-tip .sv-ic{color:#f5b73b;flex:none;margin-top:2px}
+  .sv-empty{color:var(--mute);font-size:13px;padding:6px 0}
+  .sv-form{display:grid;gap:12px}.sv-form label{display:block;font-size:12px;color:var(--mute);margin-bottom:4px}
+  .sv-emo{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .sv-emo button{font-size:20px;width:38px;height:38px;border-radius:10px;cursor:pointer;background:#0d1440;border:1px solid var(--line)}
+  .sv-emo button.on{border-color:#8b7bff;background:#241a6b}
+  @media(min-width:1100px){.sv-layout{grid-template-columns:minmax(0,1fr) 300px}}`;
+  document.head.appendChild(css);
+
+  /* ---------- helpers ---------- */
+  const saveServices = () => {
+    try { localStorage.setItem("barberServices", JSON.stringify(S.services)); } catch (e) { toast("⚠️", "Could not save services"); return false; }
+    if (typeof syncBarberToCustomerShop === "function") { try { syncBarberToCustomerShop(); } catch (e) { /* ignore */ } }
+    return true;
+  };
+  const weekCounts = () => {
+    const m = {};
+    ((S.barberStats && S.barberStats.week && S.barberStats.week.services) || []).forEach(([n, c]) => { m[n] = Number(c) || 0; });
+    return m;
+  };
+
+  function badges(counts) {
+    const list = S.services || [], out = {};
+    if (!list.length) return out;
+    const byPrice = list.map((s, i) => [i, Number(s.price) || 0]).sort((a, b) => b[1] - a[1]);
+    const topSold = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+    if (topSold && topSold[1] > 0) { const i = list.findIndex(s => s.name === topSold[0]); if (i >= 0) out[i] = "popular"; }
+    if (list.length >= 3) {
+      if (!(byPrice[0][0] in out)) out[byPrice[0][0]] = "luxury";
+      const cheap = byPrice[byPrice.length - 1][0];
+      if (!(cheap in out)) out[cheap] = "value";
+    }
+    if (list.length >= 4 && !(byPrice[1][0] in out)) out[byPrice[1][0]] = "premium";
+    return out;
+  }
+
+  /* ---------- shell + paint ---------- */
+  function shell() {
+    const tab = $("b-svc-tab");
+    if (!tab) return null;
+    let root = $("sv-root");
+    if (root) return root;
+    root = document.createElement("div");
+    root.id = "sv-root";
+    root.className = "sv";
+    root.innerHTML = `
+      <div class="sv-head"><span class="sv-badge">${ic(ICON.cut)}</span>
+        <div><h2>Services</h2><p>Manage your service menu and pricing.</p></div>
+        <label class="sv-search">${ic(ICON.search)}<input id="sv-q" type="search" placeholder="Search services..." autocomplete="off"></label></div>
+      <div class="sv-layout"><div class="sv-grid" id="sv-grid"></div><div class="sv-side" id="sv-side"></div></div>`;
+    tab.insertBefore(root, tab.firstChild);
+    $("sv-q").addEventListener("input", e => { query = e.target.value.trim().toLowerCase(); paint(); });
+    root.addEventListener("click", e => {
+      const a = e.target.closest("[data-sv]");
+      if (!a) return;
+      const k = a.dataset.sv, i = Number(a.dataset.i);
+      if (k === "add") openForm(-1);
+      else if (k === "edit") openForm(i);
+      else if (k === "del") {
+        const s = S.services[i];
+        if (s && confirm('Remove "' + s.name + '" from your menu?')) window.delSvc(i);
+      }
+    });
+    return root;
+  }
+
+  function paint() {
+    if (!shell()) return;
+    const counts = weekCounts(), bd = badges(counts);
+    const list = (S.services || []).map((s, i) => ({ s, i }))
+      .filter(x => !query || x.s.name.toLowerCase().includes(query));
+
+    $("sv-grid").innerHTML = list.map(({ s, i }) => {
+      const f = FRAMES[i % FRAMES.length], b = bd[i] ? BADGE[bd[i]] : null;
+      return '<div class="sv-card" style="--f:' + f + '">' +
+        (b ? '<span class="sv-tag">' + ic(b[1]) + b[0] + "</span>" : "") +
+        '<div class="sv-ico">' + esc(s.ico || "✂️") + '</div><div class="sv-name">' + esc(s.name) + "</div>" +
+        '<div class="sv-desc">' + esc(s.desc || "Professional " + String(s.name).toLowerCase() + " service.") + "</div>" +
+        '<div class="sv-foot"><span class="sv-dur">' + ic(ICON.clock) + esc(s.dur) + ' min</span><span class="sv-price">₹' + esc(s.price) + "</span>" +
+        '<span class="sv-act"><button type="button" data-sv="edit" data-i="' + i + '" aria-label="Edit ' + esc(s.name) + '">' + ic(ICON.edit) + "</button>" +
+        '<button type="button" class="del" data-sv="del" data-i="' + i + '" aria-label="Delete ' + esc(s.name) + '">' + ic(ICON.trash) + "</button></span></div></div>";
+    }).join("") + (query ? "" :
+      '<div class="sv-add"><span class="c">' + ic(ICON.plus) + "</span><b>Add New Service</b><small>Expand your service menu and reach more customers.</small>" +
+      '<button type="button" class="sv-addbtn" data-sv="add">' + ic(ICON.plus) + "Add Service</button></div>");
+    if (query && !list.length) $("sv-grid").innerHTML = '<div class="sv-empty">No services match your search.</div>';
+
+    /* side panel */
+    const today = iso(new Date());
+    const bookingsToday = (window.bqAppointments || []).filter(a => a && a.date === today && a.status !== "cancelled" && a.status !== "rejected").length;
+    const revenue = S.barberStats && S.barberStats.today ? Number(S.barberStats.today.earnings) || 0 : Number(S.earn) || 0;
+    const rating = Number(S.barber && S.barber.rating) > 0 ? Number(S.barber.rating).toFixed(1) : "—";
+    const stat = (c, icon, v, l) => '<div class="sv-st" style="--c:' + c + '"><div class="i">' + ic(icon) + "</div><strong>" + v + "</strong><small>" + l + "</small></div>";
+
+    const top = Object.entries(counts).filter(e => e[1] > 0).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    const total = top.reduce((t, e) => t + e[1], 0);
+    const topHtml = top.length ? top.map(([n, c], k) => {
+      const sv = (S.services || []).find(x => x.name === n), p = total ? Math.round(c / total * 100) : 0;
+      return '<div class="sv-top" style="--c:' + FRAMES[k % FRAMES.length] + '"><span class="e">' + esc(sv ? sv.ico : "✂️") + '</span><div class="m"><b>' + esc(n) +
+        "</b><small>" + c + " booking" + (c === 1 ? "" : "s") + '</small></div><span class="sv-bar"><i style="width:' + p + '%"></i></span><span class="p">' + p + "%</span></div>";
+    }).join("") : '<div class="sv-empty">No completed services this week yet.</div>';
+
+    $("sv-side").innerHTML =
+      '<div class="sv-box"><h3>' + ic(ICON.bars) + 'Service Overview</h3><div class="sv-ov">' +
+      stat("#3b6dff", ICON.cut, (S.services || []).length, "Total Services") +
+      stat("#14b8a6", ICON.rupee, inr(revenue), "Total Revenue (Today)") +
+      stat("#a23df0", ICON.users, bookingsToday, "Bookings (Today)") +
+      stat("#e0a23a", ICON.star, rating, "Avg. Rating") + "</div></div>" ;
+      // '<div class="sv-box"><h3>' + ic(ICON.cup) + "Top Services</h3>" + topHtml + "</div>" ;
+      // '<div class="sv-box"><div class="sv-tip">' + ic(ICON.bulb) + "<div><b>Quick Tip</b><br>Keep your service menu updated for better customer experience and higher bookings.</div></div></div>";
+  }
+
+  /* ---------- add / edit popup ---------- */
+  function ensureForm() {
+    if ($("m-svform")) return;
+    const w = document.createElement("div");
+    w.className = "overlay"; w.id = "m-svform";
+    w.innerHTML = `
+      <div class="modal sv" style="max-height:90vh;overflow:auto">
+        <div id="svf-title" style="font:800 20px 'Syne',sans-serif;margin-bottom:16px"></div>
+        <div class="sv-form">
+          <div><label>Service name</label><input class="inp" id="svf-name" maxlength="40" placeholder="e.g. Hair Cut"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div><label>Price (₹)</label><input class="inp" id="svf-price" type="number" min="0" inputmode="numeric"></div>
+            <div><label>Duration (min)</label><input class="inp" id="svf-dur" type="number" min="5" step="5" inputmode="numeric"></div></div>
+          <div><label>Description (optional)</label><textarea class="inp" id="svf-desc" rows="2" maxlength="90" placeholder="Shown on your service card"></textarea></div>
+          <div><label>Icon</label><input class="inp" id="svf-ico" maxlength="4" style="width:90px;font-size:20px;text-align:center"><div class="sv-emo" id="svf-emo"></div></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:18px">
+          <button class="btn btn-outline" style="flex:1" type="button" id="svf-cancel">Cancel</button>
+          <button class="btn btn-gold" style="flex:1" type="button" id="svf-save">Save</button></div>
+      </div>`;
+    document.body.appendChild(w);
+    $("svf-emo").innerHTML = EMOJIS.map(e => '<button type="button" data-e="' + e + '">' + e + "</button>").join("");
+    $("svf-emo").addEventListener("click", ev => {
+      const b = ev.target.closest("[data-e]");
+      if (b) { $("svf-ico").value = b.dataset.e; mark(); }
+    });
+    $("svf-ico").addEventListener("input", mark);
+    w.addEventListener("click", ev => { if (ev.target === w) closeModal("m-svform"); });
+    $("svf-cancel").addEventListener("click", () => closeModal("m-svform"));
+    $("svf-save").addEventListener("click", saveForm);
+  }
+  const mark = () => $("svf-emo").querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.e === $("svf-ico").value));
+
+  function openForm(i) {
+    ensureForm();
+    editing = i;
+    const s = i >= 0 ? S.services[i] : { name: "", price: "", dur: "", desc: "", ico: "💇" };
+    $("svf-title").textContent = i >= 0 ? "Edit service" : "Add new service";
+    $("svf-name").value = s.name; $("svf-price").value = s.price; $("svf-dur").value = s.dur;
+    $("svf-desc").value = s.desc || ""; $("svf-ico").value = s.ico || "💇";
+    mark();
+    openModal("m-svform");
+    setTimeout(() => $("svf-name").focus(), 80);
+  }
+
+  function saveForm() {
+    const name = $("svf-name").value.trim(), price = parseInt($("svf-price").value, 10), dur = parseInt($("svf-dur").value, 10);
+    const desc = $("svf-desc").value.trim(), ico = $("svf-ico").value.trim() || "💇";
+    if (!name) { toast("⚠️", "Please enter a service name"); $("svf-name").focus(); return; }
+    if (isNaN(price) || price < 0) { toast("⚠️", "Please enter a valid price"); $("svf-price").focus(); return; }
+    if (isNaN(dur) || dur < 5) { toast("⚠️", "Duration must be at least 5 minutes"); $("svf-dur").focus(); return; }
+    if (S.services.some((s, k) => k !== editing && s.name.toLowerCase() === name.toLowerCase())) { toast("⚠️", "A service with this name already exists"); return; }
+
+    if (editing >= 0) Object.assign(S.services[editing], { name, price, dur, desc, ico });
+    else S.services.push({ id: Date.now(), name, price, dur, desc, ico });
+    if (!saveServices()) return;
+    closeModal("m-svform");
+    paint();
+    toast("✅", editing >= 0 ? '"' + name + '" updated' : '"' + name + '" added');
+  }
+
+  /* ---------- hook into the app ---------- */
+  window.renderSvcs = paint;
+  setInterval(() => {
+    const t = $("b-svc-tab"), m = $("m-svform");
+    if (t && t.style.display === "block" && !(m && m.classList.contains("open")) && document.activeElement !== $("sv-q")) paint();
+  }, 6000);
+
+  shell();
+  const t = $("b-svc-tab");
+  if (t && t.style.display === "block") paint();
+})();
+
+(function () {
+  "use strict";
+
+  const $ = id => document.getElementById(id);
+  const esc = v => String(v == null ? "" : v).replace(/[&<>"']/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const pad = n => String(n).padStart(2, "0");
+  const iso = d => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+  const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+  const fmt12 = t => {
+    const [h, m] = String(t || "").split(":").map(Number);
+    return isNaN(h) ? "" : (h % 12 || 12) + ":" + pad(m || 0) + " " + (h < 12 ? "AM" : "PM");
+  };
+  const cleanSvc = s => String(s || "").replace(/\s·\sadvance$/, "");
+  const ic = p => '<svg class="bw-ic" viewBox="0 0 24 24">' + p + "</svg>";
+  const ICON = {
+    cal: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+    clock: '<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/>',
+    x: '<circle cx="12" cy="12" r="9"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>',
+    check: '<circle cx="12" cy="12" r="9"/><polyline points="8 12 11 15 16 9"/>',
+    refresh: '<polyline points="23 4 23 10 17 10"/><path d="M20.5 15a9 9 0 1 1-2.1-9.4L23 10"/>',
+    search: '<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.7" y2="16.7"/>',
+    filter: '<polygon points="22 3 2 3 10 12.5 10 19 14 21 14 12.5 22 3"/>',
+    chev: '<polyline points="6 9 12 15 18 9"/>', right: '<polyline points="9 18 15 12 9 6"/>', left: '<polyline points="15 18 9 12 15 6"/>',
+    plus: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+    users: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+    dots: '<circle cx="12" cy="5" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="12" cy="19" r="1.2"/>',
+    star: '<polygon points="12 2 15.1 8.3 22 9.3 17 14.1 18.2 21 12 17.8 5.8 21 7 14.1 2 9.3 8.9 8.3"/>'
+  };
+  const STATUSES = ["pending", "confirmed", "completed", "cancelled"];
+  const PAGE = 8;
+  const st = { range: "7", page: 1, q: "", svc: "all", status: "all", sel: new Set() };
+
+  const css = document.createElement("style");
+  css.textContent = `
+  #b-bookings-tab > :not(#bw-root):not(#bk-requests){display:none!important}
+  .bw{--card:#0a0f33;--line:rgba(110,110,255,.2);--mute:#97a0c9;color:#eef1ff;font-family:'DM Sans',sans-serif}
+  .bw *{box-sizing:border-box}
+  .bw-ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .bw-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+  .bw-badge{width:54px;height:54px;border-radius:14px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,#6a4bff,#3a2cc0)}
+  .bw-eye{font-size:11px;letter-spacing:.12em;color:#8da0ff;font-weight:700}
+  .bw-head h2{margin:2px 0;font:800 22px 'Syne',sans-serif}.bw-head p{margin:0;font-size:12.5px;color:var(--mute)}
+  .bw-tools{margin-left:auto;display:flex;gap:10px;flex-wrap:wrap}
+  .bw-pill{position:relative;display:inline-flex;align-items:center;gap:10px;padding:11px 14px;border-radius:12px;background:var(--card);border:1px solid var(--line);font:600 13px 'DM Sans',sans-serif;color:#eef1ff}
+  .bw-pill select{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}
+  button.bw-pill{cursor:pointer;background:#1a1a6b;border-color:#4a4ad8}
+  .bw-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:16px}
+  .bw-kpi{display:flex;align-items:center;gap:14px;padding:16px;border-radius:16px;border:1px solid var(--c);
+      background:linear-gradient(135deg,color-mix(in srgb,var(--c) 22%,#080c26),#080c26 72%);box-shadow:0 0 22px -12px var(--c)}
+  .bw-kico{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;flex:none;color:#fff;background:color-mix(in srgb,var(--c) 70%,#080c26)}
+  .bw-kico .bw-ic{width:24px;height:24px}
+  .bw-kl{font-size:12.5px;color:#d4daf7}.bw-kv{font:800 30px 'Syne',sans-serif;line-height:1.1}
+  .bw-kn{font-size:12px;color:var(--mute)}.bw-kn.up{color:#22e39a}.bw-kn.dn{color:#ff7b7b}
+  .bw-k1{--c:#3b6dff}.bw-k2{--c:#14b8a6}.bw-k3{--c:#e0459a}.bw-k4{--c:#d9a02c}
+  .bw-layout{display:grid;grid-template-columns:1fr;gap:14px}
+  .bw-box{border-radius:18px;padding:16px;background:var(--card);border:1px solid var(--line);min-width:0}
+  .bw-th{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+  .bw-th h3{margin:0;font:700 15px 'Syne',sans-serif}.bw-th small{display:block;font-size:12px;color:var(--mute);margin-top:2px}
+  .bw-filters{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;flex:1 1 360px;justify-content:flex-end}
+  .bw-search{display:flex;align-items:center;gap:8px;flex:1 1 180px;max-width:300px;padding:0 12px;border-radius:10px;background:#0d1440;border:1px solid var(--line);color:var(--mute)}
+  .bw-search input{flex:1;min-width:0;background:none;border:0;outline:0;color:#eef1ff;font:13px 'DM Sans',sans-serif;padding:10px 0}
+  .bw-sel{position:relative;display:inline-flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;background:#0d1440;border:1px solid var(--line);font-size:13px}
+  .bw-sel select{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}
+  .bw-ib{display:grid;place-items:center;width:40px;border-radius:10px;background:#0d1440;border:1px solid var(--line);color:#eef1ff;cursor:pointer}
+  .bw-bulk{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;margin-bottom:10px;border-radius:10px;background:#141b55;font-size:13px}
+  .bw-bulk button{padding:6px 12px;border-radius:8px;border:1px solid #3b46c8;background:#0d1440;color:#eef1ff;cursor:pointer;font:600 12px 'DM Sans',sans-serif}
+  .bw-scroll{overflow-x:auto}
+  table.bw-t{width:100%;border-collapse:collapse;min-width:720px;font-size:13px}
+  .bw-t th{text-align:left;padding:12px 10px;font-size:11.5px;letter-spacing:.08em;color:#aab4e0;background:#0d1440;font-weight:700}
+  .bw-t td{padding:11px 10px;border-top:1px solid var(--line);vertical-align:middle}
+  .bw-t input[type=checkbox]{width:16px;height:16px;accent-color:#6a4bff}
+  .bw-cu{display:flex;align-items:center;gap:12px}
+  .bw-av{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-weight:700;color:#fff;flex:none;background:linear-gradient(135deg,#6a7bff,#4b3fd8)}
+  .bw-cu b{display:block;font-weight:600}.bw-cu small,.bw-sv small{color:var(--mute);font-size:11.5px}
+  .bw-sv{display:flex;align-items:center;gap:10px}.bw-sv>span{font-size:20px}.bw-sv b{display:block;font-weight:600}
+  .bw-dt{display:flex;align-items:center;gap:8px;color:#d4daf7;white-space:nowrap}.bw-dt .bw-ic{width:16px;height:16px;color:#8da0ff}
+  .bw-badge2{display:inline-block;min-width:84px;text-align:center;padding:6px 10px;border-radius:7px;font-size:12px;font-weight:700;text-transform:capitalize}
+  .bw-badge2.completed{background:#0f7a5a;color:#d6fff0}.bw-badge2.confirmed{background:#2540b8;color:#e3e9ff}
+  .bw-badge2.pending{background:#8a5a0a;color:#ffe9bf}.bw-badge2.cancelled,.bw-badge2.rejected{background:#8f2340;color:#ffdce6}
+  .bw-badge2.expired{background:#3a3f66;color:#d0d5f0}
+  .bw-mg{display:flex;align-items:center;gap:8px}
+  .bw-mgs{position:relative;display:grid;place-items:center;width:34px;height:30px;border-radius:8px;border:1px solid var(--line);background:#0d1440}
+  .bw-mgs select{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}
+  .bw-dots{border:0;background:none;color:#aab4e0;cursor:pointer;padding:4px}
+  .bw-empty{text-align:center;color:var(--mute);padding:30px 10px!important}
+  .bw-foot{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:12px;font-size:12.5px;color:var(--mute)}
+  .bw-pg{display:flex;gap:6px}.bw-pg button{min-width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:#0d1440;color:#eef1ff;cursor:pointer;font:600 13px 'DM Sans',sans-serif}
+  .bw-pg button.on{background:#6a4bff;border-color:#6a4bff}.bw-pg button:disabled{opacity:.4;cursor:default}
+  .bw-side{display:flex;flex-direction:column;gap:14px}
+  .bw-qa{display:flex;align-items:center;gap:12px;width:100%;margin-top:8px;padding:10px;border-radius:12px;cursor:pointer;color:#eef1ff;text-align:left;font:inherit;
+      background:color-mix(in srgb,var(--c) 14%,#0a0f33);border:1px solid color-mix(in srgb,var(--c) 55%,transparent)}
+  .bw-qa .i{width:42px;height:42px;border-radius:10px;display:grid;place-items:center;color:#fff;flex:none;background:var(--c)}
+  .bw-qa b{display:block;font-size:13.5px}.bw-qa small{font-size:11.5px;color:var(--mute)}.bw-qa .bw-ic:last-child{margin-left:auto;color:var(--mute)}
+  .bw-happy{background:linear-gradient(135deg,#171a73,#0a0f33);border-color:#3b46c8}
+  .bw-happy p{margin:6px 0 0;font-size:13px}.bw-happy em{display:block;margin-top:10px;text-align:right;font:italic 700 16px 'Syne',sans-serif;color:#e063ff;line-height:1.25}
+  .bw-pm{display:grid;gap:10px;font-size:14px}.bw-pm span{display:block;color:var(--mute);font-size:12px}
+  @media(min-width:720px){.bw-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}}
+  @media(min-width:1100px){.bw-layout{grid-template-columns:minmax(0,1fr) 300px}}`;
+  document.head.appendChild(css);
+
+  /* ---------- data ---------- */
+  const all = () => (window.bqAppointments || []).filter(a => a && a.date);
+  const isCancel = s => s === "cancelled" || s === "rejected";
+
+  function periods() {
+    const t = new Date(); t.setHours(0, 0, 0, 0);
+    let from, to = t, pf, pt;
+    if (st.range === "all") return { from: "0000-00-00", to: "9999-12-31", pf: null, pt: null, label: "All time" };
+    if (st.range === "month") {
+      from = new Date(t.getFullYear(), t.getMonth(), 1);
+      pf = new Date(t.getFullYear(), t.getMonth() - 1, 1); pt = new Date(t.getFullYear(), t.getMonth(), 0);
+    } else {
+      const n = Number(st.range);
+      from = addDays(t, -(n - 1)); pf = addDays(from, -n); pt = addDays(from, -1);
+    }
+    const f = d => d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    return { from: iso(from), to: iso(to), pf: iso(pf), pt: iso(pt), label: f(from) + " - " + f(to) };
+  }
+  const inRange = (a, f, t) => a.date >= f && a.date <= t;
+  const pct = (cur, prev) => prev > 0 ? Math.round((cur - prev) / prev * 100) : null;
+
+  function trend(cur, prev, vs, invert) {
+    const p = pct(cur, prev);
+    if (p === null) return '<div class="bw-kn">' + (cur ? "New this period" : "Nothing yet") + "</div>";
+    const good = invert ? p <= 0 : p >= 0;
+    return '<div class="bw-kn ' + (good ? "up" : "dn") + '">' + (p >= 0 ? "↑ +" : "↓ ") + p + "% from " + vs + "</div>";
+  }
+
+  /* ---------- shell ---------- */
+  function shell() {
+    const tab = $("b-bookings-tab");
+    if (!tab) return null;
+    let root = $("bw-root");
+    if (root) return root;
+    root = document.createElement("div");
+    root.id = "bw-root";
+    root.className = "bw";
+    root.innerHTML = `
+      <div class="bw-head"><span class="bw-badge">${ic(ICON.cal)}</span>
+        <div><div class="bw-eye">BOOKINGS</div><h2>Manage Appointments &amp; Bookings</h2><p>View, track and manage all customer bookings and appointments.</p></div>
+        <div class="bw-tools">
+          <label class="bw-pill">${ic(ICON.cal)}<span id="bw-range"></span>${ic(ICON.chev)}
+            <select id="bw-rsel" aria-label="Date range"><option value="7">Last 7 days</option><option value="30">Last 30 days</option>
+              <option value="month">This month</option><option value="all">All time</option></select></label>
+          <button type="button" class="bw-pill" data-bw="refresh">${ic(ICON.refresh)}Refresh</button>
+        </div>
+      </div>
+      <div class="bw-kpis" id="bw-kpis"></div>
+      <div class="bw-layout">
+        <div class="bw-box">
+          <div class="bw-th"><span class="bw-badge" style="width:36px;height:36px;border-radius:10px">${ic(ICON.cal)}</span>
+            <div><h3>All Bookings</h3><small>List of all customer bookings and appointments.</small></div>
+            <div class="bw-filters">
+              <label class="bw-search">${ic(ICON.search)}<input id="bw-q" type="search" placeholder="Search customer, service or phone..." autocomplete="off"></label>
+              <label class="bw-sel"><span id="bw-svcl">All Services</span>${ic(ICON.chev)}<select id="bw-svc" aria-label="Service"></select></label>
+              <label class="bw-sel"><span id="bw-stl">All Statuses</span>${ic(ICON.chev)}
+                <select id="bw-stsel" aria-label="Status"><option value="all">All Statuses</option>${STATUSES.map(s => '<option value="' + s + '">' + s[0].toUpperCase() + s.slice(1) + "</option>").join("")}</select></label>
+              <button type="button" class="bw-ib" data-bw="clear" title="Clear filters" aria-label="Clear filters">${ic(ICON.filter)}</button>
+            </div>
+          </div>
+          <div id="bw-bulk"></div>
+          <div class="bw-scroll"><table class="bw-t"><thead><tr>
+            <th style="width:34px"><input type="checkbox" id="bw-all" aria-label="Select all"></th><th>CUSTOMER</th><th>SERVICE</th><th>DATE &amp; TIME</th><th>STATUS</th><th>MANAGE</th></tr></thead>
+            <tbody id="bw-body"></tbody></table></div>
+          <div class="bw-foot"><span id="bw-count"></span><div class="bw-pg" id="bw-pg"></div></div>
+        </div>
+        <div class="bw-side">
+          <div class="bw-box"><div class="bw-th" style="margin-bottom:0"><span class="bw-badge" style="width:36px;height:36px;border-radius:10px">${ic(ICON.users)}</span>
+            <div><h3>Quick Actions</h3><small>Manage bookings and customer requests.</small></div></div>
+            <button type="button" class="bw-qa" style="--c:#3b6dff" data-bw="walkin"><span class="i">${ic(ICON.plus)}</span><span><b>Add Walk-in</b><small>Add a customer to the queue</small></span>${ic(ICON.right)}</button>
+            <button type="button" class="bw-qa" style="--c:#4b5cf0" data-bw="calendar"><span class="i">${ic(ICON.cal)}</span><span><b>View Calendar</b><small>Check full schedule</small></span>${ic(ICON.right)}</button>
+            <button type="button" class="bw-qa" style="--c:#e0459a" data-bw="cancelled"><span class="i">${ic(ICON.x)}</span><span><b>View Cancellations</b><small>See cancelled bookings</small></span>${ic(ICON.right)}</button>
+            <button type="button" class="bw-qa" style="--c:#2f8fe0" data-bw="history"><span class="i">${ic(ICON.users)}</span><span><b>Customer History</b><small>Search by phone number</small></span>${ic(ICON.right)}</button>
+          </div>
+        </div>
+      </div>`;
+    tab.insertBefore(root, tab.firstChild);
+
+    $("bw-rsel").addEventListener("change", e => { st.range = e.target.value; st.page = 1; st.sel.clear(); paint(); });
+    $("bw-q").addEventListener("input", e => { st.q = e.target.value.trim().toLowerCase(); st.page = 1; paint(); });
+    $("bw-svc").addEventListener("change", e => { st.svc = e.target.value; st.page = 1; paint(); });
+    $("bw-stsel").addEventListener("change", e => { st.status = e.target.value; st.page = 1; paint(); });
+    $("bw-all").addEventListener("change", e => {
+      rows().slice((st.page - 1) * PAGE, st.page * PAGE).forEach(a => e.target.checked ? st.sel.add(String(a.id)) : st.sel.delete(String(a.id)));
+      paint();
+    });
+
+    root.addEventListener("click", e => {
+      const b = e.target.closest("[data-bw]");
+      if (b) {
+        const k = b.dataset.bw;
+        if (k === "refresh") { if (window.bqLoadBookings) window.bqLoadBookings(); toast("🔄", "Bookings refreshed"); }
+        else if (k === "clear") { st.q = ""; st.svc = "all"; st.status = "all"; st.page = 1; $("bw-q").value = ""; paint(); }
+        else if (k === "walkin") window.openWalkinModal();
+        else if (k === "calendar") window.bTab("calendar");
+        else if (k === "cancelled") { st.status = "cancelled"; st.page = 1; st.range = "all"; paint(); }
+        else if (k === "history") { $("bw-q").focus(); toast("🔎", "Type a customer's phone number in the search box"); }
+        else if (k === "page") { st.page = Number(b.dataset.p); paint(); }
+        else if (k === "bulk") bulk(b.dataset.s);
+        return;
+      }
+      const d = e.target.closest("[data-detail]");
+      if (d) openDetail(d.dataset.detail);
+    });
+    root.addEventListener("change", e => {
+      const c = e.target.closest("[data-sel]");
+      if (c) { c.checked ? st.sel.add(c.dataset.sel) : st.sel.delete(c.dataset.sel); paint(); return; }
+      const m = e.target.closest("[data-stat]");
+      if (m) window.bqSetStatus(m.dataset.stat, m.value);
+    });
+    return root;
+  }
+
+  /* ---------- filtering ---------- */
+  function rows() {
+    const p = periods();
+    return all().filter(a => {
+      if (!inRange(a, p.from, p.to)) return false;
+      if (st.status !== "all" && a.status !== st.status && !(st.status === "cancelled" && a.status === "rejected")) return false;
+      if (st.svc !== "all" && cleanSvc(a.service) !== st.svc) return false;
+      if (st.q && ![a.customer, cleanSvc(a.service), a.phone, a.token != null ? "#" + a.token : ""].some(v => String(v || "").toLowerCase().includes(st.q))) return false;
+      return true;
+    }).sort((x, y) => (y.date + (y.start || "")).localeCompare(x.date + (x.start || "")));
+  }
+
+  function bulk(status) {
+    const ids = Array.from(st.sel);
+    st.sel.clear();
+    ids.forEach(id => window.bqSetStatus(id, status));
+  }
+
+  /* ---------- paint ---------- */
+  function paint() {
+    if (!shell()) return;
+    const p = periods(), list = all(), today = iso(new Date()), yest = iso(addDays(new Date(), -1));
+    $("bw-range").textContent = p.label;
+    $("bw-rsel").value = st.range;
+
+    const cur = list.filter(a => inRange(a, p.from, p.to));
+    const prev = p.pf ? list.filter(a => inRange(a, p.pf, p.pt)) : [];
+    const vs = st.range === "month" ? "last month" : st.range === "30" ? "previous 30 days" : "last week";
+    const cnt = (arr, fn) => arr.filter(fn).length;
+    const k = (cls, icon, label, val, note) =>
+      '<div class="bw-kpi ' + cls + '"><span class="bw-kico">' + ic(icon) + '</span><div><div class="bw-kl">' + label + '</div><div class="bw-kv">' + val + "</div>" + note + "</div></div>";
+    $("bw-kpis").innerHTML =
+      k("bw-k1", ICON.cal, "Total Bookings", cur.length, p.pf ? trend(cur.length, prev.length, vs) : '<div class="bw-kn">All time</div>') +
+      k("bw-k2", ICON.clock, "Today's Bookings", cnt(list, a => a.date === today), trend(cnt(list, a => a.date === today), cnt(list, a => a.date === yest), "yesterday")) +
+      k("bw-k3", ICON.x, "Cancelled", cnt(cur, a => isCancel(a.status)), p.pf ? trend(cnt(cur, a => isCancel(a.status)), cnt(prev, a => isCancel(a.status)), vs, true) : '<div class="bw-kn">All time</div>') +
+      k("bw-k4", ICON.check, "Completed", cnt(cur, a => a.status === "completed"), p.pf ? trend(cnt(cur, a => a.status === "completed"), cnt(prev, a => a.status === "completed"), vs) : '<div class="bw-kn">All time</div>');
+
+    /* service filter options */
+    const names = Array.from(new Set(list.map(a => cleanSvc(a.service)).concat((S.services || []).map(s => s.name)))).filter(Boolean).sort();
+    const sel = $("bw-svc");
+    sel.innerHTML = '<option value="all">All Services</option>' + names.map(n => "<option" + (n === st.svc ? " selected" : "") + ">" + esc(n) + "</option>").join("");
+    sel.value = st.svc;
+    $("bw-svcl").textContent = st.svc === "all" ? "All Services" : st.svc;
+    $("bw-stsel").value = st.status;
+    $("bw-stl").textContent = st.status === "all" ? "All Statuses" : st.status[0].toUpperCase() + st.status.slice(1);
+
+    /* table */
+    const r = rows(), pages = Math.max(1, Math.ceil(r.length / PAGE));
+    if (st.page > pages) st.page = pages;
+    const slice = r.slice((st.page - 1) * PAGE, st.page * PAGE);
+    $("bw-body").innerHTML = slice.length ? slice.map(a => {
+      const sv = (S.services || []).find(s => s.name === cleanSvc(a.service));
+      const id = esc(a.id), opts = STATUSES.includes(a.status) ? STATUSES : [a.status].concat(STATUSES);
+      return "<tr><td><input type=\"checkbox\" data-sel=\"" + id + "\"" + (st.sel.has(String(a.id)) ? " checked" : "") + "></td>" +
+        '<td><div class="bw-cu"><span class="bw-av">' + esc(String(a.customer || "?").charAt(0).toUpperCase()) + "</span><div><b>" + esc(a.customer) +
+        "</b><small>" + (a.phone ? "+91 " + esc(a.phone) : a.token != null ? "Token #" + esc(a.token) : "Walk-in") + "</small></div></div></td>" +
+        '<td><div class="bw-sv"><span>' + esc(sv ? sv.ico : "✂️") + "</span><div><b>" + esc(cleanSvc(a.service)) + "</b><small>" + (a.dur ? esc(a.dur) + " min" : "") + "</small></div></div></td>" +
+        '<td><div class="bw-dt">' + ic(ICON.cal) + esc(a.date) + " " + esc(fmt12(a.start)) + "</div></td>" +
+        '<td><span class="bw-badge2 ' + esc(a.status) + '">' + esc(a.status) + "</span></td>" +
+        '<td><div class="bw-mg"><label class="bw-mgs">' + ic(ICON.chev) + '<select data-stat="' + id + '" aria-label="Change status">' +
+        opts.map(s => "<option" + (s === a.status ? " selected" : "") + ">" + s + "</option>").join("") + '</select></label>' +
+        '<button type="button" class="bw-dots" data-detail="' + id + '" aria-label="Details">' + ic(ICON.dots) + "</button></div></td></tr>";
+    }).join("") : '<tr><td colspan="6" class="bw-empty">' + (all().length ? "No bookings match your filters." : "No appointments yet.") + "</td></tr>";
+
+    $("bw-all").checked = slice.length > 0 && slice.every(a => st.sel.has(String(a.id)));
+    $("bw-bulk").innerHTML = st.sel.size
+      ? '<div class="bw-bulk"><b>' + st.sel.size + ' selected</b>Mark as:' +
+        ["confirmed", "completed", "cancelled"].map(s => '<button type="button" data-bw="bulk" data-s="' + s + '">' + s + "</button>").join("") + "</div>" : "";
+
+    const from = r.length ? (st.page - 1) * PAGE + 1 : 0, to = Math.min(r.length, st.page * PAGE);
+    $("bw-count").textContent = r.length ? "Showing " + from + "–" + to + " of " + r.length + " bookings" : "Showing 0 bookings";
+    const nums = [];
+    for (let i = 1; i <= pages; i++) if (i === 1 || i === pages || Math.abs(i - st.page) <= 1) nums.push(i); else if (nums[nums.length - 1] !== "…") nums.push("…");
+    $("bw-pg").innerHTML =
+      '<button type="button" data-bw="page" data-p="' + Math.max(1, st.page - 1) + '"' + (st.page === 1 ? " disabled" : "") + ' aria-label="Previous page">' + ic(ICON.left) + "</button>" +
+      nums.map(n => n === "…" ? '<button type="button" disabled>…</button>'
+        : '<button type="button" data-bw="page" data-p="' + n + '" class="' + (n === st.page ? "on" : "") + '">' + n + "</button>").join("") +
+      '<button type="button" data-bw="page" data-p="' + Math.min(pages, st.page + 1) + '"' + (st.page === pages ? " disabled" : "") + ' aria-label="Next page">' + ic(ICON.right) + "</button>";
+  }
+
+  /* ---------- details popup ---------- */
+  function openDetail(id) {
+    const a = all().find(x => String(x.id) === String(id));
+    if (!a) return;
+    let w = $("m-bwd");
+    if (!w) {
+      w = document.createElement("div");
+      w.className = "overlay"; w.id = "m-bwd";
+      w.innerHTML = '<div class="modal bw"><div id="bwd-body" class="bw-pm"></div><button class="btn btn-outline btn-full" style="margin-top:16px" type="button" id="bwd-close">Close</button></div>';
+      document.body.appendChild(w);
+      w.addEventListener("click", e => { if (e.target === w) closeModal("m-bwd"); });
+      $("bwd-close").addEventListener("click", () => closeModal("m-bwd"));
+    }
+    $("bwd-body").innerHTML =
+      '<div style="font:800 20px \'Syne\',sans-serif">' + (a.token != null ? "#" + esc(a.token) + " · " : "") + esc(a.customer) + "</div>" +
+      "<div><span>Service</span>" + esc(cleanSvc(a.service)) + (a.dur ? " · " + esc(a.dur) + " min" : "") + "</div>" +
+      "<div><span>Date &amp; time</span>" + esc(a.date) + " · " + esc(fmt12(a.start)) + (a.end ? " – " + esc(fmt12(a.end)) : "") + "</div>" +
+      (a.phone ? "<div><span>Phone</span>+91 " + esc(a.phone) + "</div>" : "") +
+      "<div><span>Status</span>" + esc(a.status) + "</div>" +
+      "<div><span>Booked via</span>" + (a.source === "advance" ? "Advance booking" : "Live queue") + "</div>";
+    openModal("m-bwd");
+  }
+
+  /* ---------- hook into the app ---------- */
+  const base = window.bqRenderBookings;
+  window.bqRenderBookings = function () {
+    const out = typeof base === "function" ? base.apply(this, arguments) : undefined;
+    paint();
+    return out;
+  };
+
+  shell();
+  const t = $("b-bookings-tab");
+  if (t && t.style.display === "block") paint();
+})();
+
+(function () {
+  "use strict";
+
+  const $ = id => document.getElementById(id);
+  const esc = v => String(v == null ? "" : v).replace(/[&<>"']/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const rd = (k, d) => { try { return JSON.parse(localStorage.getItem(k) || "null") || d; } catch (e) { return d; } };
+  const inr = n => "₹" + Math.round(n || 0).toLocaleString("en-IN");
+  const ic = p => '<svg class="qm-ic" viewBox="0 0 24 24">' + p + "</svg>";
+  const ICON = {
+    clock: '<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/>',
+    users: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9"/><path d="M16 3.1a4 4 0 0 1 0 7.8"/>',
+    check: '<polyline points="20 6 9 17 4 12"/>',
+    glass: '<path d="M6 2h12M6 22h12M7 2v4a5 5 0 0 0 2 4l3 2-3 2a5 5 0 0 0-2 4v4M17 2v4a5 5 0 0 1-2 4l-3 2 3 2a5 5 0 0 1 2 4v4"/>',
+    star: '<polygon points="12 2 15.1 8.3 22 9.3 17 14.1 18.2 21 12 17.8 5.8 21 7 14.1 2 9.3 8.9 8.3"/>',
+    cal: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+    plus: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+    user: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+    bolt: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+    x: '<circle cx="12" cy="12" r="9"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>',
+    right: '<polyline points="9 18 15 12 9 6"/>', left: '<polyline points="15 18 9 12 15 6"/>',
+    dots: '<circle cx="12" cy="5" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="12" cy="19" r="1.3"/>',
+    pie: '<path d="M21 12A9 9 0 1 1 12 3v9z"/>'
+  };
+  const AV = ["#6a4bff", "#14b8a6", "#3b6dff", "#d946ef", "#e0a23a", "#ec4899"];
+  const PAGE = 8;
+  let page = 1;
+
+  const css = document.createElement("style");
+  css.textContent = `
+  #b-queue-tab > :not(#qm-root){display:none!important}
+  .qm{--card:#0a0f33;--line:rgba(110,110,255,.2);--mute:#97a0c9;color:#eef1ff;font-family:'DM Sans',sans-serif}
+  .qm *{box-sizing:border-box}
+  .qm-ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .qm-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+  .qm-badge{width:58px;height:58px;border-radius:14px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,#4f3df0,#2a1f8f);border:1px solid #8b7bff;box-shadow:0 0 22px -6px #6a4bff}
+  .qm-badge .qm-ic{width:30px;height:30px}
+  .qm-head h2{margin:0;font:800 26px 'Syne',sans-serif}.qm-head h2 span{background:linear-gradient(90deg,#d946ef,#8b5cf6);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .qm-head p{margin:3px 0 0;font-size:13px;color:var(--mute)}
+  .qm-tools{margin-left:auto;display:flex;gap:10px;flex-wrap:wrap}
+  .qm-pill{display:inline-flex;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;background:var(--card);border:1px solid var(--line);font:600 13px 'DM Sans',sans-serif}
+  .qm-pill i{width:9px;height:9px;border-radius:50%;background:#22e39a;box-shadow:0 0 8px #22e39a}
+  .qm-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:16px}
+  .qm-kpi{display:flex;align-items:center;gap:14px;padding:16px;border-radius:16px;border:1px solid var(--c);
+      background:linear-gradient(135deg,color-mix(in srgb,var(--c) 24%,#080c26),#080c26 72%);box-shadow:0 0 22px -10px var(--c)}
+  .qm-kico{width:54px;height:54px;border-radius:50%;display:grid;place-items:center;flex:none;color:#fff;background:color-mix(in srgb,var(--c) 70%,#080c26)}
+  .qm-kico .qm-ic{width:26px;height:26px}
+  .qm-kl{font-size:12.5px;color:#d4daf7}.qm-kv{font:800 30px 'Syne',sans-serif;line-height:1.1}
+  .qm-kn{font-size:12px;color:var(--mute)}.qm-kn.up{color:#22e39a}.qm-kn.dn{color:#ff7b7b}
+  .qm-k1{--c:#3b6dff}.qm-k2{--c:#14b8a6}.qm-k3{--c:#a23df0}.qm-k4{--c:#d9a02c}
+  .qm-layout{display:grid;grid-template-columns:1fr;gap:14px}
+  .qm-box{border-radius:18px;padding:16px;background:var(--card);border:1px solid var(--line);min-width:0}
+  .qm-th{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+  .qm-th .ico{color:#7f93ff}.qm-th .ico .qm-ic{width:32px;height:32px}
+  .qm-th h3{margin:0;font:700 16px 'Syne',sans-serif;color:#9fe8ff}.qm-th small{display:block;font-size:12px;color:var(--mute);margin-top:2px}
+  .qm-r{margin-left:auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .qm-act{display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:10px;font-size:13px;font-weight:600;border:1px solid rgba(34,227,154,.4);color:#2de2b5;background:rgba(24,199,168,.1)}
+  .qm-act i{width:9px;height:9px;border-radius:50%;background:currentColor}
+  .qm-act.off{color:#ff8b8b;border-color:rgba(255,107,107,.4);background:rgba(255,107,107,.1)}
+  .qm-add{display:inline-flex;align-items:center;gap:8px;border:0;border-radius:10px;padding:10px 16px;cursor:pointer;color:#fff;font:700 13px 'DM Sans',sans-serif;background:#3b3bf0}
+  .qm-scroll{overflow-x:auto;border-radius:12px;border:1px solid var(--line)}
+  table.qm-t{width:100%;border-collapse:collapse;min-width:760px;font-size:13px}
+  .qm-t th{text-align:left;padding:12px 10px;font-size:12px;color:#d4daf7;background:#0d1440;font-weight:600}
+  .qm-t td{padding:10px;border-top:1px solid var(--line);vertical-align:middle}
+  .qm-t tr.cur td{background:rgba(59,59,240,.12)}
+  .qm-cu{display:flex;align-items:center;gap:12px}
+  .qm-av{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-weight:700;color:#fff;flex:none}
+  .qm-cu b{display:block;font-weight:600}.qm-cu small,.qm-sv small{color:var(--mute);font-size:11.5px}
+  .qm-sv{display:flex;align-items:center;gap:10px}.qm-sv>span{font-size:22px}.qm-sv b{display:block;font-weight:600}
+  .qm-bb{display:flex;align-items:center;gap:8px;color:#d4daf7}.qm-bb .qm-ic{width:16px;height:16px;color:#8da0ff}
+  .qm-w{display:flex;align-items:center;gap:8px;color:#d4daf7;white-space:nowrap}.qm-w .qm-ic{width:15px;height:15px;color:#8da0ff}
+  .qm-s{display:inline-block;min-width:92px;text-align:center;padding:6px 12px;border-radius:7px;font-size:12px;font-weight:700}
+  .qm-s.wait{background:#6b4a0b;color:#ffe2a8;border:1px solid #a9771a}
+  .qm-s.cur{background:#2540b8;color:#e3e9ff;border:1px solid #4d6bff}
+  .qm-s.nxt{background:#0f6b53;color:#d6fff0;border:1px solid #1fa37f}
+  .qm-ac{display:flex;align-items:center;gap:8px}
+  .qm-b{padding:8px 16px;border-radius:8px;border:0;cursor:pointer;color:#fff;font:600 13px 'DM Sans',sans-serif;background:#2d2fb8}
+  .qm-b.done{background:#0f9d6e}.qm-b.skip{background:#141b55;border:1px solid #3b46c8}
+  .qm-dots{border:0;background:none;color:#aab4e0;cursor:pointer;padding:4px}
+  .qm-empty{text-align:center;padding:34px 10px!important;color:var(--mute)}
+  .qm-foot{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:12px;font-size:12.5px;color:var(--mute)}
+  .qm-pg{display:flex;gap:6px}.qm-pg button{min-width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:#0d1440;color:#eef1ff;cursor:pointer;font:600 13px 'DM Sans',sans-serif}
+  .qm-pg button.on{background:#4b3fe8;border-color:#4b3fe8}.qm-pg button:disabled{opacity:.4;cursor:default}
+  .qm-side{display:flex;flex-direction:column;gap:14px}
+  .qm-side h3{margin:0;font:700 16px 'Syne',sans-serif}.qm-side .sub{font-size:12px;color:var(--mute);margin:2px 0 8px}
+  .qm-qh{display:flex;align-items:center;gap:10px}.qm-qh .qm-ic{width:30px;height:30px;color:#38c8ff}
+  .qm-qa{display:flex;align-items:center;gap:12px;width:100%;margin-top:8px;padding:10px;border-radius:12px;cursor:pointer;color:#eef1ff;text-align:left;font:inherit;
+      background:color-mix(in srgb,var(--c) 12%,#0a0f33);border:1px solid color-mix(in srgb,var(--c) 40%,transparent)}
+  .qm-qa .i{width:42px;height:42px;border-radius:10px;display:grid;place-items:center;color:#fff;flex:none;background:var(--c)}
+  .qm-qa b{display:block;font-size:13.5px}.qm-qa small{font-size:11.5px;color:var(--mute)}.qm-qa>.qm-ic{margin-left:auto;color:var(--mute)}
+  .qm-flow-h{display:flex;align-items:flex-start;gap:10px}.qm-flow-h .qm-ic{width:22px;height:22px;color:#8da0ff;margin-top:2px}
+  .qm-peak{margin-left:auto;text-align:center;padding:6px 10px;border-radius:9px;background:#2a1f8f;border:1px solid #5a43d8;font-size:11px;line-height:1.35}
+  .qm-peak b{display:block;font-size:12px}
+  .qm-bars{display:flex;align-items:flex-end;gap:6px;height:96px;margin-top:10px}
+  .qm-bar{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;font-size:10px;color:var(--mute);min-width:0}
+  .qm-bar i{display:block;width:100%;border-radius:4px 4px 0 0;background:linear-gradient(180deg,#8b5cf6,#3b3bf0);min-height:3px;margin-bottom:5px}
+  .qm-bar i.pk{background:linear-gradient(180deg,#c9a9ff,#8b5cf6)}
+  .qm-pm{display:grid;gap:10px;font-size:14px}.qm-pm span{display:block;color:var(--mute);font-size:12px}
+  @media(min-width:720px){.qm-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}}
+  @media(min-width:1100px){.qm-layout{grid-template-columns:minmax(0,1fr) 320px}}`;
+  document.head.appendChild(css);
+
+  const shopKey = () => String((S.barber && S.barber.shopName) || "").trim().toLowerCase();
+
+  /* ---------- shell ---------- */
+  function shell() {
+    const tab = $("b-queue-tab");
+    if (!tab) return null;
+    let root = $("qm-root");
+    if (root) return root;
+    root = document.createElement("div");
+    root.id = "qm-root";
+    root.className = "qm";
+    root.innerHTML = `
+      <div class="qm-head"><span class="qm-badge">${ic(ICON.clock)}</span>
+        <div><h2><span>Queue</span> Management</h2><p>Track your live queue, manage walk-ins and keep your customers happy.</p></div>
+        <div class="qm-tools"><span class="qm-pill">${ic(ICON.cal)}<span id="qm-date"></span></span><span class="qm-pill"><i></i>Live</span></div></div>
+      <div class="qm-kpis" id="qm-kpis"></div>
+      <div class="qm-layout">
+        <div class="qm-box">
+          <div class="qm-th"><span class="ico">${ic(ICON.users)}</span><div><h3>Live Queue</h3><small>Customers currently waiting for service.</small></div>
+            <div class="qm-r"><span class="qm-act" id="qm-act"><i></i><span></span></span>
+              <button type="button" class="qm-add" data-q="walkin">${ic(ICON.plus)}Add Walk-in</button></div></div>
+          <div class="qm-scroll"><table class="qm-t"><thead><tr><th style="width:44px">#</th><th>Customer</th><th>Service</th><th>Barber</th><th>Waiting Time</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="qm-body"></tbody></table></div>
+          <div class="qm-foot"><span id="qm-count"></span><div class="qm-pg" id="qm-pg"></div></div>
+        </div>
+        <div class="qm-side">
+          <div class="qm-box"><div class="qm-qh">${ic(ICON.bolt)}<div><h3>Quick Actions</h3><div class="sub" style="margin:0">Manage your queue with ease.</div></div></div>
+            <button type="button" class="qm-qa" style="--c:#14b8a6" data-q="walkin"><span class="i">${ic(ICON.users)}</span><span><b>Add Walk-in Customer</b><small>Quickly add a new customer</small></span>${ic(ICON.right)}</button>
+            <button type="button" class="qm-qa" style="--c:#8b3fe0" data-q="bookings"><span class="i">${ic(ICON.cal)}</span><span><b>View Bookings</b><small>Check scheduled appointments</small></span>${ic(ICON.right)}</button>
+            <button type="button" class="qm-qa" style="--c:#2f6df0" data-q="calendar"><span class="i">${ic(ICON.cal)}</span><span><b>Open Calendar</b><small>See your daily schedule</small></span>${ic(ICON.right)}</button>
+            <button type="button" class="qm-qa" style="--c:#e0459a" data-q="cancels"><span class="i">${ic(ICON.x)}</span><span><b>View Cancellations</b><small>See cancelled bookings</small></span>${ic(ICON.right)}</button></div>
+          <div class="qm-box"><div class="qm-flow-h">${ic(ICON.clock)}<div><h3>Today's Queue Flow</h3><div class="sub" style="margin:0">Live trend of your queue.</div></div><div class="qm-peak" id="qm-peak"></div></div>
+            <div class="qm-bars" id="qm-flow"></div></div>
+        </div>
+      </div>`;
+    tab.insertBefore(root, tab.firstChild);
+
+    root.addEventListener("click", e => {
+      const b = e.target.closest("[data-q]");
+      if (!b) return;
+      const k = b.dataset.q;
+      if (k === "walkin") window.openWalkinModal();
+      else if (k === "bookings") window.bTab("bookings");
+      else if (k === "calendar") window.bTab("calendar");
+      else if (k === "cancels") { window.bTab("bookings"); const c = document.querySelector('#bw-root [data-bw="cancelled"]'); if (c) c.click(); }
+      else if (k === "done") window.doneToken();
+      else if (k === "skip") window.skipToken();
+      else if (k === "view") openDetail(b.dataset.id);
+      else if (k === "remove") removeEntry(b.dataset.id);
+      else if (k === "page") { page = Number(b.dataset.p); paint(); }
+    });
+    return root;
+  }
+
+  /* ---------- paint ---------- */
+  function paint() {
+    if (!shell()) return;
+    const q = Array.isArray(S.bq) ? S.bq : [];
+    const assign = rd("bqCrewAssign:" + shopKey(), {});
+    $("qm-date").textContent = "Today, " + new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+
+    /* flow log: highest queue length seen in each hour of today */
+    const now = new Date(), dayKey = "bqQueueFlow:" + shopKey() + ":" + now.getFullYear() + "-" + (now.getMonth() + 1) + "-" + now.getDate();
+    const flow = rd(dayKey, {});
+    if (S.role === "barber" && shopKey()) {
+      const h = now.getHours();
+      if (q.length > (flow[h] || 0) || flow[h] === undefined) {
+        flow[h] = Math.max(flow[h] || 0, q.length);
+        try { localStorage.setItem(dayKey, JSON.stringify(flow)); } catch (e) { /* ignore */ }
+      }
+    }
+
+    /* KPIs */
+    const totalWait = q.reduce((t, c) => t + (Number(c.dur) || 0), 0);
+    const done = Number(S.doneCnt) || 0, earn = Number(S.earn) || 0;
+    const daily = S.barberStats && S.barberStats.week && S.barberStats.week.daily;
+    const yIdx = (now.getDay() + 5) % 7;
+    const yest = daily && now.getDay() !== 1 ? Number(daily[yIdx]) : null;
+    let servedNote = '<div class="qm-kn">Completed today</div>';
+    if (yest > 0) {
+      const p = Math.round((done - yest) / yest * 100);
+      servedNote = '<div class="qm-kn ' + (p >= 0 ? "up" : "dn") + '">' + (p >= 0 ? "↑ +" : "↓ ") + p + "% from yesterday</div>";
+    }
+    const k = (c, icon, l, v, n) => '<div class="qm-kpi ' + c + '"><span class="qm-kico">' + ic(icon) + '</span><div><div class="qm-kl">' + l + '</div><div class="qm-kv">' + v + "</div>" + n + "</div></div>";
+    $("qm-kpis").innerHTML =
+      k("qm-k1", ICON.users, "Total in Queue", q.length, '<div class="qm-kn">' + (q.length ? "~" + totalWait + " min of work waiting" : "Queue is clear") + "</div>") +
+      k("qm-k2", ICON.check, "Served Today", done, servedNote) +
+      k("qm-k3", ICON.glass, "Avg. Wait Time", totalWait + " min", '<div class="qm-kn">For a customer joining now</div>') +
+      k("qm-k4", ICON.star, "Today's Earnings", inr(earn), '<div class="qm-kn">From completed services</div>');
+
+    /* status pill */
+    const act = $("qm-act");
+    act.className = "qm-act" + (S.shopOpen === false ? " off" : "");
+    act.lastChild.textContent = S.shopOpen === false ? "Shop is closed" : "Queue is active";
+
+    /* table */
+    const pages = Math.max(1, Math.ceil(q.length / PAGE));
+    if (page > pages) page = pages;
+    const start = (page - 1) * PAGE;
+    let before = q.slice(0, start).reduce((t, c) => t + (Number(c.dur) || 0), 0);
+    $("qm-body").innerHTML = q.length ? q.slice(start, start + PAGE).map((c, n) => {
+      const idx = start + n, svc = (S.services || []).find(s => s.name === c.svc);
+      const wait = before; before += Number(c.dur) || 0;
+      const barber = assign[String(c.id)];
+      const status = c.st === "cur" ? ["cur", "In Progress"] : c.st === "nxt" ? ["nxt", "Next Up"] : ["wait", "Waiting"];
+      const action = c.st === "cur"
+        ? '<button type="button" class="qm-b done" data-q="done">Done ✓</button><button type="button" class="qm-b skip" data-q="skip">Skip</button>'
+        : '<button type="button" class="qm-b" data-q="view" data-id="' + esc(c.id) + '">View</button>';
+      return '<tr class="' + (c.st === "cur" ? "cur" : "") + '"><td>' + (idx + 1) + "</td>" +
+        '<td><div class="qm-cu"><span class="qm-av" style="background:' + AV[idx % AV.length] + '">' + esc(String(c.name || "?").charAt(0).toUpperCase()) + "</span><div><b>" + esc(c.name) + "</b><small>Token #" + esc(c.tok) + "</small></div></div></td>" +
+        '<td><div class="qm-sv"><span>' + esc(svc ? svc.ico : "✂️") + "</span><div><b>" + esc(c.svc) + "</b><small>" + (svc ? "₹" + esc(svc.price) + " • " : "") + esc(c.dur) + " min</small></div></div></td>" +
+        '<td><span class="qm-bb">' + ic(ICON.user) + esc(barber ? (barber === "Anyone" ? "Any barber" : barber) : "—") + "</span></td>" +
+        '<td><span class="qm-w">' + ic(ICON.clock) + (c.st === "cur" ? "Now" : wait + " min") + "</span></td>" +
+        '<td><span class="qm-s ' + status[0] + '">' + status[1] + "</span></td>" +
+        '<td><div class="qm-ac">' + action + '<button type="button" class="qm-dots" data-q="view" data-id="' + esc(c.id) + '" aria-label="More">' + ic(ICON.dots) + "</button></div></td></tr>";
+    }).join("") : '<tr><td colspan="7" class="qm-empty">✅ Queue is clear! Add a walk-in to get started.</td></tr>';
+
+    $("qm-count").textContent = "Showing " + (q.length ? Math.min(PAGE, q.length - start) : 0) + " of " + q.length + " customer" + (q.length === 1 ? "" : "s");
+    $("qm-pg").innerHTML = pages < 2 ? "" :
+      '<button type="button" data-q="page" data-p="' + Math.max(1, page - 1) + '"' + (page === 1 ? " disabled" : "") + ' aria-label="Previous">' + ic(ICON.left) + "</button>" +
+      Array.from({ length: pages }, (_, i) => '<button type="button" data-q="page" data-p="' + (i + 1) + '" class="' + (i + 1 === page ? "on" : "") + '">' + (i + 1) + "</button>").join("") +
+      '<button type="button" data-q="page" data-p="' + Math.min(pages, page + 1) + '"' + (page === pages ? " disabled" : "") + ' aria-label="Next">' + ic(ICON.right) + "</button>";
+
+    /* flow chart */
+    const b = S.barber || {};
+    let h0 = parseInt(String(b.openingTime || "09:00").split(":")[0], 10), h1 = parseInt(String(b.closingTime || "18:00").split(":")[0], 10);
+    if (!(h0 >= 0 && h1 > h0)) { h0 = 9; h1 = 18; }
+    Object.keys(flow).forEach(h => { h0 = Math.min(h0, Number(h)); h1 = Math.max(h1, Number(h)); });
+    if (h1 - h0 > 12) h1 = h0 + 12;
+    const hrs = Array.from({ length: h1 - h0 + 1 }, (_, i) => h0 + i);
+    const mx = Math.max(1, ...hrs.map(h => flow[h] || 0));
+    const peakH = hrs.reduce((a, h) => (flow[h] || 0) > (flow[a] || 0) ? h : a, hrs[0]);
+    const lab = h => (h % 12 || 12) + (h < 12 ? "am" : "pm");
+    $("qm-flow").innerHTML = hrs.map(h => '<div class="qm-bar"><i class="' + (h === peakH && flow[h] ? "pk" : "") + '" style="height:' + ((flow[h] || 0) / mx * 70) + 'px"></i>' + lab(h) + "</div>").join("");
+    $("qm-peak").innerHTML = flow[peakH] ? "Peak<b>" + lab(peakH) + "</b>" + flow[peakH] + " in queue" : "Peak<b>—</b>collecting";
+  }
+
+  /* ---------- details / remove ---------- */
+  function openDetail(id) {
+    const c = (S.bq || []).find(x => String(x.id) === String(id));
+    if (!c) return;
+    let w = $("m-qmd");
+    if (!w) {
+      w = document.createElement("div");
+      w.className = "overlay"; w.id = "m-qmd";
+      w.innerHTML = '<div class="modal qm"><div id="qmd-body" class="qm-pm"></div><div style="display:flex;gap:10px;margin-top:16px">' +
+        '<button class="btn btn-outline" style="flex:1" type="button" id="qmd-close">Close</button>' +
+        '<button class="btn btn-outline" style="flex:1;color:#ff6b6b;border-color:#ff6b6b" type="button" id="qmd-remove">Remove</button></div></div>';
+      document.body.appendChild(w);
+      w.addEventListener("click", e => { if (e.target === w) closeModal("m-qmd"); });
+      $("qmd-close").addEventListener("click", () => closeModal("m-qmd"));
+    }
+    const svc = (S.services || []).find(s => s.name === c.svc), barber = rd("bqCrewAssign:" + shopKey(), {})[String(c.id)];
+    const wait = (S.bq || []).slice(0, (S.bq || []).indexOf(c)).reduce((t, x) => t + (Number(x.dur) || 0), 0);
+    $("qmd-body").innerHTML =
+      '<div style="font:800 20px \'Syne\',sans-serif">#' + esc(c.tok) + " · " + esc(c.name) + "</div>" +
+      "<div><span>Service</span>" + esc(c.svc) + (svc ? " · ₹" + esc(svc.price) : "") + " · " + esc(c.dur) + " min</div>" +
+      "<div><span>Barber</span>" + esc(barber ? (barber === "Anyone" ? "Any barber" : barber) : "Not chosen") + "</div>" +
+      "<div><span>Estimated wait</span>" + (c.st === "cur" ? "Being served now" : wait + " min") + "</div>";
+    $("qmd-remove").onclick = () => { closeModal("m-qmd"); removeEntry(c.id); };
+    openModal("m-qmd");
+  }
+
+  async function removeEntry(id) {
+    const c = (S.bq || []).find(x => String(x.id) === String(id));
+    if (!c || !confirm("Remove " + c.name + " from the queue?")) return;
+    try {
+      const r = await fetch(BQ_BASE + "/api/queue/" + id + "/cancel", { method: "POST" });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok && r.status !== 404) throw new Error(j.error || "Could not remove the customer");
+      toast("🗑️", c.name + " removed from the queue");
+      await loadBarberQueue(S.barber.shopName);
+    } catch (e) { toast("⚠️", e.message || "Could not remove the customer"); }
+  }
+
+  /* ---------- hook into the app ---------- */
+  const base = window.renderBQ;
+  window.renderBQ = function () {
+    const out = typeof base === "function" ? base.apply(this, arguments) : undefined;
+    paint();
+    return out;
+  };
+  setInterval(() => {                                // stats (served / earnings) arrive on their own timer
+    const t = $("b-queue-tab");
+    if (t && t.style.display !== "none" && S.role === "barber") paint();
+  }, 3000);
+
+  shell();
+  paint();
+})();
+
+(function () {
+  "use strict";
+
+  const $ = id => document.getElementById(id);
+  const esc = v => String(v == null ? "" : v).replace(/[&<>"']/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const pad = n => String(n).padStart(2, "0");
+  const inr = n => "₹" + Math.round(n || 0).toLocaleString("en-IN");
+  const ic = p => '<svg class="db-ic" viewBox="0 0 24 24">' + p + "</svg>";
+  const ICON = {
+    grid: '<rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/>',
+    cal: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+    refresh: '<polyline points="23 4 23 10 17 10"/><path d="M20.5 15a9 9 0 1 1-2.1-9.4L23 10"/>',
+    arrow: '<line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>',
+    bars: '<rect x="4" y="12" width="4" height="8"/><rect x="10" y="5" width="4" height="15"/><rect x="16" y="9" width="4" height="11"/>'
+  };
+  const DONUT = ["#3b82f6", "#14b8a6", "#f59e0b", "#ec4899", "#8b5cf6"];
+  const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const cleanSvc = s => String(s || "").replace(/\s·\sadvance$/, "");
+  const fmt12 = t => {
+    const [h, m] = String(t || "").split(":").map(Number);
+    return isNaN(h) ? "" : (h % 12 || 12) + ":" + pad(m || 0) + " " + (h < 12 ? "AM" : "PM");
+  };
+  const stamp = a => new Date(a.date + "T" + (a.start || "00:00") + ":00").getTime();
+
+  const css = document.createElement("style");
+  css.textContent = `
+  #b-dashboard-tab > :not(#db-root){display:none!important}
+  .db{--card:#0a0f33;--line:rgba(110,110,255,.22);--mute:#97a0c9;color:#eef1ff;font-family:'DM Sans',sans-serif;
+      display:flex;flex-direction:column;gap:14px;min-height:calc(100vh - 150px)}
+  .db *{box-sizing:border-box}
+  .db-ic{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .db-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .db-badge{width:48px;height:48px;border-radius:12px;display:grid;place-items:center;color:#fff;background:#3b2fd0;border:1px solid #6a5bff}
+  .db-badge .db-ic{width:24px;height:24px}
+  .db-head h2{margin:0;font:800 24px 'Syne',sans-serif}
+  .db-head p{margin:2px 0 0;font-size:13px;color:var(--mute)}
+  .db-tools{margin-left:auto;display:flex;gap:10px;flex-wrap:wrap}
+  .db-pill{display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:10px;background:#0b1138;border:1px solid #3b46c8;
+      color:#eef1ff;font:600 13px 'DM Sans',sans-serif}
+  button.db-pill{cursor:pointer}
+  button.db-pill:hover{border-color:#7b8bff}
+  .db-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+  .db-kpi{padding:16px 18px;border-radius:14px;border:1px solid var(--c);
+      background:linear-gradient(135deg,color-mix(in srgb,var(--c) 22%,#080c26),#080c26 78%)}
+  .db-kl{font-size:13.5px;color:#d4daf7}
+  .db-kv{font:800 34px 'Syne',sans-serif;line-height:1.15;margin:4px 0}
+  .db-kn{font-size:13px;color:var(--mute)}
+  .db-kn.up{color:#22e39a;font-weight:600}.db-kn.dn{color:#ff7b7b;font-weight:600}
+  .db-k1{--c:#4b6bff}.db-k2{--c:#14b8a6}.db-k3{--c:#e0a23a}.db-k4{--c:#a23df0}
+  .db-main{flex:1;display:grid;grid-template-columns:1fr;gap:14px;min-height:340px}
+  .db-col{display:flex;flex-direction:column;gap:14px;min-width:0}
+  .db-grow{flex:1}
+  .db-bottom{display:grid;grid-template-columns:1fr;gap:14px}
+  .db-box{display:flex;flex-direction:column;padding:16px 18px;border-radius:14px;background:var(--card);border:1px solid var(--line);min-width:0}
+  .db-box h3{margin:0;font:700 15.5px 'Syne',sans-serif}
+  .db-qh{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+  .db-sub{font-size:12.5px;color:var(--mute)}
+  .db-link{display:inline-flex;align-items:center;gap:5px;border:0;background:none;cursor:pointer;color:#7f93ff;font:600 13.5px 'DM Sans',sans-serif}
+  .db-link .db-ic{width:15px;height:15px}
+  /* weekly chart */
+  .db-chart{flex:1;display:flex;flex-direction:column;min-height:230px}
+  .db-plot{position:relative;flex:1;min-height:170px;margin:6px 0 0 30px}
+  .db-gl{position:absolute;left:0;right:0;height:0;border-top:1px solid rgba(110,110,255,.16)}
+  .db-gl span{position:absolute;left:-30px;top:-8px;width:22px;text-align:right;font-size:11.5px;color:var(--mute)}
+  .db-cols{position:absolute;inset:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3.5%;padding:0 1.5%}
+  .db-col1{display:flex;align-items:flex-end;height:100%}
+  .db-col1 i{display:block;width:100%;border-radius:6px 6px 0 0;background:#f5b73b;min-height:0;box-shadow:0 0 18px -6px #f5b73b99;position:relative}
+  .db-col1 i b{position:absolute;top:-19px;left:0;right:0;text-align:center;font-size:12px;font-weight:600;color:#eef1ff}
+  .db-xl{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3.5%;padding:8px 1.5% 0;margin-left:30px;text-align:center;font-size:13px;color:#c3cbf0}
+  .db-xl .t{color:#f5b73b;font-weight:600}
+  .db-none{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--mute);font-size:13.5px;pointer-events:none}
+  /* lists */
+  .db-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid var(--line);font-size:14px}
+  .db-row .l{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .db-row .r{flex:none;color:var(--mute);font-size:12.5px}
+  .db-tag{flex:none;min-width:70px;text-align:center;padding:3px 10px;border-radius:7px;font-size:12px;font-weight:700;color:#fff}
+  .db-tag.cur{background:#2540b8}.db-tag.nxt{background:#0f6b53}.db-tag.wait{background:#6b4a0b;color:#ffe2a8}
+  .db-empty{flex:1;display:flex;align-items:center;justify-content:center;padding:18px 0;color:var(--mute);font-size:13.5px;text-align:center;border-top:1px solid var(--line)}
+  .db-qa{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .db-qa button{padding:13px 14px;border-radius:10px;cursor:pointer;text-align:left;color:#eef1ff;font:600 14px 'DM Sans',sans-serif;
+      border:1px solid var(--c);background:color-mix(in srgb,var(--c) 14%,#0a0f33)}
+  .db-qa button:hover{background:color-mix(in srgb,var(--c) 26%,#0a0f33)}
+  /* donut */
+  .db-mix{flex:1;display:flex;align-items:center;gap:22px;flex-wrap:wrap}
+  .db-donut{position:relative;width:104px;height:104px;flex:none}
+  .db-donut svg{width:100%;height:100%;transform:rotate(-90deg)}
+  .db-donut b{position:absolute;inset:0;display:grid;place-items:center;font:700 22px 'Syne',sans-serif}
+  .db-leg{display:flex;flex-direction:column;gap:7px;font-size:13.5px}
+  .db-leg span{display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+  .db-leg i{width:8px;height:8px;border-radius:50%}
+  @media(min-width:720px){.db-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}.db-bottom{grid-template-columns:repeat(3,minmax(0,1fr))}}
+  @media(min-width:980px){.db-main{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)}}`;
+  document.head.appendChild(css);
+
+  function shell() {
+    const tab = $("b-dashboard-tab");
+    if (!tab) return null;
+    let root = $("db-root");
+    if (root) return root;
+    root = document.createElement("div");
+    root.id = "db-root";
+    root.className = "db";
+    tab.insertBefore(root, tab.firstChild);
+
+    root.addEventListener("click", e => {
+      const b = e.target.closest("[data-db]");
+      if (!b) return;
+      const k = b.dataset.db;
+      if (k === "refresh") {
+        if (typeof refreshBarberStats === "function") refreshBarberStats();
+        if (S.barber && S.barber.shopName && typeof loadBarberQueue === "function") loadBarberQueue(S.barber.shopName);
+        toast("🔄", "Dashboard refreshed");
+        setTimeout(paint, 600);
+      } else if (["queue", "bookings", "calendar", "settings"].indexOf(k) !== -1) {
+        window.bTab(k);
+      }
+    });
+    return root;
+  }
+
+  /* ---------- pieces ---------- */
+  function chart(daily, todayIdx) {
+    const total = daily.reduce((t, n) => t + n, 0);
+    const top = Math.max(4, Math.ceil(Math.max(...daily) / 4) * 4);     // axis max, multiple of 4
+    const lines = [4, 3, 2, 1, 0].map(i => {
+      const v = top / 4 * i;
+      return '<div class="db-gl" style="top:' + (100 - i * 25) + '%"><span>' + v + "</span></div>";
+    }).join("");
+    const cols = daily.map((n, i) =>
+      '<div class="db-col1" title="' + DAYS[i] + ": " + n + '"><i style="height:' + (n ? Math.max(3, n / top * 100) : 0) + '%">' + (n ? "<b>" + n + "</b>" : "") + "</i></div>").join("");
+    const labels = DAYS.map((d, i) => "<span" + (i === todayIdx ? ' class="t"' : "") + ">" + d + "</span>").join("");
+    return '<div class="db-chart"><div class="db-plot">' + lines + '<div class="db-cols">' + cols + "</div>" +
+      (total ? "" : '<div class="db-none">No completed visits yet this week.<br>Finished services will appear here.</div>') +
+      '</div><div class="db-xl">' + labels + "</div></div>";
+  }
+
+  function donut(services) {
+    const top = services.slice(0, 4);
+    const total = top.reduce((t, s) => t + Number(s[1] || 0), 0);
+    const R = 34, C = 2 * Math.PI * R;
+    let ring = '<circle cx="50" cy="50" r="' + R + '" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="14"/>';
+    let cum = 0;
+    if (total) {
+      top.forEach((s, i) => {
+        const frac = Number(s[1]) / total;
+        const len = Math.max(0, frac * C - (top.length > 1 ? 2 : 0));
+        ring += '<circle cx="50" cy="50" r="' + R + '" fill="none" stroke="' + DONUT[i % DONUT.length] +
+          '" stroke-width="14" stroke-dasharray="' + len.toFixed(2) + " " + (C - len).toFixed(2) +
+          '" stroke-dashoffset="' + (-cum * C).toFixed(2) + '"/>';
+        cum += frac;
+      });
+    }
+    const legend = total
+      ? top.map((s, i) => '<span><i style="background:' + DONUT[i % DONUT.length] + '"></i>' +
+          esc(s[0]) + " " + Math.round(Number(s[1]) / total * 100) + "%</span>").join("")
+      : '<span style="color:var(--mute)">No completed services this week yet.</span>';
+    return '<div class="db-mix"><div class="db-donut"><svg viewBox="0 0 100 100">' + ring + "</svg><b>" + total +
+      '</b></div><div class="db-leg">' + legend + "</div></div>";
+  }
+
+  function upcoming() {
+    const now = Date.now();
+    const list = (window.bqAppointments || [])
+      .filter(a => a && a.date && (a.status === "pending" || a.status === "confirmed") && stamp(a) >= now - 15 * 60000)
+      .sort((x, y) => stamp(x) - stamp(y)).slice(0, 4);
+    if (!list.length) return '<div class="db-empty">No upcoming bookings.</div>';
+    const today = new Date().toDateString();
+    return list.map(a => {
+      const d = new Date(a.date + "T00:00:00");
+      const when = d.toDateString() === today ? fmt12(a.start)
+        : d.toLocaleDateString("en-US", { month: "short", day: "numeric" }) + ", " + fmt12(a.start);
+      return '<div class="db-row"><span class="l">' + esc(when) + " · " + esc(a.customer) + '</span><span class="r">' + esc(cleanSvc(a.service)) + "</span></div>";
+    }).join("");
+  }
+
+  function ago(ts) {
+    const m = Math.round((Date.now() - ts) / 60000);
+    if (m < 1) return "just now";
+    if (m < 60) return m + " min ago";
+    if (m < 1440) return Math.round(m / 60) + " hr ago";
+    return Math.round(m / 1440) + " d ago";
+  }
+
+  function activity() {
+    const now = Date.now();
+    const list = (window.bqAppointments || [])
+      .filter(a => a && a.date && stamp(a) <= now + 60000)
+      .sort((x, y) => stamp(y) - stamp(x)).slice(0, 4);
+    if (!list.length) return '<div class="db-empty">Activity will show up here as customers come in.</div>';
+    return list.map(a => {
+      const t = a.status === "completed" ? esc(a.customer) + "'s " + esc(cleanSvc(a.service).toLowerCase()) + " done"
+        : a.status === "cancelled" || a.status === "rejected" ? esc(a.customer) + " cancelled"
+        : "New booking · " + esc(a.customer);
+      return '<div class="db-row"><span class="l">' + t + '</span><span class="r">' + ago(stamp(a)) + "</span></div>";
+    }).join("");
+  }
+
+  /* ---------- build ---------- */
+  function build() {
+    const q = Array.isArray(S.bq) ? S.bq : [];
+    const st = S.barberStats || null;
+    const done = Number(S.doneCnt) || 0;
+    const earn = Number(S.earn) || 0;
+    const totalWait = q.reduce((t, c) => t + (Number(c.dur) || 0), 0);
+    const now = new Date();
+    const todayIdx = (now.getDay() + 6) % 7;
+    const dateLabel = now.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+
+    const daily = st && st.week && Array.isArray(st.week.daily) && st.week.daily.length === 7
+      ? st.week.daily.map(n => Number(n) || 0) : [0, 0, 0, 0, 0, 0, 0];
+    const weekTotal = daily.reduce((t, n) => t + n, 0);
+    const yest = now.getDay() !== 1 ? daily[(now.getDay() + 5) % 7] : 0;
+    let doneNote = '<div class="db-kn">Since opening</div>';
+    if (yest > 0) {
+      const p = Math.round((done - yest) / yest * 100);
+      doneNote = '<div class="db-kn ' + (p >= 0 ? "up" : "dn") + '">' + (p >= 0 ? "↑ " : "↓ ") + Math.abs(p) + "% vs yesterday</div>";
+    }
+    const services = st && st.week && Array.isArray(st.week.services) ? st.week.services : [];
+
+    const kpi = (cls, label, val, note) =>
+      '<div class="db-kpi ' + cls + '"><div class="db-kl">' + label + '</div><div class="db-kv">' + val + "</div>" + note + "</div>";
+
+    const live = q.slice(0, 5).map(c => {
+      const t = c.st === "cur" ? ["cur", "Now"] : c.st === "nxt" ? ["nxt", "Next"] : ["wait", "Waiting"];
+      return '<div class="db-row"><span class="l">#' + esc(c.tok) + " " + esc(c.name) + '</span><span class="db-tag ' + t[0] + '">' + t[1] + "</span></div>";
+    }).join("") || '<div class="db-empty">No customers are currently in the queue.</div>';
+
+    const qa = (k, c, label) => '<button type="button" style="--c:' + c + '" data-db="' + k + '">' + label + "</button>";
+
+    return `
+      <div class="db-head"><span class="db-badge">${ic(ICON.grid)}</span>
+        <div><h2>Dashboard</h2><p>Your daily overview and shop activity.</p></div>
+        <div class="db-tools"><span class="db-pill">${ic(ICON.cal)}${esc(dateLabel)}</span>
+          <button type="button" class="db-pill" data-db="refresh">${ic(ICON.refresh)}Refresh</button></div></div>
+
+      <div class="db-kpis">
+        ${kpi("db-k1", "In queue", q.length, '<div class="db-kn">' + (q.length ? "~" + totalWait + " min of work" : "Queue is clear") + "</div>")}
+        ${kpi("db-k2", "Completed today", done, doneNote)}
+        ${kpi("db-k3", "Today's earnings", inr(earn), '<div class="db-kn">From completed services</div>')}
+        ${kpi("db-k4", "Average wait", totalWait + " min", '<div class="db-kn">Queue estimate</div>')}
+      </div>
+
+      <div class="db-main">
+        <div class="db-box"><div class="db-qh"><h3>Completed this week</h3><span class="db-sub">${weekTotal} visit${weekTotal === 1 ? "" : "s"}</span></div>
+          ${chart(daily, todayIdx)}</div>
+        <div class="db-col">
+          <div class="db-box db-grow"><div class="db-qh"><h3>Live queue</h3>
+            <button type="button" class="db-link" data-db="queue">Manage${ic(ICON.arrow)}</button></div>${live}</div>
+          <div class="db-box"><div class="db-qh"><h3>Quick actions</h3></div><div class="db-qa">
+            ${qa("queue", "#14b8a6", "Manage queue")}${qa("bookings", "#a23df0", "Bookings")}
+            ${qa("calendar", "#3b82f6", "Calendar")}${qa("settings", "#ec4899", "Settings")}</div></div>
+        </div>
+      </div>
+
+      <div class="db-bottom">
+        <div class="db-box"><div class="db-qh"><h3>Service mix</h3><span class="db-sub">This week</span></div>${donut(services)}</div>
+        <div class="db-box"><div class="db-qh"><h3>Next bookings</h3>
+          <button type="button" class="db-link" data-db="bookings">View all${ic(ICON.arrow)}</button></div>${upcoming()}</div>
+        <div class="db-box"><div class="db-qh"><h3>Recent activity</h3></div>${activity()}</div>
+      </div>`;
+  }
+
+  function paint() {
+    const root = shell();
+    if (!root) return;
+    const html = build();
+    if (root._sig !== html) { root._sig = html; root.innerHTML = html; }
+  }
+
+  /* keep every existing caller working: run the old refresh, then ours */
+  const base = window.bqRefreshOverview;
+  window.bqRefreshOverview = function () {
+    const out = typeof base === "function" ? base.apply(this, arguments) : undefined;
+    paint();
+    return out;
+  };
+
+  setInterval(() => {
+    const t = $("b-dashboard-tab");
+    if (t && t.style.display === "block" && S.role === "barber") paint();
+  }, 4000);
+
+  shell();
+  const t = $("b-dashboard-tab");
+  if (t && t.style.display === "block") paint();
+})();
+
+
+
+
+/* queue_actions.js
+   Load AFTER script.js and queue_redesign.js (and the other redesign files):
+   <script src="queue_actions.js"></script>
+   Adds Done and Skip buttons to EVERY waiting customer in the Queue tab, not
+   just the one being served. Uses the same backend calls as doneToken() and
+   skipToken(): POST /api/queue/{id}/complete and /api/queue/{id}/skip. */
+(function () {
+  "use strict";
+
+  const $ = id => document.getElementById(id);
+  const busy = new Set();
+
+  /* ---------- the action ---------- */
+  async function act(id, kind) {
+    const key = kind + ":" + id;
+    if (busy.has(key)) return;
+    const c = (S.bq || []).find(x => String(x.id) === String(id));
+    if (!c) { toast("⚠️", "That customer is no longer in the queue"); return; }
+    if (!S.barber || !S.barber.shopName) { toast("⚠️", "Set up your shop first"); return; }
+    if (kind === "done" && !confirm("Mark " + c.name + " (#" + c.tok + ") as done?")) return;
+
+    busy.add(key);
+    try {
+      const r = await fetch(BQ_BASE + "/api/queue/" + id + "/" + (kind === "done" ? "complete" : "skip"), { method: "POST" });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok || !j.success) throw new Error(j.error || "Could not update the queue");
+
+      await loadBarberQueue(S.barber.shopName);
+
+      if (kind === "done") {
+        /* the bookings bridge treats anyone who leaves the queue without being the
+           head as cancelled, so mark this one completed explicitly */
+        if (typeof window.bqSetStatus === "function") { try { window.bqSetStatus(id, "completed"); } catch (e) { /* ignore */ } }
+        const sv = (S.services || []).find(s => s.name === c.svc);
+        S.doneCnt = (Number(S.doneCnt) || 0) + 1;
+        S.earn = (Number(S.earn) || 0) + (sv ? Number(sv.price) || 0 : 0);
+        const d = $("b-done"), e = $("b-earn");
+        if (d) d.textContent = S.doneCnt;
+        if (e) e.textContent = "₹" + Math.round(S.earn).toLocaleString("en-IN");
+        if (typeof refreshBarberStats === "function") refreshBarberStats();
+        toast("✅", c.name + " marked done");
+      } else {
+        toast("⏭️", c.name + " skipped");
+      }
+    } catch (e) {
+      toast("⚠️", e.message || "Could not update the queue");
+    } finally {
+      busy.delete(key);
+    }
+  }
+  window.bqQueueAct = act;
+
+  /* ---------- put the buttons on every waiting row ---------- */
+  function decorate() {
+    const body = $("qm-body");
+    if (!body) return;
+    body.querySelectorAll('button.qm-b[data-q="view"]').forEach(v => {
+      const id = v.getAttribute("data-id");
+      const wrap = document.createElement("span");
+      wrap.style.cssText = "display:contents";
+      wrap.innerHTML =
+        '<button type="button" class="qm-b done" data-q2="done" data-id="' + id + '">Done ✓</button>' +
+        '<button type="button" class="qm-b skip" data-q2="skip" data-id="' + id + '">Skip</button>';
+      v.replaceWith(wrap);
+    });
+  }
+
+  /* queue_redesign repaints on its own timer, so re-decorate after every repaint */
+  function watch() {
+    const root = $("qm-root");
+    if (!root) return false;
+    new MutationObserver(decorate).observe(root, { childList: true, subtree: true });
+    decorate();
+    return true;
+  }
+  if (!watch()) {
+    const t = setInterval(() => { if (watch()) clearInterval(t); }, 500);
+  }
+
+  /* ---------- clicks (capture, so queue_redesign's own handler never sees them) ---------- */
+  document.addEventListener("click", e => {
+    const b = e.target.closest && e.target.closest("[data-q2]");
+    if (!b) return;
+    e.preventDefault();
+    e.stopPropagation();
+    act(b.getAttribute("data-id"), b.getAttribute("data-q2"));
+  }, true);
+})();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* history_sync.js
+   Load AFTER script.js and the other add-on files:
+   <script src="history_sync.js"></script>
+   Pulls finished visits (completed / skipped / cancelled) from the server
+   (GET /api/queue/history) and merges them into window.bqAppointments, so
+   Bookings, Calendar, Recent activity and Next bookings match the Dashboard
+   on every browser and device, not just visits this browser watched. */
+(function () {
+  "use strict";
+
+  const pad = n => String(n).padStart(2, "0");
+  const isoDate = d => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+  const hhmm = d => pad(d.getHours()) + ":" + pad(d.getMinutes());
+  const visible = id => { const n = document.getElementById(id); return !!n && n.style.display === "block"; };
+
+  let busy = false, lastRun = 0;
+
+  async function pull(force) {
+    const shop = window.S && S.barber && S.barber.shopName;
+    if (!shop || S.role !== "barber" || busy) return;
+    if (!force && Date.now() - lastRun < 8000) return;
+    busy = true; lastRun = Date.now();
+    try {
+      const r = await fetch(BQ_BASE + "/api/queue/history?days=90&shop_name=" + encodeURIComponent(shop));
+      const j = await r.json();
+      if (!r.ok || !j.success || !Array.isArray(j.history)) return;
+      if (!Array.isArray(window.bqAppointments)) window.bqAppointments = [];
+      const list = window.bqAppointments;
+      let changed = false;
+
+      j.history.forEach(h => {
+        const status = h.status === "completed" ? "completed" : "cancelled";
+        const joined = h.joined_at ? new Date(h.joined_at) : null;
+        const finished = h.completed_at ? new Date(h.completed_at) : null;
+        const when = finished || joined;
+        if (!when || isNaN(when)) return;
+        const dur = Number(h.duration) || 20;
+
+        const found = list.find(a => String(a.id) === String(h.id));
+        if (found) {
+          if (found.status !== status) { found.status = status; changed = true; }
+          if (finished && found.date !== isoDate(finished)) { found.date = isoDate(finished); changed = true; }
+          if (h.price != null && found.price !== h.price) { found.price = h.price; found.phone = h.phone; changed = true; }
+        } else {
+          const start = finished ? new Date(finished.getTime() - dur * 60000) : joined;
+          list.push({
+            id: h.id, token: h.token, customer: h.name, service: h.service,
+            date: isoDate(when), start: hhmm(start),
+            end: hhmm(finished || new Date(start.getTime() + dur * 60000)),
+            dur, status, source: "queue", price: h.price, phone: h.phone
+          });
+          changed = true;
+        }
+      });
+
+      if (changed) {
+        try { localStorage.setItem("barberBookings:" + shop, JSON.stringify(list.slice(-500))); } catch (e) { /* ignore */ }
+        if (visible("b-bookings-tab") && window.bqRenderBookings) window.bqRenderBookings();
+        if (visible("b-calendar-tab") && window.bqRenderCalendar) window.bqRenderCalendar();
+        if (visible("b-dashboard-tab") && window.bqRefreshOverview) window.bqRefreshOverview();
+      }
+    } catch (e) { /* offline: keep what we have */ }
+    finally { busy = false; }
+  }
+  window.bqPullHistory = () => pull(true);
+
+  /* pull right after every queue refresh (the bridge may have just marked someone
+     cancelled; the server's answer corrects it) */
+  const origLoad = window.loadBarberQueue;
+  if (typeof origLoad === "function") {
+    window.loadBarberQueue = async function () {
+      const out = await origLoad.apply(this, arguments);
+      pull(false);
+      return out;
+    };
+  }
+
+  /* and when the barber opens Bookings / Calendar */
+  const origTab = window.bTab;
+  if (typeof origTab === "function") {
+    window.bTab = function () {
+      const out = origTab.apply(this, arguments);
+      pull(true);
+      return out;
+    };
+  }
+
+  setInterval(() => pull(false), 10000);
+  setTimeout(() => pull(true), 2000);
 })();
