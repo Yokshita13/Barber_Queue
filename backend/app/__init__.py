@@ -31,8 +31,8 @@ def create_app():
     )
 
     with app.app_context():
-        db.create_all()         # also creates the new booking tables
-        ensure_upi_columns()    # adds the QR columns to the existing shops table
+        db.create_all()         
+        ensure_upi_columns()    
 
     @app.route("/")
     def home():
