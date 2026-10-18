@@ -7976,7 +7976,7 @@ window.S = S;   // expose the state object so the add-on code can read S.barber
         (b ? '<span class="sv-tag">' + ic(b[1]) + b[0] + "</span>" : "") +
         '<div class="sv-ico">' + esc(s.ico || "✂️") + '</div><div class="sv-name">' + esc(s.name) + "</div>" +
         '<div class="sv-desc">' + esc(s.desc || "Professional " + String(s.name).toLowerCase() + " service.") + "</div>" +
-        '<div class="sv-foot"><span class="sv-dur">' + ic(ICON.clock) + esc(s.dur) + ' min</span><span class="sv-price">₹' + esc(s.price) + "</span>" +
+        '<div class="sv-foot"><span class="sv-dur">' + ic(ICON.clock) + esc(s.dur) + ' min</span><span class="sv-price">₹' + esc(s.price) + "   </span>" +
         '<span class="sv-act"><button type="button" data-sv="edit" data-i="' + i + '" aria-label="Edit ' + esc(s.name) + '">' + ic(ICON.edit) + "</button>" +
         '<button type="button" class="del" data-sv="del" data-i="' + i + '" aria-label="Delete ' + esc(s.name) + '">' + ic(ICON.trash) + "</button></span></div></div>";
     }).join("") + (query ? "" :
@@ -7999,12 +7999,12 @@ window.S = S;   // expose the state object so the add-on code can read S.barber
         "</b><small>" + c + " booking" + (c === 1 ? "" : "s") + '</small></div><span class="sv-bar"><i style="width:' + p + '%"></i></span><span class="p">' + p + "%</span></div>";
     }).join("") : '<div class="sv-empty">No completed services this week yet.</div>';
 
-    $("sv-side").innerHTML =
-      '<div class="sv-box"><h3>' + ic(ICON.bars) + 'Service Overview</h3><div class="sv-ov">' +
-      stat("#3b6dff", ICON.cut, (S.services || []).length, "Total Services") +
-      stat("#14b8a6", ICON.rupee, inr(revenue), "Total Revenue (Today)") +
-      stat("#a23df0", ICON.users, bookingsToday, "Bookings (Today)") +
-      stat("#e0a23a", ICON.star, rating, "Avg. Rating") + "</div></div>" ;
+    // $("sv-side").innerHTML =
+    //   '<div class="sv-box"><h3>' + ic(ICON.bars) + 'Service Overview</h3><div class="sv-ov">' +
+    //   stat("#3b6dff", ICON.cut, (S.services || []).length, "Total Services") +
+    //   stat("#14b8a6", ICON.rupee, inr(revenue), "Total Revenue (Today)") +
+    //   stat("#a23df0", ICON.users, bookingsToday, "Bookings (Today)") +
+    //   stat("#e0a23a", ICON.star, rating, "Avg. Rating") + "</div></div>" ;
       // '<div class="sv-box"><h3>' + ic(ICON.cup) + "Top Services</h3>" + topHtml + "</div>" ;
       // '<div class="sv-box"><div class="sv-tip">' + ic(ICON.bulb) + "<div><b>Quick Tip</b><br>Keep your service menu updated for better customer experience and higher bookings.</div></div></div>";
   }
@@ -9084,33 +9084,6 @@ window.S = S;   // expose the state object so the add-on code can read S.barber
     act(b.getAttribute("data-id"), b.getAttribute("data-q2"));
   }, true);
 })();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /* history_sync.js
    Load AFTER script.js and the other add-on files:
    <script src="history_sync.js"></script>
