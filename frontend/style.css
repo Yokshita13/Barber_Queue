@@ -1912,43 +1912,6 @@ label {
   .sa-m-grid{grid-template-columns:1fr}
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /* ===== Advance booking ===== */
 
 /* customer: shop page */
@@ -2005,3 +1968,140 @@ label {
 .ab-set-grid label{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--txt2,#9a9db5)}
 .ab-sync{color:var(--green,#4ade80)}
 @media (max-width:420px){.ab-set-grid{grid-template-columns:1fr}}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* =========================================================
+   layout_fix.css
+   Paste this at the VERY END of style.css (no other change needed).
+   Every rule starts with #s-barb so it beats the styles that the
+   redesign scripts inject into the page.
+   ========================================================= */
+
+/* ---------- ROOT CAUSE OF THE NARROW DESKTOP LAYOUT ----------
+   style.css has:   #s-barb .scroll > * { max-width: 900px; }
+   That squeezes every dashboard page into a 900px column on the left.
+   This line cancels it. */
+@media (min-width: 900px) {
+  #s-barb .scroll > * { max-width: none !important; }
+  #s-barb .scroll { padding: 24px 28px; }
+}
+
+/* ---------- all redesigned pages: fill the space, but stay readable ---------- */
+#s-barb .an, #s-barb .st, #s-barb .pf, #s-barb .sx,
+#s-barb .cl, #s-barb .bw, #s-barb .qm, #s-barb .sv {
+  width: 100%;
+  max-width: 1480px;
+  margin-left: auto;
+  margin-right: auto;
+  overflow-wrap: anywhere;
+}
+
+/* grid children may shrink instead of pushing the page wider than the screen */
+#s-barb .an-grid > *, #s-barb .an-col > *,
+#s-barb .bw-layout > *, #s-barb .bw-side > *,
+#s-barb .qm-layout > *, #s-barb .qm-side > *,
+#s-barb .sv-layout > *, #s-barb .sv-side > *, #s-barb .sv-grid > *,
+#s-barb .cl-layout > *, #s-barb .cl-side > *,
+#s-barb .pf-grid > *, #s-barb .pf-col > *,
+#s-barb .sx-grid > *, #s-barb .sx-col > *,
+#s-barb .st-grid > * { min-width: 0; }
+
+/* headings: Syne ExtraBold is very wide, so use a lighter weight and fluid size */
+#s-barb .an-head h2, #s-barb .st-head h2, #s-barb .pf-head h2, #s-barb .sx h2,
+#s-barb .cl-head h2, #s-barb .bw-head h2, #s-barb .qm-head h2, #s-barb .sv-head h2 {
+  font-weight: 700;
+  font-size: clamp(19px, 2.2vw, 26px);
+  line-height: 1.25;
+}
+#s-barb .an-kv, #s-barb .st-kv, #s-barb .bw-kv, #s-barb .qm-kv { font-weight: 700; }
+
+/* ---------- laptops / small desktops (sidebar + content is tight) ---------- */
+@media (min-width: 900px) and (max-width: 1199px) {
+  /* side panels drop under the main panel until there is room for both */
+  #s-barb .an-grid,
+  #s-barb .bw-layout,
+  #s-barb .qm-layout,
+  #s-barb .sv-layout,
+  #s-barb .cl-layout { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* KPI cards: 2 per row until the screen is wide enough for 4 */
+@media (min-width: 481px) and (max-width: 1199px) {
+  #s-barb .an-kpis, #s-barb .st-kpis, #s-barb .bw-kpis, #s-barb .qm-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ---------- phones ---------- */
+@media (max-width: 600px) {
+  #s-barb .scroll.pad { padding-left: 12px; padding-right: 12px; }
+
+  /* page headers: smaller icon, tools go full width underneath */
+  #s-barb .an-badge, #s-barb .st-badge, #s-barb .bw-badge,
+  #s-barb .qm-badge, #s-barb .sv-badge { width: 42px; height: 42px; border-radius: 11px; }
+  #s-barb .an-head p, #s-barb .st-head p, #s-barb .pf-head p, #s-barb .cl-head p,
+  #s-barb .bw-head p, #s-barb .qm-head p, #s-barb .sv-head p, #s-barb .sx-sub { font-size: 12px; }
+
+  #s-barb .an-head-r, #s-barb .st-tools, #s-barb .bw-tools,
+  #s-barb .qm-tools, #s-barb .cl-tools {
+    margin-left: 0; width: 100%; flex: 1 1 100%; gap: 8px;
+  }
+  #s-barb .an-head-r > *, #s-barb .bw-tools > *, #s-barb .qm-tools > * { flex: 1 1 0; min-width: 0; justify-content: center; }
+  #s-barb .st-search, #s-barb .sv-search { max-width: none; flex: 1 1 100%; margin-left: 0; }
+  #s-barb .st-add { flex: 1 1 100%; justify-content: center; }
+  #s-barb .cl-range { width: 100%; justify-content: space-between; }
+
+  /* cards */
+  #s-barb .an-panel, #s-barb .st-card, #s-barb .pf-card, #s-barb .sx-card,
+  #s-barb .bw-box, #s-barb .qm-box, #s-barb .sv-box, #s-barb .cl-box { padding: 12px; }
+  #s-barb .an-kpi, #s-barb .st-kpi, #s-barb .bw-kpi, #s-barb .qm-kpi { padding: 12px; }
+  #s-barb .an-kv, #s-barb .st-kv, #s-barb .bw-kv, #s-barb .qm-kv { font-size: 24px; }
+  #s-barb .an-spark { display: none; }
+  #s-barb .an-bars { height: 170px; }
+  #s-barb .an-ph { flex-wrap: wrap; }
+  #s-barb .an-seg, #s-barb .an-tag { margin-left: 0; }
+
+  /* toolbars and filters */
+  #s-barb .bw-filters, #s-barb .qm-r { margin-left: 0; flex: 1 1 100%; justify-content: flex-start; width: 100%; }
+  #s-barb .bw-search { max-width: none; flex: 1 1 100%; }
+  #s-barb .qm-add { flex: 1; justify-content: center; }
+
+  /* profile + settings */
+  #s-barb .pf-av { width: 88px; height: 88px; }
+  #s-barb .pf-row { flex-wrap: wrap; gap: 4px; }
+  #s-barb .pf-row strong { text-align: left; }
+}
+
+/* one KPI card per row on narrow phones, one service/staff card per row */
+@media (max-width: 480px) {
+  #s-barb .an-kpis, #s-barb .st-kpis, #s-barb .bw-kpis, #s-barb .qm-kpis { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 430px) {
+  #s-barb .st-grid, #s-barb .sv-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* very small screens (and the 260px preview) */
+@media (max-width: 340px) {
+  #s-barb .an-kv, #s-barb .st-kv, #s-barb .bw-kv, #s-barb .qm-kv { font-size: 20px; }
+  #s-barb .an-kico, #s-barb .st-kico, #s-barb .bw-kico, #s-barb .qm-kico { width: 38px; height: 38px; }
+}
+
+/* toast: never wider than the screen */
+#toast { max-width: 92vw; white-space: normal; text-align: center; }
