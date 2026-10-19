@@ -2614,7 +2614,7 @@ if(isB){
   const userPhone = S.user.phone || 'Phone not available';
   const userLocation = S.user.location || 'Not set';
   const visitCount = S.queueHistory.length;
-  const ratedCount = S.ratedShops.length;
+  const ratedCount = new Set(S.ratedShops.map(r => r.shopId)).size;
   const paymentMethodText = S.paymentMethods.length
     ? S.paymentMethods.join(' · ')
     : 'No payment methods used yet';
@@ -3032,11 +3032,6 @@ function submitRating(){
 
   const visit=S.lastCompletedVisit;
 
-  if(S.ratedShops.some(r=>r.shopId===visit.shopId)){
-    toast('You have already rated this shop.');
-    return;
-  }
-
   const review=document.getElementById('rate-txt')?.value.trim() || '';
 
   S.ratedShops.push({
@@ -3435,7 +3430,7 @@ renderMyQ = function(){
   }
 
   const v = S.lastCompletedVisit;
-  if(v && !S.ratedShops.some(r => r.shopId === v.shopId)){
+  if(v){
     el.insertAdjacentHTML('beforeend', `
       <div style="text-align:center;padding-bottom:30px;margin-top:-30px">
         <button class="btn btn-outline" onclick="rateLastVisit()">
@@ -4986,7 +4981,7 @@ window.S = S;   // expose the state object so the add-on code can read S.barber
         return mine;
       };
       S.queueHistory = merge(S.queueHistory || [], existing.queueHistory, v => String(v.entryId || v.timestamp));
-      S.ratedShops = merge(S.ratedShops || [], existing.ratedShops, r => String(r.shopId));
+      S.ratedShops = merge(S.ratedShops || [], existing.ratedShops, r => [r.shopId, r.date, r.rating, r.review].join("|"));
       S.payments = merge(S.payments || [], existing.payments, p => String(p.id));
       S.paymentMethods = Array.from(new Set([...(S.paymentMethods || []), ...(existing.paymentMethods || [])]));
     }
@@ -7862,7 +7857,7 @@ window.S = S;   // expose the state object so the add-on code can read S.barber
   .sv-search{margin-left:auto;display:flex;align-items:center;gap:8px;flex:1 1 220px;max-width:340px;padding:0 14px;border-radius:12px;background:var(--card);border:1px solid var(--line);color:var(--mute)}
   .sv-search input{flex:1;min-width:0;background:none;border:0;outline:0;color:#eef1ff;font:14px 'DM Sans',sans-serif;padding:12px 0}
   .sv-layout{display:grid;grid-template-columns:1fr;gap:16px}
-  .sv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;align-content:start}
+    .sv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;align-content:start}
   .sv-card{position:relative;display:flex;flex-direction:column;padding:18px;border-radius:18px;border:1.5px solid var(--f);min-height:200px;
       background:linear-gradient(160deg,color-mix(in srgb,var(--f) 14%,#080c26),#080c26 62%);box-shadow:0 0 24px -12px var(--f)}
   .sv-tag{position:absolute;top:14px;right:14px;display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:8px;font-size:11.5px;font-weight:600;
@@ -7872,9 +7867,9 @@ window.S = S;   // expose the state object so the add-on code can read S.barber
       background:linear-gradient(135deg,color-mix(in srgb,var(--f) 80%,#fff),color-mix(in srgb,var(--f) 70%,#000));box-shadow:0 0 18px -4px var(--f)}
   .sv-name{font:700 20px 'Syne',sans-serif;margin-bottom:6px}
   .sv-desc{font-size:13px;line-height:1.5;color:#c8cfee;flex:1;margin-bottom:14px}
-  .sv-foot{display:flex;align-items:center;gap:12px}
-  .sv-dur{display:flex;align-items:center;gap:6px;font-size:13px;color:#d4daf7;padding-right:12px;border-right:1px solid var(--line)}
-  .sv-price{font:700 20px 'Syne',sans-serif;color:#f5b73b}
+  .sv-foot{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .sv-dur{display:flex;align-items:center;gap:6px;font-size:13px;color:#d4daf7;padding-right:10px;border-right:1px solid var(--line);white-space:nowrap}
+  .sv-price{font:700 18px 'Syne',sans-serif;color:#f5b73b;white-space:nowrap}
   .sv-act{margin-left:auto;display:flex;gap:8px}
   .sv-act button{width:34px;height:34px;border-radius:50%;cursor:pointer;display:grid;place-items:center;color:#7fb2ff;background:rgba(59,109,255,.18);border:1px solid rgba(59,109,255,.55)}
   .sv-act button.del{color:#ff6b8b;background:rgba(255,80,120,.14);border-color:rgba(255,80,120,.5)}
@@ -8191,6 +8186,7 @@ window.S = S;   // expose the state object so the add-on code can read S.barber
     const t = new Date(); t.setHours(0, 0, 0, 0);
     let from, to = t, pf, pt;
     if (st.range === "all") return { from: "0000-00-00", to: "9999-12-31", pf: null, pt: null, label: "All time" };
+        if (st.range === "upcoming") { const e = addDays(t, 90); return { from: iso(t), to: iso(e), pf: null, pt: null, label: "Upcoming" }; }
     if (st.range === "month") {
       from = new Date(t.getFullYear(), t.getMonth(), 1);
       pf = new Date(t.getFullYear(), t.getMonth() - 1, 1); pt = new Date(t.getFullYear(), t.getMonth(), 0);
@@ -8226,7 +8222,7 @@ window.S = S;   // expose the state object so the add-on code can read S.barber
         <div class="bw-tools">
           <label class="bw-pill">${ic(ICON.cal)}<span id="bw-range"></span>${ic(ICON.chev)}
             <select id="bw-rsel" aria-label="Date range"><option value="7">Last 7 days</option><option value="30">Last 30 days</option>
-              <option value="month">This month</option><option value="all">All time</option></select></label>
+              <option value="month">This month</option><option value="upcoming">Upcoming</option><option value="all">All time</option></select></label>
           <button type="button" class="bw-pill" data-bw="refresh">${ic(ICON.refresh)}Refresh</button>
         </div>
       </div>
@@ -8993,22 +8989,11 @@ window.S = S;   // expose the state object so the add-on code can read S.barber
   if (t && t.style.display === "block") paint();
 })();
 
-
-
-
-/* queue_actions.js
-   Load AFTER script.js and queue_redesign.js (and the other redesign files):
-   <script src="queue_actions.js"></script>
-   Adds Done and Skip buttons to EVERY waiting customer in the Queue tab, not
-   just the one being served. Uses the same backend calls as doneToken() and
-   skipToken(): POST /api/queue/{id}/complete and /api/queue/{id}/skip. */
 (function () {
   "use strict";
 
   const $ = id => document.getElementById(id);
   const busy = new Set();
-
-  /* ---------- the action ---------- */
   async function act(id, kind) {
     const key = kind + ":" + id;
     if (busy.has(key)) return;
@@ -9026,8 +9011,6 @@ window.S = S;   // expose the state object so the add-on code can read S.barber
       await loadBarberQueue(S.barber.shopName);
 
       if (kind === "done") {
-        /* the bookings bridge treats anyone who leaves the queue without being the
-           head as cancelled, so mark this one completed explicitly */
         if (typeof window.bqSetStatus === "function") { try { window.bqSetStatus(id, "completed"); } catch (e) { /* ignore */ } }
         const sv = (S.services || []).find(s => s.name === c.svc);
         S.doneCnt = (Number(S.doneCnt) || 0) + 1;
@@ -9074,8 +9057,6 @@ window.S = S;   // expose the state object so the add-on code can read S.barber
   if (!watch()) {
     const t = setInterval(() => { if (watch()) clearInterval(t); }, 500);
   }
-
-  /* ---------- clicks (capture, so queue_redesign's own handler never sees them) ---------- */
   document.addEventListener("click", e => {
     const b = e.target.closest && e.target.closest("[data-q2]");
     if (!b) return;
@@ -9084,13 +9065,7 @@ window.S = S;   // expose the state object so the add-on code can read S.barber
     act(b.getAttribute("data-id"), b.getAttribute("data-q2"));
   }, true);
 })();
-/* history_sync.js
-   Load AFTER script.js and the other add-on files:
-   <script src="history_sync.js"></script>
-   Pulls finished visits (completed / skipped / cancelled) from the server
-   (GET /api/queue/history) and merges them into window.bqAppointments, so
-   Bookings, Calendar, Recent activity and Next bookings match the Dashboard
-   on every browser and device, not just visits this browser watched. */
+
 (function () {
   "use strict";
 
@@ -9150,8 +9125,6 @@ window.S = S;   // expose the state object so the add-on code can read S.barber
   }
   window.bqPullHistory = () => pull(true);
 
-  /* pull right after every queue refresh (the bridge may have just marked someone
-     cancelled; the server's answer corrects it) */
   const origLoad = window.loadBarberQueue;
   if (typeof origLoad === "function") {
     window.loadBarberQueue = async function () {
@@ -9161,7 +9134,6 @@ window.S = S;   // expose the state object so the add-on code can read S.barber
     };
   }
 
-  /* and when the barber opens Bookings / Calendar */
   const origTab = window.bTab;
   if (typeof origTab === "function") {
     window.bTab = function () {
@@ -9173,4 +9145,485 @@ window.S = S;   // expose the state object so the add-on code can read S.barber
 
   setInterval(() => pull(false), 10000);
   setTimeout(() => pull(true), 2000);
+})();
+
+(function () {
+  "use strict";
+
+  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const isMobile = isIOS || /Android/i.test(navigator.userAgent);
+
+  function upiQuery() {
+    const pay = S.shopPay, p = S.pendingJoin;
+    if (!pay || !pay.upi_id || !p) return "";
+    const shop = (S.shops && S.shops[p.shopId] && S.shops[p.shopId].name) || "Shop";
+    return "pa=" + encodeURIComponent(pay.upi_id) +
+           "&pn=" + encodeURIComponent(shop) +
+           "&am=" + encodeURIComponent(Number(p.price) || 0) +
+           "&cu=INR&tn=" + encodeURIComponent("Token " + (p.tok || ""));
+  }
+
+  function openUpi(scheme) {
+    const q = upiQuery();
+    if (!q) { toast("⚠️", "This shop has not added a UPI ID. Scan the QR with your UPI app."); return; }
+    if (!isMobile) { toast("📱", "Open this page on your phone to pay with a UPI app, or scan the QR."); return; }
+    window.location.href = (scheme || "upi://pay") + "?" + q;
+  }
+  window.bqOpenUpi = openUpi;
+
+  function decorate() {
+    const sec = document.getElementById("upi-qr-section");
+    const img = document.getElementById("upi-qr-img");
+    if (!sec || sec.style.display === "none") return;
+
+    if (img && !img.dataset.upiTap) {           
+      img.dataset.upiTap = "1";
+      img.style.cursor = "pointer";
+      img.title = "Tap to open your UPI app";
+      img.addEventListener("click", () => openUpi());
+    }
+
+    let box = document.getElementById("upi-open-box");
+    if (!box) {
+      box = document.createElement("div");
+      box.id = "upi-open-box";
+      box.style.cssText = "display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:12px";
+      sec.appendChild(box);
+    }
+    const hasId = !!(S.shopPay && S.shopPay.upi_id);
+    box.style.display = hasId ? "flex" : "none";
+    const html = isIOS
+      ? '<button type="button" class="btn btn-gold btn-sm" onclick="bqOpenUpi(\'gpay://upi/pay\')">Google Pay</button>' +
+        '<button type="button" class="btn btn-gold btn-sm" onclick="bqOpenUpi(\'phonepe://pay\')">PhonePe</button>' +
+        '<button type="button" class="btn btn-gold btn-sm" onclick="bqOpenUpi(\'paytmmp://pay\')">Paytm</button>'
+      : '<button type="button" class="btn btn-gold btn-sm" onclick="bqOpenUpi()">Pay with UPI app</button>';
+    if (box.dataset.h !== html) { box.innerHTML = html; box.dataset.h = html; }
+  }
+
+  const base = window.selectPayMethod || selectPayMethod;
+  selectPayMethod = function () {
+    const out = base.apply(this, arguments);
+    decorate();
+    return out;
+  };
+  window.selectPayMethod = selectPayMethod;
+})();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(function () {
+  "use strict";
+  const $ = id => document.getElementById(id);
+  const esc = v => String(v == null ? "" : v).replace(/[&<>"']/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const desk = () => window.matchMedia("(min-width:980px)").matches;
+  const svcOf = (s, i) => S.services[s.svcs[i]];
+  const tone = w => w <= 10 ? ["Light", "#22c55e"] : w <= 20 ? ["Moderate", "#f5b73b"] : ["Busy", "#ff8a4c"];
+  const gLabel = { male: "Men", female: "Women", unisex: "Unisex" };
+  const grad = s => `linear-gradient(135deg,${s.clr || "#7c5cff"},color-mix(in srgb,${s.clr || "#7c5cff"} 35%,#ff4fa3))`;
+  const art = (s, cls) => s.photo
+    ? `<img class="${cls}" src="${esc(s.photo)}" alt="${esc(s.name)}">`
+    : `<span class="${cls}">${esc(s.ico || "💈")}</span>`;
+
+  /* ---------------- CSS ---------------- */
+  const css = document.createElement("style");
+  css.textContent = `
+  #cust-home > :not(#cx-home){display:none!important}
+  .cx{--c:#0c1030;--c2:#10153d;--ln:rgba(120,120,255,.16);--mu:#98a1cc;--gold:#f5b73b;color:#eef1ff;font-family:'DM Sans',sans-serif}
+  .cx *{box-sizing:border-box}
+  .cx button{font-family:inherit}
+  .cx-loc{font-size:12px;color:var(--mu);margin:2px 0 8px}
+  .cx-hi{font:800 30px/1.1 'Syne',sans-serif;margin:0 0 14px}
+  .cx-hi em{font-style:normal;background:linear-gradient(90deg,#f5b73b,#ff5fa2);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .cx-big{display:none;font:800 38px/1.1 'Syne',sans-serif;margin:0 0 6px}
+  .cx-big em{font-style:normal;color:var(--gold)}
+  .cx-sub{display:none;font-size:13px;color:var(--mu);margin:0 0 14px}
+  .cx-search{display:flex;align-items:center;gap:10px;background:var(--c);border:1px solid var(--ln);border-radius:16px;padding:0 8px 0 14px;margin-bottom:12px}
+  .cx-search input{flex:1;min-width:0;background:none;border:0;outline:0;color:#eef1ff;font:14px 'DM Sans',sans-serif;padding:14px 0}
+  .cx-search b{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--gold);color:#1a1200}
+  .cx-chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:12px;scrollbar-width:none}
+  .cx-chips::-webkit-scrollbar{display:none}
+  .cx-chip{flex:none;cursor:pointer;border:1px solid var(--ln);background:var(--c);color:#d9defa;border-radius:999px;padding:8px 14px;font-size:13px;font-weight:600;white-space:nowrap}
+  .cx-chip.on{background:var(--gold);color:#1a1200;border-color:var(--gold)}
+  .cx-h{display:flex;justify-content:space-between;align-items:baseline;margin:16px 0 10px;font:700 15px 'Syne',sans-serif}
+  .cx-h small{font:12px 'DM Sans',sans-serif;color:var(--gold)}
+  .cx-h .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#ff4d6d;margin-right:6px}
+  .cx-fast{display:flex;gap:12px;overflow-x:auto;padding-bottom:6px;scrollbar-width:none}
+  .cx-fast::-webkit-scrollbar{display:none}
+  .cx-fc{position:relative;flex:none;width:170px;height:128px;border-radius:20px;padding:14px;cursor:pointer;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;gap:6px}
+  .cx-fc .bg{position:absolute;right:-6px;top:-4px;font-size:58px;opacity:.9}
+  .cx-fc img.bg{width:90px;height:90px;object-fit:cover;border-radius:16px;font-size:0}
+  .cx-fc b{position:relative;font:700 16px 'Syne',sans-serif}
+  .cx-pills{position:relative;display:flex;gap:6px}
+  .cx-pills span{background:rgba(0,0,0,.32);border-radius:999px;padding:4px 9px;font-size:11.5px;font-weight:600}
+  .cx-list{display:flex;flex-direction:column;gap:10px}
+  .cx-card{display:flex;align-items:center;gap:12px;padding:12px;border-radius:18px;background:var(--c);border:1px solid var(--ln);cursor:pointer;position:relative}
+  .cx-card.on{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset,0 0 26px -12px var(--gold)}
+  .cx-card.off{opacity:.55}
+  .cx-ico{width:48px;height:48px;border-radius:14px;flex:none;display:grid;place-items:center;font-size:24px;overflow:hidden;background:var(--c2)}
+  .cx-ico img{width:100%;height:100%;object-fit:cover}
+  .cx-mid{flex:1;min-width:0}
+  .cx-nm{display:flex;align-items:center;gap:8px;font:700 15px 'Syne',sans-serif;min-width:0}
+  .cx-nm span.t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cx-tag{flex:none;font:700 9.5px 'DM Sans',sans-serif;letter-spacing:.06em;padding:3px 7px;border-radius:6px;text-transform:uppercase}
+  .cx-tag.o{color:#34d399;background:rgba(52,211,153,.14);border:1px solid rgba(52,211,153,.4)}
+  .cx-tag.c{color:#ff6b8b;background:rgba(255,107,139,.12);border:1px solid rgba(255,107,139,.4)}
+  .cx-meta{font-size:12px;color:var(--mu);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cx-meta b{color:var(--gold);font-weight:600}
+  .cx-now{flex:none;text-align:right;border-left:1px dashed var(--ln);padding-left:12px;font-size:10px;letter-spacing:.1em;color:var(--mu)}
+  .cx-now strong{display:block;font:800 22px 'Syne',sans-serif;color:var(--gold);letter-spacing:0}
+  .cx-wait{display:none;flex:none;text-align:right}
+  .cx-wait strong{font:800 26px 'Syne',sans-serif;color:var(--gold)}
+  .cx-wait small{display:block;font-size:10px;letter-spacing:.1em;color:var(--mu)}
+  .cx-lq{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin-top:8px;font-size:11px;color:var(--mu)}
+  .cx-lq i{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font:600 10px 'DM Sans',sans-serif;font-style:normal;background:var(--c2);border:1px solid var(--ln);color:#cfd6ff}
+  .cx-lq i.d{background:rgba(52,211,153,.18);border-color:rgba(52,211,153,.5);color:#34d399}
+  .cx-lq i.n{background:var(--gold);border-color:var(--gold);color:#1a1200}
+  .cx-fz{position:absolute;top:-1px;right:14px;background:var(--gold);color:#1a1200;font:800 9px 'DM Sans',sans-serif;letter-spacing:.1em;padding:3px 9px;border-radius:0 0 8px 8px;display:none}
+  .cx-empty{text-align:center;padding:34px 10px;color:var(--mu)}
+
+  /* ---- detail ---- */
+  .cx-det{--c:#0c1030;--c2:#10153d;--ln:rgba(120,120,255,.16);--mu:#98a1cc;--gold:#f5b73b;color:#eef1ff;font-family:'DM Sans',sans-serif}
+  .cx-det *{box-sizing:border-box}
+  .cx-hero{position:relative;border-radius:22px;overflow:hidden;min-height:190px;display:flex;flex-direction:column;justify-content:flex-end;padding:18px}
+  .cx-hero .art{position:absolute;right:18px;top:10px;font-size:92px;line-height:1;filter:drop-shadow(0 10px 22px rgba(0,0,0,.35))}
+  .cx-hero img.art{width:130px;height:130px;object-fit:cover;border-radius:22px;font-size:0}
+  .cx-hero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 35%,rgba(7,9,31,.85));pointer-events:none}
+  .cx-hero>*:not(.art){position:relative;z-index:1}
+  .cx-hero h2{margin:0;font:800 28px 'Syne',sans-serif;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .cx-hero p{margin:4px 0 0;font-size:12.5px;color:#d8dcf5}
+  .cx-st{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}
+  .cx-st>div{background:var(--c);border:1px solid var(--ln);border-radius:14px;padding:11px 12px}
+  .cx-st>div.hl{border-color:rgba(245,183,59,.55);background:linear-gradient(135deg,rgba(245,183,59,.14),var(--c))}
+  .cx-st small{display:block;font-size:9.5px;letter-spacing:.1em;color:var(--mu);text-transform:uppercase}
+  .cx-st strong{font:800 21px 'Syne',sans-serif}
+  .cx-st .hl strong{color:var(--gold)}
+  .cx-st .x{display:none}
+  .cx-sec{display:flex;justify-content:space-between;align-items:baseline;margin:16px 0 8px;font:700 14px 'Syne',sans-serif}
+  .cx-sec small{font:12px 'DM Sans',sans-serif;color:var(--gold)}
+  .cx-svs{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+  .cx-svc{cursor:pointer;text-align:left;color:#eef1ff;background:var(--c);border:1px solid var(--ln);border-radius:12px;padding:10px 12px}
+  .cx-svc.on{border-color:var(--gold);background:rgba(245,183,59,.1)}
+  .cx-svc b{display:block;font-size:13px;font-weight:600}
+  .cx-svc span{font-size:12px;color:var(--gold)}
+  .cx-svc em{font-style:normal;font-size:11.5px;color:var(--mu)}
+  .cx-rv{background:var(--c);border:1px solid var(--ln);border-radius:14px;padding:11px 13px;margin-bottom:8px;font-size:12.5px;color:#cfd5f5}
+  .cx-rv b{color:#fff}.cx-rv i{font-style:normal;color:var(--gold);margin-left:6px}
+  .cx-cta{position:sticky;bottom:10px;z-index:5;display:flex;gap:8px;margin-top:16px}
+  .cx-go{flex:1;border:0;cursor:pointer;border-radius:16px;padding:15px;font:800 15px 'DM Sans',sans-serif;color:#1a1200;background:linear-gradient(90deg,#f5b73b,#ff8a3d);box-shadow:0 10px 26px -10px #f5b73b}
+  .cx-go[disabled]{background:#262b55;color:#8a93c4;box-shadow:none;cursor:not-allowed}
+  .cx-alt{flex:none;border:1px solid var(--ln);cursor:pointer;border-radius:16px;padding:0 16px;font:700 14px 'DM Sans',sans-serif;color:#eef1ff;background:var(--c)}
+  .cx-tabs{display:flex;gap:6px;background:var(--c2);border:1px solid var(--ln);border-radius:14px;padding:4px;margin:16px 0 4px}
+  .cx-tab{flex:1;border:0;cursor:pointer;border-radius:10px;padding:10px;font:700 13px 'DM Sans',sans-serif;color:var(--mu);background:none}
+  .cx-tab.on{background:var(--gold);color:#1a1200}
+  .cx-pane[hidden]{display:none}
+  .cx-tk{background:rgba(245,183,59,.1);border:1.5px solid var(--gold);border-radius:20px;padding:18px;text-align:center;margin-top:14px}
+  .cx-tk small{font-size:12px;color:var(--mu)}
+  .cx-tk strong{display:block;font:800 54px/1 'Syne',sans-serif;color:var(--gold);margin:4px 0}
+  .cx-tk div{display:flex;gap:8px;justify-content:center;margin-top:10px}
+  .cx-tk button{cursor:pointer;border-radius:12px;padding:9px 16px;font-weight:700;font-size:13px;border:1px solid var(--ln);background:var(--c);color:#eef1ff}
+  .cx-tk button.r{color:#ff6b8b;border-color:rgba(255,107,139,.5)}
+
+  /* ---- desktop split ---- */
+  #cx-detail{display:none}
+  @media (min-width:980px){
+    .cx-wrap{display:grid;grid-template-columns:minmax(340px,400px) 1fr;gap:22px;align-items:start}
+    .cx-hi,.cx-loc,.cx-h.fastH,.cx-fast{display:none}
+    .cx-big,.cx-sub{display:block}
+    .cx-left{position:sticky;top:8px;max-height:calc(100vh - 90px);overflow:auto;padding-right:4px}
+    .cx-now{display:none}
+    .cx-wait{display:block}
+    .cx-card{padding:14px}
+    .cx-card.fz .cx-fz{display:block}
+    .cx-card.fz{border-color:var(--gold)}
+    #cx-detail{display:block;background:var(--c);border:1px solid var(--ln);border-radius:26px;padding:16px;min-height:480px}
+    .cx-hero{min-height:230px;padding:24px}
+    .cx-hero h2{font-size:36px}
+    .cx-hero .art{font-size:130px;right:34px;top:14px}
+    .cx-hero img.art{width:180px;height:180px}
+    .cx-st{grid-template-columns:repeat(4,1fr)}
+    .cx-st .x{display:block}
+    .cx-cta{position:static}
+    .cx-pick{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .cx-det .cx-svs{grid-template-columns:repeat(3,1fr)}
+  }`;
+  document.head.appendChild(css);
+
+  /* ---------------- home ---------------- */
+  const ICO_SEARCH = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#98a1cc" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>';
+  const CHIPS = [["all", "All"], ["open", "⚡ Open now"], ["top", "⭐ Top rated"], ["near", "📍 Nearby"], ["male", "Men"], ["female", "Women"]];
+
+  function ensureRoot() {
+    if ($("cx-home")) return true;
+    const home = $("cust-home");
+    if (!home) return false;
+    const r = document.createElement("div");
+    r.id = "cx-home";
+    r.className = "cx";
+    r.innerHTML = `
+      <div class="cx-wrap">
+        <div class="cx-left">
+          <div class="cx-loc" id="cx-loc"></div>
+          <h1 class="cx-hi" id="cx-hi"></h1>
+          <h1 class="cx-big">Skip the wait,<br><em>book your chair.</em></h1>
+          <p class="cx-sub" id="cx-sub"></p>
+          <label class="cx-search">${ICO_SEARCH}<input id="cx-q" type="search" placeholder="Search shops or services" autocomplete="off"><b>≡</b></label>
+          <div class="cx-chips" id="cx-chips"></div>
+          <div class="cx-h fastH"><span><span class="dot"></span>Shortest wait right now</span></div>
+          <div class="cx-fast" id="cx-fast"></div>
+          <div class="cx-h"><span>All shops near you</span><small id="cx-count"></small></div>
+          <div class="cx-list" id="cx-list"></div>
+        </div>
+        <div id="cx-detail"></div>
+      </div>`;
+    home.insertBefore(r, home.firstChild);
+
+    r.addEventListener("input", e => {
+      if (e.target.id === "cx-q") { S.shopQuery = e.target.value; window.renderShops(); }
+    });
+    r.addEventListener("click", e => {
+      const chip = e.target.closest("[data-f]");
+      if (chip) { setFilter(chip.dataset.f); return; }
+      const card = e.target.closest("[data-id]");
+      if (card) window.openShop(Number(card.dataset.id));
+    });
+    return true;
+  }
+
+  function setFilter(f) {
+    if (f === "all") { S.shopFilter = "all"; S.genderFilter = "all"; }
+    else if (f === "male" || f === "female") S.genderFilter = S.genderFilter === f ? "all" : f;
+    else S.shopFilter = S.shopFilter === f ? "all" : f;
+    window.renderShops();
+  }
+
+  function pills(s) {
+    if (!s.open) return "";
+    const out = [];
+    for (let k = -2; k <= 3; k++) {
+      const n = (Number(s.cur) || 0) + k;
+      if (n < 1) continue;
+      out.push(`<i class="${k < 0 ? "d" : k === 0 ? "n" : ""}">${k < 0 ? "✓" : n}</i>`);
+    }
+    return out.length ? `<div class="cx-lq">Live queue&nbsp;${out.join("")}</div>` : "";
+  }
+
+  function card(s, fastestId) {
+    const g = gLabel[s.gender || "unisex"];
+    const t = tone(s.wait);
+    return `<div class="cx-card ${s.open ? "" : "off"} ${s.id === fastestId ? "fz" : ""} ${desk() && S.selectedShop === s.id ? "on" : ""}" data-id="${s.id}">
+      <span class="cx-fz">FASTEST</span>
+      <div class="cx-ico">${s.photo ? `<img src="${esc(s.photo)}" alt="">` : esc(s.ico || "💈")}</div>
+      <div class="cx-mid">
+        <div class="cx-nm"><span class="t">${esc(s.name)}</span><span class="cx-tag ${s.open ? "o" : "c"}">${s.open ? "Open" : "Closed"}</span></div>
+        <div class="cx-meta">${esc(s.addr)} · ${g} · ★ ${esc(s.rating)} <b>(${esc(s.rev)})</b>${s.open ? ` · ${esc(s.q)} waiting · <b>~${esc(s.wait)} min</b>` : ""}</div>
+        ${pills(s)}
+      </div>
+      ${s.open
+        ? `<div class="cx-now">NOW<strong>#${esc(s.cur)}</strong></div>
+           <div class="cx-wait"><strong>${esc(s.wait)}</strong><small>MIN WAIT</small><small style="color:${t[1]};letter-spacing:0">● ${t[0]}</small></div>`
+        : `<div class="cx-wait" style="display:block"><small>${s.openingTime ? "OPENS " + esc(s.openingTime) : "CLOSED"}</small></div>
+           <div class="cx-now"><strong style="color:var(--mu)">—</strong></div>`}
+    </div>`;
+  }
+
+  let lastSig = "";
+  function paint() {
+    if (!ensureRoot()) return;
+    const list = (window.bqVisibleShops ? window.bqVisibleShops() : S.shops.slice());
+    const open = list.filter(s => s.open).sort((a, b) => a.wait - b.wait);
+    const fastestId = open.length > 1 ? open[0].id : -1;
+
+    $("cx-loc").textContent = "📍 " + ((S.user && S.user.location) && !/not set/i.test(S.user.location) ? S.user.location : "Set your location in Profile");
+    const nm = (S.user && S.user.name) || "there";
+    $("cx-hi").innerHTML = `Hey ${esc(nm.split(" ")[0])}, <em>no more waiting around.</em>`;
+    $("cx-sub").textContent = `${open.length} shop${open.length === 1 ? "" : "s"} near you · live queues, updated every few seconds`;
+
+    const q = $("cx-q"); if (q && q !== document.activeElement && q.value !== (S.shopQuery || "")) q.value = S.shopQuery || "";
+    $("cx-chips").innerHTML = CHIPS.map(([k, l]) => {
+      const on = k === "all" ? (S.shopFilter === "all" && (S.genderFilter || "all") === "all")
+        : (k === "male" || k === "female") ? S.genderFilter === k : S.shopFilter === k;
+      return `<button type="button" class="cx-chip ${on ? "on" : ""}" data-f="${k}">${l}</button>`;
+    }).join("");
+
+    $("cx-fast").innerHTML = open.slice(0, 5).map((s, i) => `
+      <div class="cx-fc" data-id="${s.id}" style="background:${grad(s)}">
+        ${art(s, "bg")}
+        <b>${esc(s.name)}</b>
+        <div class="cx-pills"><span>⏱ ${esc(s.wait)} min</span><span>★ ${esc(s.rating)}</span></div>
+      </div>`).join("") || `<div class="cx-empty">No shops are open right now.</div>`;
+
+    $("cx-count").textContent = list.length + " found";
+    $("cx-list").innerHTML = list.length
+      ? list.map(s => card(s, fastestId)).join("")
+      : `<div class="cx-empty">${S.shopFilter === "near" ? "Set your location in Profile to see nearby shops." : "No shops match your search."}</div>`;
+
+    if (desk()) {
+      const cur = S.shops[S.selectedShop];
+      const target = cur && list.find(s => s.id === cur.id) ? cur : (open[0] || list[0]);
+      if (target) {
+        if (S.selectedShop !== target.id) { S.selectedShop = target.id; if (target.open) buildJoinModal(); }
+        const sig = [target.id, target.cur, target.q, target.wait, target.open, S.inQueue, S.myTok, S.selectedSvc, S.cxTab].join("|");
+        if (sig !== lastSig || !$("cx-detail").innerHTML) { lastSig = sig; showDetail(target); }
+        document.querySelectorAll("#cx-list .cx-card").forEach(c => c.classList.toggle("on", Number(c.dataset.id) === target.id));
+      } else $("cx-detail").innerHTML = '<div class="cx-empty">Pick a shop to see its live queue.</div>';
+    }
+  }
+
+  /* ---------------- shop detail ---------------- */
+  function detailHtml(s) {
+    const inQ = S.inQueue && S.myShopId === s.id;
+    const sel = svcOf(s, Math.min(S.selectedSvc || 0, s.svcs.length - 1)) || svcOf(s, 0);
+    const g = gLabel[s.gender || "unisex"];
+    return `<div class="cx-det" data-shop="${s.id}">
+      <div class="cx-hero" style="background:${grad(s)}">
+        ${art(s, "art")}
+        <h2>${esc(s.name)} <span class="cx-tag ${s.open ? "o" : "c"}">${s.open ? "Open" : "Closed"}</span></h2>
+        <p>${esc(s.addr)} · ${g} · ★ ${esc(s.rating)} (${esc(s.rev)} reviews)</p>
+      </div>
+      <div class="cx-st">
+        <div class="hl"><small>Your wait</small><strong>~${esc(s.wait)} min</strong></div>
+        <div><small>Serving</small><strong>#${esc(s.cur)}</strong></div>
+        <div><small>Ahead</small><strong>${esc(s.q)}</strong></div>
+        <div class="x"><small>Closes</small><strong>${esc(s.closingTime || "—")}</strong></div>
+      </div>
+      ${inQ ? `<div class="cx-tk"><small>You're in the queue</small><strong>#${esc(S.myTok)}</strong><small>${esc(S.mySvc)}</small>
+        <div><button class="r" data-act="leave">Leave queue</button><button data-act="rate" data-name="${esc(s.name)}">Rate shop ⭐</button></div></div>`
+      : (() => {
+          const tab = s.open ? (S.cxTab || "now") : "later";
+          return `<div class="cx-tabs">
+            <button type="button" class="cx-tab ${tab === "now" ? "on" : ""}" data-tab="now">🎫 Join now</button>
+            <button type="button" class="cx-tab ${tab === "later" ? "on" : ""}" data-tab="later">📅 Book later</button>
+          </div>
+          <div class="cx-pane" data-pane="now" ${tab === "now" ? "" : "hidden"}>
+            <div class="cx-sec"><span>Pick a service</span><small>${s.svcs.length} available</small></div>
+            <div class="cx-svs">${s.svcs.map((si, i) => { const v = S.services[si]; return `
+              <button type="button" class="cx-svc ${i === (S.selectedSvc || 0) ? "on" : ""}" data-svc="${i}">
+                <b>${esc(v.ico)} ${esc(v.name)}</b><span>₹${esc(v.price)}</span> <em>· ${esc(v.dur)} min</em></button>`; }).join("")}</div>
+            <div class="cx-cta">
+              <button type="button" class="cx-go" data-act="join" ${s.open ? "" : "disabled"}>${s.open ? `🎫 Get my token · ₹${esc(sel ? sel.price : 0)}` : "Shop is closed"}</button>
+            </div>
+          </div>
+          <div class="cx-pane" data-pane="later" ${tab === "later" ? "" : "hidden"}>
+            <div class="cx-sec"><span>Reserve a slot</span></div>
+            <div class="cx-rv">Choose a date and time that suits you and we'll hold your spot.</div>
+            <div class="cx-cta">
+              <button type="button" class="cx-go" data-act="book">📅 Choose date &amp; time</button>
+            </div>
+          </div>`;
+        })()}
+      <div class="cx-sec"><span>What people say</span></div>
+      <div id="cx-rev"><div class="cx-rv">Loading reviews…</div></div>
+      <div id="bq-gallery"></div>
+      <div style="height:24px"></div>
+    </div>`;
+  }
+
+  async function loadReviews(s) {
+    const box = $("cx-rev");
+    if (!box) return;
+    try {
+      const r = await fetch(BQ_BASE + "/api/shops/reviews?shop_name=" + encodeURIComponent(s.name));
+      const j = await r.json();
+      const cur = document.querySelector(".cx-det");
+      if (!cur || Number(cur.dataset.shop) !== s.id || !$("cx-rev")) return;
+      const list = ((j && j.success && j.reviews) || []).filter(rv => rv && String(rv.review || "").trim());
+      $("cx-rev").innerHTML = list.length
+        ? list.slice(0, 4).map(rv => `<div class="cx-rv"><b>${esc(rv.name || "Customer")}</b><i>${"★".repeat(rv.stars || 0)}</i><div>${esc(rv.review || "")}</div></div>`).join("")
+        : '<div class="cx-rv">No written reviews yet.</div>';
+    } catch (e) { if ($("cx-rev")) $("cx-rev").innerHTML = ""; }
+  }
+
+  function showDetail(s) {
+    const box = $("cx-detail");
+    if (!box) return;
+    box.innerHTML = detailHtml(s);
+    loadReviews(s);
+  }
+
+  /* shared clicks inside any detail (desktop pane or phone screen) */
+  document.addEventListener("click", e => {
+    const det = e.target.closest(".cx-det");
+    if (!det) return;
+    const s = S.shops[Number(det.dataset.shop)];
+    if (!s) return;
+    S.selectedShop = s.id;
+
+    const tabBtn = e.target.closest("[data-tab]");
+    if (tabBtn) {
+      S.cxTab = tabBtn.dataset.tab;
+      det.querySelectorAll(".cx-tab").forEach(b => b.classList.toggle("on", b === tabBtn));
+      det.querySelectorAll(".cx-pane").forEach(p => { p.hidden = p.dataset.pane !== S.cxTab; });
+      lastSig = "";
+      return;
+    }
+
+    const svc = e.target.closest("[data-svc]");
+    if (svc) {
+      S.selectedSvc = Number(svc.dataset.svc);
+      det.querySelectorAll(".cx-svc").forEach(b => b.classList.toggle("on", b === svc));
+      const v = svcOf(s, S.selectedSvc), go = det.querySelector('[data-act="join"]');
+      if (v && go && s.open) go.textContent = "🎫 Get my token · ₹" + v.price;
+      lastSig = "";
+      return;
+    }
+    const act = e.target.closest("[data-act]");
+    if (!act) return;
+    switch (act.dataset.act) {
+      case "join": if (s.open) { buildJoinModalKeep(s); confirmJoin(); } break;
+      case "book": window.bkOpen && window.bkOpen(); break;
+      case "leave": window.leaveQ && window.leaveQ(); break;
+      case "rate":
+        openModal("m-rate");
+        const n = $("rate-shop-name"); if (n) n.textContent = act.dataset.name;
+        break;
+    }
+  });
+  function buildJoinModalKeep(s) {      // confirmJoin() reads S.selectedSvc / S.selectedShop
+    S.selectedShop = s.id;
+    S.selectedSvc = Math.min(S.selectedSvc || 0, s.svcs.length - 1);
+  }
+
+  /* ---------------- hook into the existing functions ---------------- */
+  const baseRender = window.renderShops;
+  window.renderShops = function () {
+    const out = baseRender.apply(this, arguments);
+    try { paint(); } catch (err) { console.error("customer UI:", err); }
+    return out;
+  };
+
+  const baseOpen = window.openShop;
+  window.openShop = function (id) {
+    const s = S.shops[id];
+    if (!s) return;
+    if (desk() && $("cx-detail")) {
+      S.selectedShop = id;
+      S.selectedSvc = 0;
+      if (s.open) buildJoinModal();
+      lastSig = "";
+      paint();
+      return;
+    }
+    const out = baseOpen.apply(this, arguments);       // keeps go('s-shop'), gallery loader, join modal
+    const body = $("sh-body");
+    if (body) { body.innerHTML = detailHtml(s); loadReviews(s); }
+    return out;
+  };
+
+  window.addEventListener("resize", () => { lastSig = ""; try { paint(); } catch (e) {} });
+  (async function init() {
+    try { await componentsReady; } catch (e) { return; }
+    try { paint(); } catch (e) { console.error(e); }
+  })();
 })();
