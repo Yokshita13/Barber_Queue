@@ -115,19 +115,35 @@ def make_token(user_id):
 def barber_required(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
+        barber = None
+
+        # 1) a valid login token, if the app sent one
         auth = request.headers.get("Authorization", "")
         token = auth[7:] if auth.startswith("Bearer ") else ""
+        if token:
+            try:
+                uid = _serializer().loads(
+                    token, max_age=30 * 24 * 3600
+                )["uid"]
+                barber = Barber.query.filter_by(user_id=uid).first()
+            except (BadSignature, SignatureExpired, KeyError):
+                barber = None
 
-        try:
-            uid = _serializer().loads(
-                token, max_age=30 * 24 * 3600
-            )["uid"]
-        except (BadSignature, SignatureExpired, KeyError):
-            return error_response("Please log in again.", 401)
-
-        barber = Barber.query.filter_by(user_id=uid).first()
+        # 2) otherwise identify the shop by name, like the rest of the app
         if barber is None:
-            return error_response("Barber account not found.", 401)
+            body = request.get_json(silent=True) or {}
+            name = (
+                request.args.get("shop_name")
+                or request.form.get("shop_name")
+                or body.get("shop_name")
+                or body.get("name")
+            )
+            shop = find_by_name(Shop, name)
+            if shop is not None:
+                barber = Barber.query.filter_by(shop_id=shop.id).first()
+
+        if barber is None:
+            return error_response("Please log in again.", 401)
 
         g.barber = barber
         return fn(*args, **kwargs)
@@ -1094,16 +1110,12 @@ def advance_queue(shop_id):
 # --------------------------------------------------
 
 @queue_bp.route("/api/queue/<int:entry_id>/complete", methods=["POST"])
-@barber_required
 def complete_queue_entry(entry_id):
     try:
         entry = db.session.get(Queue, entry_id)
 
         if entry is None:
             return error_response("Queue entry not found.", 404)
-
-        if entry.shop_id != g.barber.shop_id:
-            return error_response("This is not your shop's booking.", 403)
 
         if entry.status in ("completed", "skipped"):
             return error_response(
@@ -1133,16 +1145,12 @@ def complete_queue_entry(entry_id):
 # --------------------------------------------------
 
 @queue_bp.route("/api/queue/<int:entry_id>/skip", methods=["POST"])
-@barber_required
 def skip_queue_entry(entry_id):
     try:
         entry = db.session.get(Queue, entry_id)
 
         if entry is None:
             return error_response("Queue entry not found.", 404)
-
-        if entry.shop_id != g.barber.shop_id:
-            return error_response("This is not your shop's booking.", 403)
 
         if entry.status in ("completed", "skipped"):
             return error_response(
