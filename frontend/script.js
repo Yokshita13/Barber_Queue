@@ -2609,224 +2609,928 @@ if(isB){
 
   return;
 }
-  // CUSTOMER PROFILE
+    // CUSTOMER PROFILE — responsive dashboard matching the supplied reference
   const userName = S.user.name || 'Customer';
-  const userPhone = S.user.phone || 'Phone not available';
-  const userLocation = S.user.location || 'Not set';
-  const visitCount = S.queueHistory.length;
-  const ratedCount = new Set(S.ratedShops.map(r => r.shopId)).size;
-  const paymentMethodText = S.paymentMethods.length
-    ? S.paymentMethods.join(' · ')
-    : 'No payment methods used yet';
+  const userPhone = S.user.phone || '';
+  const userLocation = S.user.location && S.user.location !== 'Not set' ? S.user.location : '';
+  const visits = Array.isArray(S.queueHistory) ? S.queueHistory : [];
+  const ratings = Array.isArray(S.ratedShops) ? S.ratedShops : [];
+  const payments = Array.isArray(S.payments) ? S.payments : [];
+  const methods = Array.isArray(S.paymentMethods) ? S.paymentMethods : [];
 
-  const initial = userName.charAt(0).toUpperCase();
+  const initial = (userName.trim().charAt(0) || 'C').toUpperCase();
 
+  const spent = payments
+    .filter(p => String(p.status || '').toLowerCase() === 'paid')
+    .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
 
-  document.getElementById('prof-body').innerHTML = `
+  const ratedShopIds = new Set(ratings.map(r => String(r.shopId ?? r.shop ?? '')));
+  const ratedCount = ratedShopIds.size;
 
-    <div style="
-      text-align:center;
-      padding:24px 0 28px
-    ">
+  const profileCompletion =
+    (userName && userName !== 'Customer' ? 1 : 0) +
+    (userPhone ? 1 : 0) +
+    (userLocation ? 1 : 0);
 
-      <div class="av"
-      style="
-        width:80px;
-        height:80px;
-        margin:0 auto 14px;
-        font-size:30px;
-        background:var(--gdim);
-        border:3px solid var(--gold);
-        color:var(--gold)
-      ">
-        ${initial}
+  const completionPercent = Math.round((profileCompletion / 3) * 100);
+
+  const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[ch]));
+
+  const dateLabel = value => {
+    if (!value) return 'Date unavailable';
+
+    const d = new Date(value);
+
+    return Number.isNaN(d.getTime())
+      ? esc(value)
+      : d.toLocaleDateString('en-IN', {
+          day: '2-digit',
+          month: 'short'
+        });
+  };
+
+  const shopNameFor = item =>
+    item.shop ||
+    item.shopName ||
+    (S.shops.find(s => String(s.id) === String(item.shopId)) || {}).name ||
+    'Barber shop';
+
+  const historyRows = visits.slice(0, 3).map(v => `
+    <div class="bq-row">
+      <span class="bq-status-dot"></span>
+
+      <div class="bq-row-copy">
+        <strong>
+          ${esc(shopNameFor(v))} · ${esc(v.service || v.svc || 'Service')}
+        </strong>
+        <small>
+          Token #${esc(v.token || v.tok || '—')} ·
+          ${dateLabel(v.date || v.createdAt)}
+        </small>
       </div>
 
-      <div style="
-        font-size:22px;
-        font-weight:800;
-        font-family:'Syne',sans-serif
-      ">
-        ${userName}
-      </div>
+      <b class="bq-gold">
+        ${v.amount || v.price ? '₹' + esc(v.amount || v.price) : ''}
+      </b>
+    </div>
+  `).join('');
 
-      <div style="
-        color:var(--txt2);
-        font-size:13px;
-        margin-top:4px
-      ">
-        ${userPhone}
-      </div>
+  const ratingRows = (S.ratedShops || [])
+  .slice()
+  .reverse()
+  .map(r => {
+    const shopName = r.shop || "Unknown shop";
+    const stars = Math.max(0, Math.min(5, Number(r.rating) || 0));
 
-      <span class="tag tg" style="margin-top:10px">
-        Customer
+    return `
+      <div class="bq-inset">
+        <span class="bq-shop-icon">⭐</span>
+
+        <div class="bq-inset-copy">
+          <strong>${esc(shopName)}</strong>
+          <small>
+            ${"★".repeat(stars)}${"☆".repeat(5 - stars)}
+            · ${stars}/5 stars
+          </small>
+          <small>
+            ${esc(r.review || "No written review")}
+          </small>
+          <small>
+            Rated on ${esc(r.date || "Date unavailable")}
+          </small>
+        </div>
+
+        <span class="bq-rating-label">Rated</span>
+      </div>
+    `;
+  })
+  .join("");
+
+  const paymentRows = payments.slice(0, 3).map(p => `
+    <div class="bq-inset">
+      <span class="bq-payment-icon">
+        ${String(p.method || '').toLowerCase().includes('upi') ? '▦' : '▰'}
       </span>
 
+      <div class="bq-inset-copy">
+        <strong>
+          ${esc(shopNameFor(p))}
+          <span class="bq-paid">${esc(p.status || 'RECORDED').toUpperCase()}</span>
+        </strong>
+
+        <small>
+          ${esc(p.method || 'Payment')} ·
+          ${dateLabel(p.date || p.createdAt)}
+        </small>
+      </div>
+
+      <b class="bq-price">
+        ${p.amount != null ? '₹' + esc(p.amount) : '—'}
+      </b>
     </div>
+  `).join('');
 
+  const safeHistory = historyRows ||
+    '<div class="bq-empty">Your completed visits will appear here.</div>';
 
-    <div style="margin-bottom:20px">
+  const safeRatings = ratingRows ||
+  '<div class="bq-empty">No shop ratings yet. Complete a visit and rate the shop to see your history here.</div>';
 
-      <div class="prow">
+  const safePayments = paymentRows ||
+    '<div class="bq-empty">Your payment records will appear here.</div>';
 
-        <div class="prow-ico">📱</div>
+  const body = document.getElementById('prof-body');
+  if (!body) return;
 
-        <div style="flex:1">
+  body.innerHTML = `
+    <style>
+      #s-prof .prof-card,
+      #s-prof .profile-shell,
+      #s-prof .page-wrap {
+        max-width: none;
+      }
 
-          <div class="prow-lab">
-            Phone
+      #s-prof #prof-body {
+        width: 100%;
+        min-width: 0;
+      }
+
+      .bq-profile-dashboard {
+        color: #f3f0e9;
+        width: 100%;
+        min-width: 0;
+        font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+      }
+
+      .bq-profile-dashboard * {
+        box-sizing: border-box;
+      }
+
+      .bq-profile-dashboard .bq-topbar {
+        min-height: 49px;
+        display: flex;
+        align-items: center;
+        gap: 26px;
+        padding: 0 14px;
+        margin-bottom: 13px;
+        border-bottom: 1px solid #1b1a21;
+      }
+
+      .bq-profile-dashboard .bq-brand {
+        color: #ffc12f;
+        font-size: 14px;
+        font-weight: 950;
+        letter-spacing: .3px;
+        white-space: nowrap;
+      }
+
+      .bq-profile-dashboard .bq-brand span {
+        color: #f7e6ba;
+      }
+
+      .bq-profile-dashboard .bq-nav {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+      }
+
+      .bq-profile-dashboard .bq-nav button {
+        border: 0;
+        border-radius: 99px;
+        padding: 7px 12px;
+        background: transparent;
+        color: #a5a2ac;
+        font-size: 9px;
+      }
+
+      .bq-profile-dashboard .bq-nav button.active {
+        color: #19120a;
+        background: #ffc12f;
+        font-weight: 900;
+      }
+
+      .bq-profile-dashboard .bq-top-avatar {
+        margin-left: auto;
+        width: 27px;
+        height: 27px;
+        border: 0;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(135deg, #ffc12f, #ff9638);
+        color: #1b1408;
+        font-weight: 900;
+      }
+
+      .bq-profile-dashboard .bq-layout {
+        display: grid;
+        grid-template-columns: minmax(215px, 27%) minmax(0, 1fr);
+        gap: 13px;
+        align-items: stretch;
+      }
+
+      .bq-profile-dashboard .bq-side {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        padding: 15px 13px;
+        border: 1px solid #493718;
+        border-radius: 16px;
+        background:
+          radial-gradient(circle at 50% 10%, rgba(255,190,40,.15), transparent 28%),
+          #111117;
+      }
+
+      .bq-profile-dashboard .bq-identity {
+        text-align: center;
+        padding: 0 0 15px;
+      }
+
+      .bq-profile-dashboard .bq-ring {
+        width: 70px;
+        height: 70px;
+        margin: 0 auto 7px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        position: relative;
+        background: conic-gradient(#ffc12f ${completionPercent}%, #39302a 0);
+      }
+
+      .bq-profile-dashboard .bq-ring:before {
+        content: "";
+        position: absolute;
+        inset: 2px;
+        border-radius: 50%;
+        background: #111117;
+      }
+
+      .bq-profile-dashboard .bq-ring b {
+        z-index: 1;
+        font-size: 23px;
+        color: #ffc12f;
+      }
+
+      .bq-profile-dashboard .bq-percent {
+        font-size: 8px;
+        font-weight: 900;
+        color: #ffc12f;
+      }
+
+      .bq-profile-dashboard .bq-identity h2 {
+        font-size: 16px;
+        margin: 5px 0 3px;
+        font-weight: 800;
+      }
+
+      .bq-profile-dashboard .bq-muted {
+        color: #888793;
+        font-size: 9px;
+      }
+
+      .bq-profile-dashboard .bq-pill {
+        display: inline-flex;
+        margin-top: 7px;
+        padding: 4px 9px;
+        border-radius: 99px;
+        background: #ffc12f16;
+        color: #ffc12f;
+        font-size: 9px;
+        font-weight: 800;
+      }
+
+      .bq-profile-dashboard .bq-stats {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 5px;
+        margin-bottom: 10px;
+      }
+
+      .bq-profile-dashboard .bq-stat {
+        min-width: 0;
+        text-align: center;
+        padding: 10px 3px;
+        background: #191922;
+        border: 1px solid #282631;
+        border-radius: 11px;
+      }
+
+      .bq-profile-dashboard .bq-stat strong {
+        display: block;
+        font-size: 15px;
+        margin-bottom: 3px;
+        overflow-wrap: anywhere;
+      }
+
+      .bq-profile-dashboard .bq-stat span {
+        color: #888793;
+        font-size: 7px;
+        letter-spacing: .3px;
+        font-weight: 900;
+      }
+
+      .bq-profile-dashboard .bq-finish {
+        border: 1px solid #543052;
+        border-radius: 12px;
+        padding: 10px;
+        background: linear-gradient(120deg, #4a2a4b60, #1c1524a0);
+      }
+
+      .bq-profile-dashboard .bq-finish h3 {
+        margin: 0 0 5px;
+        font-size: 10px;
+      }
+
+      .bq-profile-dashboard .bq-finish p {
+        color: #aaa3b3;
+        font-size: 8px;
+        line-height: 1.5;
+        margin: 0 0 8px;
+      }
+
+      .bq-profile-dashboard .bq-progress {
+        height: 4px;
+        border-radius: 10px;
+        background: #352c3a;
+        overflow: hidden;
+      }
+
+      .bq-profile-dashboard .bq-progress div {
+        height: 100%;
+        background: linear-gradient(90deg, #ffc12f, #ff9d35);
+        border-radius: inherit;
+      }
+
+      .bq-profile-dashboard .bq-progress-meta {
+        display: flex;
+        justify-content: space-between;
+        gap: 5px;
+        margin-top: 6px;
+        font-size: 7px;
+        color: #888793;
+      }
+
+      .bq-profile-dashboard .bq-actions {
+        display: grid;
+        gap: 7px;
+        margin-top: auto;
+        padding-top: 16px;
+      }
+
+      .bq-profile-dashboard button {
+        font: inherit;
+        cursor: pointer;
+      }
+
+      .bq-profile-dashboard .bq-primary,
+      .bq-profile-dashboard .bq-logout {
+        width: 100%;
+        border-radius: 99px;
+        padding: 10px;
+        font-size: 10px;
+        font-weight: 900;
+      }
+
+      .bq-profile-dashboard .bq-primary {
+        border: 0;
+        color: #201407;
+        background: linear-gradient(100deg, #ffca39, #ff9737);
+      }
+
+      .bq-profile-dashboard .bq-logout {
+        border: 1px solid #63312f;
+        background: #5d24242e;
+        color: #ff6d78;
+      }
+
+      .bq-profile-dashboard .bq-content {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        align-content: start;
+        min-width: 0;
+      }
+
+      .bq-profile-dashboard .bq-card {
+        min-width: 0;
+        padding: 13px;
+        background: rgba(17,17,24,.96);
+        border: 1px solid #25242d;
+        border-radius: 15px;
+      }
+
+      .bq-profile-dashboard .bq-card-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 11px;
+      }
+
+      .bq-profile-dashboard .bq-heading {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 10px;
+        font-weight: 900;
+      }
+
+      .bq-profile-dashboard .bq-icon {
+        width: 17px;
+        height: 17px;
+        display: grid;
+        place-items: center;
+        border-radius: 5px;
+        flex-shrink: 0;
+        background: #ffc12f20;
+        color: #ffc12f;
+        font-size: 9px;
+      }
+
+      .bq-profile-dashboard .bq-link {
+        border: 0;
+        padding: 0;
+        background: none;
+        color: #ffc12f;
+        font-size: 8px;
+        font-weight: 900;
+        white-space: nowrap;
+      }
+
+      .bq-profile-dashboard .bq-detail-list,
+      .bq-profile-dashboard .bq-rows {
+        display: grid;
+        gap: 7px;
+      }
+
+      .bq-profile-dashboard .bq-inset,
+      .bq-profile-dashboard .bq-detail {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+        padding: 8px;
+        border: 1px solid #282731;
+        border-radius: 10px;
+        background: #191920;
+      }
+
+      .bq-profile-dashboard .bq-detail-copy,
+      .bq-profile-dashboard .bq-inset-copy,
+      .bq-profile-dashboard .bq-row-copy {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .bq-profile-dashboard .bq-eyebrow {
+        color: #777580;
+        font-size: 7px;
+        font-weight: 900;
+        letter-spacing: .5px;
+        margin-bottom: 3px;
+      }
+
+      .bq-profile-dashboard .bq-value {
+        color: #ffc12f;
+        font-size: 9px;
+        font-weight: 700;
+        overflow-wrap: anywhere;
+      }
+
+      .bq-profile-dashboard .bq-value.normal {
+        color: #eee9e2;
+      }
+
+      .bq-profile-dashboard .bq-mini-btn {
+        border: 0;
+        border-radius: 99px;
+        padding: 5px 8px;
+        background: #ffc12f;
+        color: #1d1609;
+        font-size: 8px;
+        font-weight: 900;
+        white-space: nowrap;
+      }
+
+      .bq-profile-dashboard .bq-chevron {
+        color: #777580;
+        font-size: 16px;
+      }
+
+      .bq-profile-dashboard .bq-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+      }
+
+      .bq-profile-dashboard .bq-status-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #7ce1b0;
+        flex-shrink: 0;
+      }
+
+      .bq-profile-dashboard .bq-row strong,
+      .bq-profile-dashboard .bq-inset-copy strong {
+        display: block;
+        font-size: 9px;
+        font-weight: 800;
+        overflow-wrap: anywhere;
+        margin-bottom: 3px;
+      }
+
+      .bq-profile-dashboard .bq-row small,
+      .bq-profile-dashboard .bq-inset-copy small {
+        display: block;
+        font-size: 7px;
+        color: #888793;
+        line-height: 1.4;
+      }
+
+      .bq-profile-dashboard .bq-gold,
+      .bq-profile-dashboard .bq-price {
+        color: #ffc12f;
+        font-size: 9px;
+        font-weight: 900;
+        white-space: nowrap;
+      }
+
+      .bq-profile-dashboard .bq-shop-icon,
+      .bq-profile-dashboard .bq-payment-icon {
+        width: 16px;
+        height: 16px;
+        display: grid;
+        place-items: center;
+        border-radius: 5px;
+        flex-shrink: 0;
+        background: #34305e;
+        color: #c3b7ff;
+        font-size: 10px;
+      }
+
+      .bq-profile-dashboard .bq-payment-icon {
+        background: #27272d;
+        color: #e7d7a2;
+      }
+
+      .bq-profile-dashboard .bq-rating-label {
+        color: #ffc12f;
+        font-size: 8px;
+        font-weight: 800;
+      }
+
+      .bq-profile-dashboard .bq-paid {
+        color: #7ce1b0;
+        background: #45be8520;
+        border-radius: 4px;
+        padding: 2px 4px;
+        font-size: 7px;
+      }
+
+      .bq-profile-dashboard .bq-support {
+        grid-column: 1 / -1;
+      }
+
+      .bq-profile-dashboard .bq-support-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .bq-profile-dashboard .bq-support-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        min-width: 0;
+        padding: 10px;
+        border: 1px solid #282731;
+        border-radius: 11px;
+        background: #191920;
+        color: inherit;
+        text-align: left;
+      }
+
+      .bq-profile-dashboard .bq-support-icon {
+        width: 18px;
+        height: 18px;
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+        border-radius: 5px;
+        background: #273b3c;
+        font-size: 10px;
+      }
+
+      .bq-profile-dashboard .bq-support-item strong {
+        display: block;
+        font-size: 9px;
+        margin: 1px 0 4px;
+      }
+
+      .bq-profile-dashboard .bq-support-item small {
+        display: block;
+        color: #888793;
+        font-size: 7px;
+        line-height: 1.4;
+      }
+
+      .bq-profile-dashboard .bq-empty {
+        color: #888793;
+        font-size: 8px;
+        padding: 7px 2px;
+        line-height: 1.5;
+      }
+
+      @media (max-width: 850px) {
+        .bq-profile-dashboard .bq-layout {
+          grid-template-columns: 1fr;
+        }
+
+        .bq-profile-dashboard .bq-side {
+          min-height: 0;
+        }
+
+        .bq-profile-dashboard .bq-actions {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+
+      @media (max-width: 560px) {
+        .bq-profile-dashboard .bq-topbar {
+          gap: 9px;
+          padding: 0 3px;
+        }
+
+        .bq-profile-dashboard .bq-brand {
+          font-size: 12px;
+        }
+
+        .bq-profile-dashboard .bq-nav {
+          gap: 1px;
+        }
+
+        .bq-profile-dashboard .bq-nav button {
+          padding: 7px 8px;
+        }
+
+        .bq-profile-dashboard .bq-content {
+          grid-template-columns: 1fr;
+          gap: 9px;
+        }
+
+        .bq-profile-dashboard .bq-support {
+          grid-column: auto;
+        }
+
+        .bq-profile-dashboard .bq-support-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .bq-profile-dashboard .bq-card {
+          padding: 12px;
+        }
+
+        .bq-profile-dashboard .bq-row strong,
+        .bq-profile-dashboard .bq-inset-copy strong {
+          font-size: 10px;
+        }
+
+        .bq-profile-dashboard .bq-row small,
+        .bq-profile-dashboard .bq-inset-copy small {
+          font-size: 8px;
+        }
+      }
+    </style>
+
+    <div class="bq-profile-dashboard">
+      <header class="bq-topbar">
+        <div class="bq-brand">Glowora</div>
+
+        <nav class="bq-nav" aria-label="Customer navigation">
+          <button type="button" onclick="go('s-cust')">Home</button>
+          <button type="button"
+            onclick="cTab('queue', document.querySelector('#c-tabs .tab:nth-child(2)'))">
+            My ticket
+          </button>
+          <button type="button" class="active" onclick="go('s-prof')">
+            Profile
+          </button>
+        </nav>
+
+        <button class="bq-top-avatar" type="button" aria-label="Customer account">
+          ${esc(initial)}
+        </button>
+      </header>
+
+      <div class="bq-layout">
+        <aside class="bq-side">
+          <div class="bq-identity">
+            <div class="bq-ring"><b>${esc(initial)}</b></div>
+            <div class="bq-percent">${completionPercent}%</div>
+            <h2>${esc(userName)}</h2>
+            <div class="bq-muted">
+              ${userPhone ? esc(userPhone) : 'Add your phone number'}
+            </div>
+            <span class="bq-pill">● Customer</span>
           </div>
 
-          <div class="prow-val">
-            ${userPhone}
+          <div class="bq-stats">
+            <div class="bq-stat">
+              <strong>${visits.length}</strong>
+              <span>VISITS</span>
+            </div>
+
+            <div class="bq-stat">
+              <strong>${ratedCount}</strong>
+              <span>SHOPS RATED</span>
+            </div>
+
+            <div class="bq-stat">
+              <strong>₹${spent.toLocaleString('en-IN')}</strong>
+              <span>SPENT</span>
+            </div>
           </div>
 
+          <section class="bq-finish">
+            <h3>Finish your profile ✨</h3>
+            <p>
+              Add your phone and location to get queue alerts and see shops
+              near you first.
+            </p>
+
+            <div class="bq-progress">
+              <div style="width:${completionPercent}%"></div>
+            </div>
+
+            <div class="bq-progress-meta">
+              <span>${profileCompletion} of 3 done</span>
+              <span>${!userPhone ? '+Phone ' : ''}${!userLocation ? '+Location' : ''}</span>
+            </div>
+          </section>
+
+          <div class="bq-actions">
+            <button class="bq-primary" type="button" onclick="editProfile()">✎ &nbsp; Edit profile</button>
+            <button class="bq-logout" type="button" onclick="logout()">Logout</button>
+            <button class="bq-delete-account" type="button" style="color:var(--red)" onclick="toast('⚠️','Account deletion requires email confirmation')">Delete Account</button>
+          </div>
+        </aside>
+
+        <div class="bq-content">
+          <section class="bq-card">
+            <div class="bq-card-head">
+              <div class="bq-heading">
+                <span class="bq-icon">▣</span>
+                Personal details
+              </div>
+            </div>
+
+            <div class="bq-detail-list">
+              <div class="bq-detail">
+                <div class="bq-detail-copy">
+                  <div class="bq-eyebrow">PHONE</div>
+                  <div class="bq-value">
+                    ${userPhone ? esc(userPhone) : 'Not added yet'}
+                  </div>
+                </div>
+
+                <button class="bq-mini-btn" type="button" onclick="editProfile()">
+                  + ${userPhone ? 'Edit' : 'Add'}
+                </button>
+              </div>
+
+              <div class="bq-detail">
+                <div class="bq-detail-copy">
+                  <div class="bq-eyebrow">LOCATION</div>
+                  <div class="bq-value">
+                    ${userLocation ? esc(userLocation) : 'Not set'}
+                  </div>
+                </div>
+
+                <button class="bq-mini-btn" type="button" onclick="editProfile()">
+                  + ${userLocation ? 'Edit' : 'Set'}
+                </button>
+              </div>
+
+              <button class="bq-detail"
+                style="width:100%;text-align:left;color:inherit"
+                type="button"
+                onclick="toast('Queue alerts are managed by your Glowora account.')">
+
+                <div class="bq-detail-copy">
+                  <div class="bq-eyebrow">NOTIFICATIONS</div>
+                  <div class="bq-value normal">Queue alerts on</div>
+                </div>
+
+                <span class="bq-chevron">›</span>
+              </button>
+            </div>
+          </section>
+
+          <section class="bq-card">
+            <div class="bq-card-head">
+              <div class="bq-heading">
+                <span class="bq-icon" style="background:#16352e;color:#85e1b3">▦</span>
+                Queue history
+              </div>
+
+              <button class="bq-link" type="button" onclick="showAllProfileHistory()">
+                View all
+              </button>
+            </div>
+
+            <div class="bq-rows">${safeHistory}</div>
+          </section>
+
+          <section class="bq-card">
+            <div class="bq-card-head">
+              <div class="bq-heading">
+                <span class="bq-icon" style="background:#34301b">★</span>
+                Shops rated
+              </div>
+
+              <button class="bq-link" type="button" onclick="openProfileRate()">
+                Rate a recent visit
+              </button>
+            </div>
+
+            <div class="bq-rows">${safeRatings}</div>
+          </section>
+
+          <section class="bq-card">
+            <div class="bq-card-head">
+              <div class="bq-heading">
+                <span class="bq-icon" style="background:#302348;color:#c7a9ff">▰</span>
+                Payments
+              </div>
+
+              <button class="bq-link" type="button" onclick="showAllProfilePayments()">
+                History
+              </button>
+            </div>
+
+            <div class="bq-rows">
+              ${safePayments}
+
+              <div class="bq-inset">
+                <span class="bq-payment-icon">▤</span>
+
+                <div class="bq-inset-copy">
+                  <strong>Methods used</strong>
+                  <small>
+                    ${methods.length
+                      ? esc(methods.join(' · '))
+                      : 'No payment methods used yet'}
+                  </small>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="bq-card bq-support">
+            <div class="bq-card-head">
+              <div class="bq-heading">
+                <span class="bq-icon" style="background:#38252c;color:#ff9ca7">♧</span>
+                Help &amp; support
+              </div>
+            </div>
+
+            <div class="bq-support-grid">
+              <button class="bq-support-item" type="button" onclick="go('s-support')">
+                <span class="bq-support-icon">☏</span>
+                <span>
+                  <strong>Chat with us</strong>
+                  <small>Replies within a few hours</small>
+                </span>
+              </button>
+
+              <button class="bq-support-item" type="button" onclick="go('s-support')">
+                <span class="bq-support-icon" style="background:#403323">📝</span>
+                <span>
+                  <strong>Raise a ticket</strong>
+                  <small>Report a booking or payment issue</small>
+                </span>
+              </button>
+
+              <button class="bq-support-item" type="button" onclick="go('s-support')">
+                <span class="bq-support-icon" style="background:#332348;color:#d7aaff">?</span>
+                <span>
+                  <strong>FAQs</strong>
+                  <small>How queues and booking work</small>
+                </span>
+              </button>
+            </div>
+          </section>
         </div>
-
-        <span style="color:var(--txt2)">›</span>
-
       </div>
-
-
-      <div class="prow">
-
-        <div class="prow-ico">📍</div>
-
-        <div style="flex:1">
-
-          <div class="prow-lab">
-            Location
-          </div>
-
-          <div class="prow-val">
-            ${userLocation}
-          </div>
-
-        </div>
-
-        <span style="color:var(--txt2)">›</span>
-
-      </div>
-
-
-      <div class="prow">
-
-        <div class="prow-ico">🎫</div>
-
-        <div style="flex:1">
-
-          <div class="prow-lab">
-            Queue History
-          </div>
-
-          <div class="prow-val">
-            ${visitCount} ${visitCount===1?'visit':'visits'}
-          </div>
-
-        </div>
-
-        <span style="color:var(--txt2)">›</span>
-
-      </div>
-
-
-      <div class="prow">
-
-        <div class="prow-ico">⭐</div>
-
-        <div style="flex:1">
-
-          <div class="prow-lab">
-            Shops Rated
-          </div>
-
-          <div class="prow-val">
-            ${ratedCount} ${ratedCount===1?'shop':'shops'}
-          </div>
-
-        </div>
-
-        <span style="color:var(--txt2)">›</span>
-
-      </div>
-
-      <div class="prow" style="cursor:pointer" onclick="showPaymentMethods()">
-
-        <div class="prow-ico">💳</div>
-
-        <div style="flex:1">
-
-          <div class="prow-lab">
-            Payment Methods
-          </div>
-
-          <div class="prow-val">
-            ${paymentMethodText}
-          </div>
-
-        </div>
-
-        <span style="color:var(--txt2)">›</span>
-
-      </div>
-
-      <div class="prow" style="cursor:pointer" onclick="go('s-support')">
-
-        <div class="prow-ico">🎧</div>
-
-        <div style="flex:1">
-
-          <div class="prow-lab">
-            Support
-          </div>
-
-          <div class="prow-val">
-            Help &amp; Support
-          </div>
-
-        </div>
-
-        <span style="color:var(--txt2)">›</span>
-
-      </div>
-
     </div>
-
-    <div style="font-size:15px;font-weight:700;font-family:'Syne',sans-serif;margin-bottom:12px">
-      Payment History
-    </div>
-
-    <div style="margin-bottom:20px">
-      ${renderPaymentHistory()}
-    </div>
-
-
-    <div style="
-      display:flex;
-      flex-direction:column;
-      gap:10px
-    ">
-
-      <button class="btn btn-outline btn-full"
-        onclick="editProfile()">
-        ✏️ Edit Profile
-      </button>
-
-      <button class="btn btn-red btn-full"
-        onclick="logout()">
-        Logout
-      </button>
-
-      <button class="btn btn-ghost btn-full"
-        style="color:var(--red)"
-        onclick="toast('⚠️','Account deletion requires email confirmation')">
-        Delete Account
-      </button>
-
-    </div>
-
-    <div style="height:24px"></div>
-
   `;
 }
 
@@ -9209,19 +9913,6 @@ window.S = S;   // expose the state object so the add-on code can read S.barber
   window.selectPayMethod = selectPayMethod;
 })();
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 (function () {
   "use strict";
   const $ = id => document.getElementById(id);
@@ -9627,3 +10318,1006 @@ window.S = S;   // expose the state object so the add-on code can read S.barber
     try { paint(); } catch (e) { console.error(e); }
   })();
 })();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(function () {
+  "use strict";
+  const $ = id => document.getElementById(id);
+  const esc = v => String(v == null ? "" : v).replace(/[&<>"']/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  const css = document.createElement("style");
+  css.textContent = `
+  /* ---------- payment ---------- */
+  #m-pay .modal.px{width:100%;max-width:460px;max-height:94vh;overflow:auto;padding:20px;border-radius:26px;color:#eef1ff;font-family:'DM Sans',sans-serif;
+    background:radial-gradient(120% 80% at 100% 100%,rgba(124,58,237,.28),transparent 60%),linear-gradient(180deg,#0a0e2e,#070a22);
+    border:1px solid rgba(120,120,255,.2)}
+  .px *{box-sizing:border-box}
+  .px button{font-family:inherit}
+  .px-head{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+  .px-ico{width:54px;height:54px;border-radius:50%;display:grid;place-items:center;font-size:24px;flex:none;background:rgba(245,183,59,.12);border:1.5px solid rgba(245,183,59,.6);box-shadow:0 0 22px -6px #f5b73b}
+  .px-head h3{margin:0;font:700 24px 'DM Sans',sans-serif}
+  .px-head small{display:block;margin-top:2px;font-size:13.5px;color:#8fa0ff}
+  .px-amt{display:flex;align-items:center;gap:12px;padding:16px;border-radius:20px;margin-bottom:20px;border:1.5px solid #f5b73b;
+    background:linear-gradient(135deg,rgba(245,183,59,.2),rgba(245,183,59,.04));box-shadow:0 0 30px -12px #f5b73b}
+  .px-amt .ci{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;flex:none;font:800 20px 'DM Sans',sans-serif;color:#f5b73b;background:rgba(245,183,59,.14);border:1px solid rgba(245,183,59,.4)}
+  .px-amt span{flex:1;font-size:14px;color:#b8c0e8}
+  .px-amt strong{font:800 34px 'DM Sans',sans-serif;color:#f5b73b;letter-spacing:-.5px}
+  .px h4{margin:0 0 10px;font:700 17px 'DM Sans',sans-serif}
+  .px .pay-opt{display:flex;align-items:center;gap:14px;padding:13px 14px;margin-bottom:10px;border-radius:18px;cursor:pointer;
+    background:rgba(20,26,70,.55);border:1px solid rgba(120,120,255,.22);transition:.15s}
+  .px .pay-opt .oi{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;font-size:21px;flex:none;background:rgba(70,90,200,.28);border:1px solid rgba(120,130,255,.35)}
+  .px .pay-opt .ot{flex:1;min-width:0}
+  .px .pay-opt .ot b{display:block;font:700 16px 'DM Sans',sans-serif}
+  .px .pay-opt .ot small{display:block;margin-top:2px;font-size:12.5px;color:#8fa0ff}
+  .px .pay-opt .rd{width:26px;height:26px;border-radius:50%;flex:none;display:grid;place-items:center;border:2px solid #4a55a8;color:transparent;font-size:14px;font-weight:800}
+  .px .pay-opt.sel{border-color:#f5b73b;background:linear-gradient(135deg,rgba(245,183,59,.16),rgba(20,26,70,.55));box-shadow:0 0 26px -10px #f5b73b}
+  .px .pay-opt.sel .oi{background:rgba(245,183,59,.14);border-color:rgba(245,183,59,.5)}
+  .px .pay-opt.sel .rd{background:#f5b73b;border-color:#f5b73b;color:#1a1200}
+  #upi-qr-section.px-qr{text-align:center;padding:14px;margin:-2px 0 12px;border-radius:18px;background:rgba(20,26,70,.55);border:1px dashed rgba(120,130,255,.4)}
+  #upi-qr-section.px-qr img{width:180px;max-width:70%;border-radius:14px;background:#fff;padding:8px}
+  #upi-id-text{margin-top:8px;font-size:13px;color:#b8c0e8;word-break:break-all}
+  .px-btns{display:grid;grid-template-columns:1fr 1.5fr;gap:12px;margin-top:16px}
+  .px-back,.px-go{display:flex;align-items:center;justify-content:center;gap:10px;min-height:56px;border-radius:18px;cursor:pointer;font:700 16px/1.15 'DM Sans',sans-serif;text-align:center}
+  .px-back{color:#eef1ff;background:rgba(20,26,70,.6);border:1px solid rgba(120,130,255,.3)}
+  .px-go{border:0;color:#1a1200;background:linear-gradient(90deg,#f5b73b,#ff9a3d);box-shadow:0 12px 28px -12px #f5b73b}
+  .px-go:disabled{opacity:.7}
+  @media (max-width:380px){.px-amt strong{font-size:28px}.px-btns{grid-template-columns:1fr}}
+
+  /* ---------- support ---------- */
+  .sp{--c:#0c1030;--ln:rgba(120,120,255,.18);--mu:#98a1cc;color:#eef1ff;font-family:'DM Sans',sans-serif;max-width:1100px;margin:0 auto}
+  .sp *{box-sizing:border-box}
+  .sp-top{text-align:center;padding:10px 0 22px}
+  .sp-hs{width:56px;height:56px;margin:0 auto 10px;border-radius:50%;display:grid;place-items:center;font-size:26px;background:rgba(245,183,59,.1);border:1.5px solid #f5b73b;box-shadow:0 0 24px -6px #f5b73b}
+  .sp-top h2{margin:0;font:800 30px 'Syne',sans-serif}.sp-top h2 em{font-style:normal;color:#f5b73b}
+  .sp-top h5{margin:6px 0 2px;font:700 17px 'DM Sans',sans-serif;color:#c9d2ff}
+  .sp-top p{margin:0;font-size:12.5px;color:var(--mu)}
+  .sp-cards{display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:20px}
+  .sp-card{display:flex;align-items:center;gap:14px;width:100%;padding:16px;border-radius:18px;text-decoration:none;color:inherit;text-align:left;cursor:pointer;border:1.5px solid var(--k);
+    background:linear-gradient(135deg,color-mix(in srgb,var(--k) 16%,#0a0e2e),#0a0e2e 70%);box-shadow:0 0 26px -16px var(--k);font-family:inherit}
+  .sp-card .ci{width:54px;height:54px;border-radius:50%;display:grid;place-items:center;font-size:23px;flex:none;background:var(--k);box-shadow:0 0 18px -4px var(--k)}
+  .sp-card .tx{flex:1;min-width:0}
+  .sp-card b{display:block;font:700 17px 'DM Sans',sans-serif}
+  .sp-card small{display:block;margin-top:2px;font-size:13.5px;color:#cdd3f3;overflow:hidden;text-overflow:ellipsis}
+  .sp-card .ch{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;flex:none;background:rgba(255,255,255,.07);border:1px solid var(--ln);font-size:18px}
+  .sp-faq{padding:14px;border-radius:22px;background:rgba(12,16,48,.7);border:1px solid var(--ln)}
+  .sp-fh{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:2px 4px 12px;margin-bottom:8px;border-bottom:1px solid var(--ln)}
+  .sp-fh b{display:flex;align-items:center;gap:10px;font:700 18px 'DM Sans',sans-serif}
+  .sp-va{cursor:pointer;border-radius:999px;padding:8px 14px;font:600 13px 'DM Sans',sans-serif;color:#f5b73b;background:none;border:1px solid #f5b73b}
+  .sp .bq-faq{border-radius:14px;margin-bottom:8px;border:1px solid var(--ln);background:rgba(20,26,70,.45);overflow:hidden}
+  .sp .bq-faq-q{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;font:500 14.5px 'DM Sans',sans-serif;color:#eef1ff;background:none;border:0;text-align:left;cursor:pointer}
+  .sp .bq-faq-q .qm{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;flex:none;font:800 13px 'DM Sans',sans-serif;color:#1a1200;background:#f5b73b}
+  .sp .bq-faq-q .qt{flex:1}
+  .sp .bq-faq-q .pl{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;flex:none;background:rgba(255,255,255,.06);border:1px solid var(--ln)}
+  .sp .bq-faq-a{display:none;padding:0 16px 14px 54px;font-size:13.5px;line-height:1.55;color:var(--mu)}
+  .sp .bq-faq.open .bq-faq-a{display:block}
+  .sp .bq-faq.more{display:none}.sp.all .bq-faq.more{display:block}
+  @media (min-width:760px){.sp-cards{grid-template-columns:1fr 1fr;gap:14px}.sp-card{padding:20px}.sp-faq{padding:18px 20px}}`;
+  document.head.appendChild(css);
+
+  /* ================= PAYMENT ================= */
+  function buildPay() {
+    const m = $("m-pay");
+    if (!m || m.dataset.px) return;
+    const box = m.querySelector(".modal") || m.firstElementChild;
+    if (!box) return;
+    m.dataset.px = "1";
+    box.classList.add("px");
+    box.innerHTML = `
+      <div class="px-head"><div class="px-ico">💳</div><div><h3>Payment</h3><small id="pay-svc"></small></div></div>
+      <div class="px-amt"><div class="ci">₹</div><span>Amount to Pay</span><strong id="pay-amt">₹0</strong></div>
+      <h4>Choose Payment Method</h4>
+      <div class="pay-opt sel" id="pay-online" onclick="selectPayMethod('online')">
+        <div class="oi">💳</div><div class="ot"><b>Pay Online Now</b><small>UPI, Card, Wallet – secured checkout</small></div><div class="rd">✓</div></div>
+      <div class="pay-opt" id="pay-upi_qr" style="display:none" onclick="selectPayMethod('upi_qr')">
+        <div class="oi">▦</div><div class="ot"><b>Pay with Shop's UPI QR</b><small>Scan and pay the barber directly</small></div><div class="rd">✓</div></div>
+      <div id="upi-qr-section" class="px-qr" style="display:none"><img id="upi-qr-img" alt="Shop UPI QR"><div id="upi-id-text"></div></div>
+      <div class="pay-opt" id="pay-shop" onclick="selectPayMethod('shop')">
+        <div class="oi">💵</div><div class="ot"><b>Pay at Shop</b><small>Settle in cash or card after your service</small></div><div class="rd">✓</div></div>
+      <div class="px-btns">
+        <button type="button" class="px-back" id="pay-back">← Back</button>
+        <button type="button" class="px-go" id="pay-go">👥 <span id="pay-btn-label">Pay &amp; Join Queue</span></button>
+      </div>`;
+    $("pay-back").addEventListener("click", () => closeModal("m-pay"));
+    $("pay-go").addEventListener("click", () => processPayment());
+  }
+
+  const CARDS = {
+    call:  { k: "#ff2d6f", ico: "📞" },
+    chat:  { k: "#10b981", ico: "💬" },
+    mail:  { k: "#3b6cff", ico: "✉️" },
+    tkt:   { k: "#f5b73b", ico: "📄" }
+  };
+  const card = (c, title, sub, attrs, tag) => `
+    <${tag} ${attrs} class="sp-card" style="--k:${c.k}">
+      <span class="ci">${c.ico}</span><span class="tx"><b>${title}</b><small>${sub}</small></span><span class="ch">›</span>
+    </${tag}>`;
+
+  function rebuildSupport() {
+    const body = $("support-body");
+    if (!body || typeof FAQS === "undefined") return;
+    const LIMIT = 6;
+    body.innerHTML = `
+      <div class="sp">
+        <div class="sp-top">
+          <div class="sp-hs">🎧</div>
+          <h2>Help <em>&amp;</em> Support</h2>
+          <h5>How can we help?</h5>
+          <p>We're here every day, 9 AM – 9 PM</p>
+        </div>
+        <div class="sp-cards">
+          ${card(CARDS.call, "Call Us", "+91 12345 67890", 'href="tel:+911234567890"', "a")}
+          ${card(CARDS.chat, "Help Assistant", "Instant answers", 'type="button" data-bq="chat"', "button")}
+          ${card(CARDS.mail, "Email Us", "support@barberq.app", 'href="mailto:support@barberq.app"', "a")}
+          ${card(CARDS.tkt, "Raise a Ticket", "Submit a support request", 'type="button" data-bq="ticket"', "button")}
+        </div>
+        <div class="sp-faq">
+          <div class="sp-fh"><b>💬 Frequently Asked Questions</b>
+            ${FAQS.length > LIMIT ? '<button type="button" class="sp-va" id="sp-va">+ View All</button>' : ""}</div>
+          ${FAQS.map((f, i) => `
+            <div class="bq-faq ${i >= LIMIT ? "more" : ""}">
+              <button type="button" class="bq-faq-q"><span class="qm">?</span><span class="qt">${esc(f.q)}</span><span class="pl">＋</span></button>
+              <div class="bq-faq-a">${esc(f.a)}</div>
+            </div>`).join("")}
+        </div>
+        <div id="bq-my-tickets"></div>
+        <div style="height:24px"></div>
+      </div>`;
+    const va = $("sp-va");
+    if (va) va.addEventListener("click", () => {
+      const sp = body.querySelector(".sp");
+      const all = sp.classList.toggle("all");
+      va.textContent = all ? "− Show less" : "+ View All";
+    });
+  }
+
+  const baseSupport = window.renderSupport;
+  window.renderSupport = function () {
+    const out = baseSupport.apply(this, arguments);   // keeps the My Tickets loader
+    try { rebuildSupport(); } catch (e) { console.error("support UI:", e); }
+    return out;
+  };
+  renderSupport = window.renderSupport;
+
+  (async function init() {
+    try { await componentsReady; } catch (e) { return; }
+    buildPay();
+    if ($("s-support") && $("s-support").classList.contains("active")) window.renderSupport();
+  })();
+})();
+
+(function () {
+  "use strict";
+  const $ = id => document.getElementById(id);
+  const esc = v => String(v == null ? "" : v).replace(/[&<>"']/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const desk = () => window.matchMedia("(min-width:980px)").matches;
+  const svcOf = (s, i) => S.services[s.svcs[i]];
+  const tone = w => w <= 10 ? ["Light", "#22c55e"] : w <= 20 ? ["Moderate", "#f5b73b"] : ["Busy", "#ff8a4c"];
+  const gLabel = { male: "Men", female: "Women", unisex: "Unisex" };
+  const grad = s => `linear-gradient(135deg,${s.clr || "#7c5cff"},color-mix(in srgb,${s.clr || "#7c5cff"} 35%,#ff4fa3))`;
+  const art = (s, cls) => s.photo
+    ? `<img class="${cls}" src="${esc(s.photo)}" alt="${esc(s.name)}">`
+    : `<span class="${cls}">${esc(s.ico || "💈")}</span>`;
+
+  const css = document.createElement("style");
+  css.textContent = `
+  #cust-home > :not(#cx-home){display:none!important}
+  .cx{--c:#0c1030;--c2:#10153d;--ln:rgba(120,120,255,.16);--mu:#98a1cc;--gold:#f5b73b;color:#eef1ff;font-family:'DM Sans',sans-serif}
+  .cx *{box-sizing:border-box}
+  .cx button{font-family:inherit}
+  .cx-loc{font-size:12px;color:var(--mu);margin:2px 0 8px}
+  .cx-hi{font:800 30px/1.1 'Syne',sans-serif;margin:0 0 14px}
+  .cx-hi em{font-style:normal;background:linear-gradient(90deg,#f5b73b,#ff5fa2);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .cx-big{display:none;font:800 38px/1.1 'Syne',sans-serif;margin:0 0 6px}
+  .cx-big em{font-style:normal;color:var(--gold)}
+  .cx-sub{display:none;font-size:13px;color:var(--mu);margin:0 0 14px}
+  .cx-search{display:flex;align-items:center;gap:10px;background:var(--c);border:1px solid var(--ln);border-radius:16px;padding:0 8px 0 14px;margin-bottom:12px}
+  .cx-search input{flex:1;min-width:0;background:none;border:0;outline:0;color:#eef1ff;font:14px 'DM Sans',sans-serif;padding:14px 0}
+  .cx-search b{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--gold);color:#1a1200}
+  .cx-chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:12px;scrollbar-width:none}
+  .cx-chips::-webkit-scrollbar{display:none}
+  .cx-chip{flex:none;cursor:pointer;border:1px solid var(--ln);background:var(--c);color:#d9defa;border-radius:999px;padding:8px 14px;font-size:13px;font-weight:600;white-space:nowrap}
+  .cx-chip.on{background:var(--gold);color:#1a1200;border-color:var(--gold)}
+  .cx-h{display:flex;justify-content:space-between;align-items:baseline;margin:16px 0 10px;font:700 15px 'Syne',sans-serif}
+  .cx-h small{font:12px 'DM Sans',sans-serif;color:var(--gold)}
+  .cx-h .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#ff4d6d;margin-right:6px}
+  .cx-fast{display:flex;gap:12px;overflow-x:auto;padding-bottom:6px;scrollbar-width:none}
+  .cx-fast::-webkit-scrollbar{display:none}
+  .cx-fc{position:relative;flex:none;width:170px;height:128px;border-radius:20px;padding:14px;cursor:pointer;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;gap:6px}
+  .cx-fc .bg{position:absolute;right:-6px;top:-4px;font-size:58px;opacity:.9}
+  .cx-fc img.bg{width:90px;height:90px;object-fit:cover;border-radius:16px;font-size:0}
+  .cx-fc b{position:relative;font:700 16px 'Syne',sans-serif}
+  .cx-pills{position:relative;display:flex;gap:6px}
+  .cx-pills span{background:rgba(0,0,0,.32);border-radius:999px;padding:4px 9px;font-size:11.5px;font-weight:600}
+  .cx-list{display:flex;flex-direction:column;gap:10px}
+  .cx-card{display:flex;align-items:center;gap:12px;padding:12px;border-radius:18px;background:var(--c);border:1px solid var(--ln);cursor:pointer;position:relative}
+  .cx-card.on{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset,0 0 26px -12px var(--gold)}
+  .cx-card.off{opacity:.55}
+  .cx-ico{width:48px;height:48px;border-radius:14px;flex:none;display:grid;place-items:center;font-size:24px;overflow:hidden;background:var(--c2)}
+  .cx-ico img{width:100%;height:100%;object-fit:cover}
+  .cx-mid{flex:1;min-width:0}
+  .cx-nm{display:flex;align-items:center;gap:8px;font:700 15px 'Syne',sans-serif;min-width:0}
+  .cx-nm span.t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cx-tag{flex:none;font:700 9.5px 'DM Sans',sans-serif;letter-spacing:.06em;padding:3px 7px;border-radius:6px;text-transform:uppercase}
+  .cx-tag.o{color:#34d399;background:rgba(52,211,153,.14);border:1px solid rgba(52,211,153,.4)}
+  .cx-tag.c{color:#ff6b8b;background:rgba(255,107,139,.12);border:1px solid rgba(255,107,139,.4)}
+  .cx-meta{font-size:12px;color:var(--mu);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cx-meta b{color:var(--gold);font-weight:600}
+  .cx-now{flex:none;text-align:right;border-left:1px dashed var(--ln);padding-left:12px;font-size:10px;letter-spacing:.1em;color:var(--mu)}
+  .cx-now strong{display:block;font:800 22px 'Syne',sans-serif;color:var(--gold);letter-spacing:0}
+  .cx-wait{display:none;flex:none;text-align:right}
+  .cx-wait strong{font:800 26px 'Syne',sans-serif;color:var(--gold)}
+  .cx-wait small{display:block;font-size:10px;letter-spacing:.1em;color:var(--mu)}
+  .cx-lq{display:flex;align-items:center;gap:5px;margin-top:8px;font-size:11px;color:var(--mu);overflow:hidden}
+  .cx-lq .lbl{display:none;margin-right:4px}
+  .cx-lq i:nth-of-type(n+5){display:none}
+  .cx-lq i{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font:600 10px 'DM Sans',sans-serif;font-style:normal;background:var(--c2);border:1px solid var(--ln);color:#cfd6ff}
+  .cx-lq i.d{background:rgba(52,211,153,.18);border-color:rgba(52,211,153,.5);color:#34d399}
+  .cx-lq i.n{background:var(--gold);border-color:var(--gold);color:#1a1200}
+  .cx-fz{position:absolute;top:-1px;right:14px;background:var(--gold);color:#1a1200;font:800 9px 'DM Sans',sans-serif;letter-spacing:.1em;padding:3px 9px;border-radius:0 0 8px 8px;display:none}
+  .cx-empty{text-align:center;padding:34px 10px;color:var(--mu)}
+
+  /* ---- detail ---- */
+  .cx-det{--c:#0c1030;--c2:#10153d;--ln:rgba(120,120,255,.16);--mu:#98a1cc;--gold:#f5b73b;color:#eef1ff;font-family:'DM Sans',sans-serif}
+  .cx-det *{box-sizing:border-box}
+  .cx-hero{position:relative;border-radius:22px;overflow:hidden;min-height:190px;display:flex;flex-direction:column;justify-content:flex-end;padding:18px}
+  .cx-hero .art{position:absolute;right:18px;top:10px;font-size:92px;line-height:1;filter:drop-shadow(0 10px 22px rgba(0,0,0,.35))}
+  .cx-hero img.art{width:130px;height:130px;object-fit:cover;border-radius:22px;font-size:0}
+  .cx-hero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 35%,rgba(7,9,31,.85));pointer-events:none}
+  .cx-hero>*:not(.art){position:relative;z-index:1}
+  .cx-hero h2{margin:0;font:800 28px 'Syne',sans-serif;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .cx-hero p{margin:4px 0 0;font-size:12.5px;color:#d8dcf5}
+  .cx-st{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}
+  .cx-st>div{background:var(--c);border:1px solid var(--ln);border-radius:14px;padding:11px 12px}
+  .cx-st>div.hl{border-color:rgba(245,183,59,.55);background:linear-gradient(135deg,rgba(245,183,59,.14),var(--c))}
+  .cx-st small{display:block;font-size:9.5px;letter-spacing:.1em;color:var(--mu);text-transform:uppercase}
+  .cx-st strong{font:800 21px 'Syne',sans-serif}
+  .cx-st .hl strong{color:var(--gold)}
+  .cx-st .x{display:none}
+  .cx-sec{display:flex;justify-content:space-between;align-items:baseline;margin:16px 0 8px;font:700 14px 'Syne',sans-serif}
+  .cx-sec small{font:12px 'DM Sans',sans-serif;color:var(--gold)}
+  .cx-svs{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+  .cx-svc{cursor:pointer;text-align:left;color:#eef1ff;background:var(--c);border:1px solid var(--ln);border-radius:12px;padding:10px 12px}
+  .cx-svc.on{border-color:var(--gold);background:rgba(245,183,59,.1)}
+  .cx-svc b{display:block;font-size:13px;font-weight:600}
+  .cx-svc span{font-size:12px;color:var(--gold)}
+  .cx-svc em{font-style:normal;font-size:11.5px;color:var(--mu)}
+  .cx-rv{background:var(--c);border:1px solid var(--ln);border-radius:14px;padding:11px 13px;margin-bottom:8px;font-size:12.5px;color:#cfd5f5}
+  .cx-rv b{color:#fff}.cx-rv i{font-style:normal;color:var(--gold);margin-left:6px}
+  .cx-cta{position:sticky;bottom:10px;z-index:5;display:flex;gap:8px;margin-top:16px}
+  .cx-go{flex:1;border:0;cursor:pointer;border-radius:16px;padding:15px;font:800 15px 'DM Sans',sans-serif;color:#1a1200;background:linear-gradient(90deg,#f5b73b,#ff8a3d);box-shadow:0 10px 26px -10px #f5b73b}
+  .cx-go[disabled]{background:#262b55;color:#8a93c4;box-shadow:none;cursor:not-allowed}
+  .cx-alt{flex:none;border:1px solid var(--ln);cursor:pointer;border-radius:16px;padding:0 16px;font:700 14px 'DM Sans',sans-serif;color:#eef1ff;background:var(--c)}
+  .cx-tk{background:rgba(245,183,59,.1);border:1.5px solid var(--gold);border-radius:20px;padding:18px;text-align:center;margin-top:14px}
+  .cx-tk small{font-size:12px;color:var(--mu)}
+  .cx-tk strong{display:block;font:800 54px/1 'Syne',sans-serif;color:var(--gold);margin:4px 0}
+  .cx-tk div{display:flex;gap:8px;justify-content:center;margin-top:10px}
+  .cx-tk button{cursor:pointer;border-radius:12px;padding:9px 16px;font-weight:700;font-size:13px;border:1px solid var(--ln);background:var(--c);color:#eef1ff}
+  .cx-tk button.r{color:#ff6b8b;border-color:rgba(255,107,139,.5)}
+
+  .cx-pick{display:flex;flex-direction:column}
+  .cx-psv{order:1}.cx-pr{order:2}.cx-prv{order:3}
+  .cx-tabs{display:none}
+  .cx-rsv-t{display:none}
+  .cx-inline{display:none;position:static!important;background:none!important;padding:0!important;opacity:1!important;visibility:visible!important;pointer-events:auto!important;transform:none!important;inset:auto!important}
+  .cx-inline.open{display:block}
+  .cx-inline .modal{max-width:none!important;width:100%!important;max-height:none!important;overflow:visible!important;box-shadow:none!important;border:0!important;background:transparent!important;padding:0!important;transform:none!important;margin:0!important}
+  .cx-inline #bk-cancel{display:none}
+  .cx-inline .modal>div:first-child{display:none}
+  /* ---- desktop split ---- */
+  #cx-detail{display:none}
+  @media (min-width:980px){
+    .cx-wrap{display:grid;grid-template-columns:minmax(340px,400px) 1fr;gap:22px;align-items:start}
+    .cx-hi,.cx-loc,.cx-h.fastH,.cx-fast{display:none}
+    .cx-big,.cx-sub{display:block}
+    .cx-left{position:sticky;top:8px;max-height:calc(100vh - 90px);overflow:auto;padding-right:4px}
+    .cx-now{display:none}
+    .cx-wait{display:block}
+    .cx-lq .lbl{display:inline}
+    .cx-lq i:nth-of-type(n+5){display:grid}
+    .cx-card{padding:14px}
+    .cx-card.fz .cx-fz{display:block}
+    .cx-card.fz{border-color:var(--gold)}
+    #cx-detail{display:block;background:var(--c);border:1px solid var(--ln);border-radius:26px;padding:16px;min-height:480px}
+    .cx-hero{min-height:230px;padding:24px}
+    .cx-hero h2{font-size:36px}
+    .cx-hero .art{font-size:130px;right:34px;top:14px}
+    .cx-hero img.art{width:180px;height:180px}
+    .cx-st{grid-template-columns:repeat(4,1fr)}
+    .cx-st .x{display:block}
+    .cx-cta{position:static}
+    .cx-pick{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .cx-det .cx-svs{grid-template-columns:repeat(3,1fr)}
+    .cx-pick{display:grid;grid-template-columns:minmax(0,1fr) 340px;grid-template-areas:"sv pr" "rv pr";column-gap:18px;align-items:start}
+    .cx-psv{grid-area:sv}.cx-pr{grid-area:pr;margin-top:16px}.cx-prv{grid-area:rv}
+    .cx-rsv{background:var(--c2);border:1px solid var(--ln);border-radius:20px;padding:14px}
+    .cx-tabs{display:grid;grid-template-columns:1fr 1fr;background:#080b26;border:1px solid var(--ln);border-radius:12px;padding:3px;margin-bottom:12px}
+    .cx-tabs button{border:0;cursor:pointer;border-radius:9px;padding:9px;font:700 13px 'DM Sans',sans-serif;background:none;color:var(--mu)}
+    .cx-tabs button.on{background:var(--gold);color:#1a1200}
+    .cx-rsv-t{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--mu);margin:2px 0 12px}
+    .cx-rsv-t strong{font:800 22px 'Syne',sans-serif;color:var(--gold)}
+    .cx-rsv .cx-cta{margin-top:0}
+    .cx-rsv .cx-alt{display:none}
+    .cx-bkmsg{text-align:center;color:var(--mu);font-size:13px;padding:10px 0}
+    .cx-bkmsg button{margin-top:10px;cursor:pointer;border-radius:12px;padding:10px 16px;font-weight:700;border:1px solid var(--ln);background:var(--c);color:#eef1ff}
+  }`;
+  document.head.appendChild(css);
+  const ICO_SEARCH = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#98a1cc" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>';
+  const CHIPS = [["all", "All"], ["open", "⚡ Open now"], ["top", "⭐ Top rated"], ["near", "📍 Nearby"], ["male", "Men"], ["female", "Women"]];
+
+  function ensureRoot() {
+    if ($("cx-home")) return true;
+    const home = $("cust-home");
+    if (!home) return false;
+    const r = document.createElement("div");
+    r.id = "cx-home";
+    r.className = "cx";
+    r.innerHTML = `
+      <div class="cx-wrap">
+        <div class="cx-left">
+          <div class="cx-loc" id="cx-loc"></div>
+          <h1 class="cx-hi" id="cx-hi"></h1>
+          <h1 class="cx-big">Skip the wait,<br><em>book your chair.</em></h1>
+          <p class="cx-sub" id="cx-sub"></p>
+          <label class="cx-search">${ICO_SEARCH}<input id="cx-q" type="search" placeholder="Search shops or services" autocomplete="off"><b>≡</b></label>
+          <div class="cx-chips" id="cx-chips"></div>
+          <div class="cx-h fastH"><span><span class="dot"></span>Shortest wait right now</span></div>
+          <div class="cx-fast" id="cx-fast"></div>
+          <div class="cx-h"><span>All shops near you</span><small id="cx-count"></small></div>
+          <div class="cx-list" id="cx-list"></div>
+        </div>
+        <div id="cx-detail"></div>
+      </div>`;
+    home.insertBefore(r, home.firstChild);
+
+    r.addEventListener("input", e => {
+      if (e.target.id === "cx-q") { S.shopQuery = e.target.value; window.renderShops(); }
+    });
+    r.addEventListener("click", e => {
+      const chip = e.target.closest("[data-f]");
+      if (chip) { setFilter(chip.dataset.f); return; }
+      const card = e.target.closest("[data-id]");
+      if (card) window.openShop(Number(card.dataset.id));
+    });
+    return true;
+  }
+
+  function setFilter(f) {
+    if (f === "all") { S.shopFilter = "all"; S.genderFilter = "all"; }
+    else if (f === "male" || f === "female") S.genderFilter = S.genderFilter === f ? "all" : f;
+    else S.shopFilter = S.shopFilter === f ? "all" : f;
+    window.renderShops();
+  }
+
+  function pills(s) {
+    if (!s.open) return "";
+    const out = [];
+    for (let k = -2; k <= 3; k++) {
+      const n = (Number(s.cur) || 0) + k;
+      if (n < 1) continue;
+      out.push(`<i class="${k < 0 ? "d" : k === 0 ? "n" : ""}">${k < 0 ? "✓" : n}</i>`);
+    }
+    return out.length ? `<div class="cx-lq"><span class="lbl">Live queue</span>${out.join("")}</div>` : "";
+  }
+
+  function card(s, fastestId) {
+    const g = gLabel[s.gender || "unisex"];
+    const t = tone(s.wait);
+    return `<div class="cx-card ${s.open ? "" : "off"} ${s.id === fastestId ? "fz" : ""} ${desk() && S.selectedShop === s.id ? "on" : ""}" data-id="${s.id}">
+      <span class="cx-fz">FASTEST</span>
+      <div class="cx-ico">${s.photo ? `<img src="${esc(s.photo)}" alt="">` : esc(s.ico || "💈")}</div>
+      <div class="cx-mid">
+        <div class="cx-nm"><span class="t">${esc(s.name)}</span><span class="cx-tag ${s.open ? "o" : "c"}">${s.open ? "Open" : "Closed"}</span></div>
+        <div class="cx-meta">${esc(s.addr)} · ${g} · ★ ${esc(s.rating)} <b>(${esc(s.rev)})</b>${s.open ? ` · ${esc(s.q)} waiting · <b>~${esc(s.wait)} min</b>` : ""}</div>
+        ${pills(s)}
+      </div>
+      ${s.open
+        ? `<div class="cx-now">NOW<strong>#${esc(s.cur)}</strong></div>
+           <div class="cx-wait"><strong>${esc(s.wait)}</strong><small>MIN WAIT</small><small style="color:${t[1]};letter-spacing:0">● ${t[0]}</small></div>`
+        : `<div class="cx-wait" style="display:block"><small>${s.openingTime ? "OPENS " + esc(s.openingTime) : "CLOSED"}</small></div>
+           <div class="cx-now"><strong style="color:var(--mu)">—</strong></div>`}
+    </div>`;
+  }
+
+  let lastSig = "";
+  let tab = "now";          
+  function paint() {
+    if (!ensureRoot()) return;
+    const list = (window.bqVisibleShops ? window.bqVisibleShops() : S.shops.slice());
+    const open = list.filter(s => s.open).sort((a, b) => a.wait - b.wait);
+    const fastestId = open.length > 1 ? open[0].id : -1;
+
+    $("cx-loc").textContent = "📍 " + ((S.user && S.user.location) && !/not set/i.test(S.user.location) ? S.user.location : "Set your location in Profile");
+    const nm = (S.user && S.user.name) || "there";
+    $("cx-hi").innerHTML = `Hey ${esc(nm.split(" ")[0])}, <em>no more waiting around.</em>`;
+    $("cx-sub").textContent = `${open.length} shop${open.length === 1 ? "" : "s"} near you · live queues, updated every few seconds`;
+
+    const q = $("cx-q"); if (q && q !== document.activeElement && q.value !== (S.shopQuery || "")) q.value = S.shopQuery || "";
+    $("cx-chips").innerHTML = CHIPS.map(([k, l]) => {
+      const on = k === "all" ? (S.shopFilter === "all" && (S.genderFilter || "all") === "all")
+        : (k === "male" || k === "female") ? S.genderFilter === k : S.shopFilter === k;
+      return `<button type="button" class="cx-chip ${on ? "on" : ""}" data-f="${k}">${l}</button>`;
+    }).join("");
+
+    $("cx-fast").innerHTML = open.slice(0, 5).map((s, i) => `
+      <div class="cx-fc" data-id="${s.id}" style="background:${grad(s)}">
+        ${art(s, "bg")}
+        <b>${esc(s.name)}</b>
+        <div class="cx-pills"><span>⏱ ${esc(s.wait)} min</span><span>★ ${esc(s.rating)}</span></div>
+      </div>`).join("") || `<div class="cx-empty">No shops are open right now.</div>`;
+
+    $("cx-count").textContent = list.length + " found";
+    $("cx-list").innerHTML = list.length
+      ? list.map(s => card(s, fastestId)).join("")
+      : `<div class="cx-empty">${S.shopFilter === "near" ? "Set your location in Profile to see nearby shops." : "No shops match your search."}</div>`;
+
+    if (desk()) {
+      const cur = S.shops[S.selectedShop];
+      const target = cur && list.find(s => s.id === cur.id) ? cur : (open[0] || list[0]);
+      if (target) {
+        if (S.selectedShop !== target.id) { S.selectedShop = target.id; if (target.open) buildJoinModal(); }
+        const sig = [target.id, target.cur, target.q, target.wait, target.open, S.inQueue, S.myTok, S.selectedSvc].join("|");
+        const shown = document.querySelector("#cx-detail .cx-det");
+        const keepBooking = tab === "later" && shown && Number(shown.dataset.shop) === target.id;
+        if (!keepBooking && (sig !== lastSig || !$("cx-detail").innerHTML)) { lastSig = sig; showDetail(target); }
+        document.querySelectorAll("#cx-list .cx-card").forEach(c => c.classList.toggle("on", Number(c.dataset.id) === target.id));
+      } else $("cx-detail").innerHTML = '<div class="cx-empty">Pick a shop to see its live queue.</div>';
+    }
+  }
+
+  function detailHtml(s) {
+    const inQ = S.inQueue && S.myShopId === s.id;
+    const sel = svcOf(s, Math.min(S.selectedSvc || 0, s.svcs.length - 1)) || svcOf(s, 0);
+    const g = gLabel[s.gender || "unisex"];
+    return `<div class="cx-det" data-shop="${s.id}">
+      <div class="cx-hero" style="background:${grad(s)}">
+        ${art(s, "art")}
+        <h2>${esc(s.name)} <span class="cx-tag ${s.open ? "o" : "c"}">${s.open ? "Open" : "Closed"}</span></h2>
+        <p>${esc(s.addr)} · ${g} · ★ ${esc(s.rating)} (${esc(s.rev)} reviews)</p>
+      </div>
+      <div class="cx-st">
+        <div class="hl"><small>Your wait</small><strong>~${esc(s.wait)} min</strong></div>
+        <div><small>Serving</small><strong>#${esc(s.cur)}</strong></div>
+        <div><small>Ahead</small><strong>${esc(s.q)}</strong></div>
+        <div class="x"><small>Closes</small><strong>${esc(s.closingTime || "—")}</strong></div>
+      </div>
+      <div class="cx-pick">
+        <div class="cx-psv">${inQ || tab === "later" ? "" : `<div class="cx-sec"><span>Pick a service</span><small>${s.svcs.length} available</small></div>
+          <div class="cx-svs">${s.svcs.map((si, i) => { const v = S.services[si]; return `
+            <button type="button" class="cx-svc ${i === (S.selectedSvc || 0) ? "on" : ""}" data-svc="${i}">
+              <b>${esc(v.ico)} ${esc(v.name)}</b><span>₹${esc(v.price)}</span> <em>· ${esc(v.dur)} min</em></button>`; }).join("")}</div>`}</div>
+        <div class="cx-pr">${inQ ? `<div class="cx-tk"><small>You're in the queue</small><strong>#${esc(S.myTok)}</strong><small>${esc(S.mySvc)}</small>
+            <div><button class="r" data-act="leave">Leave queue</button><button data-act="rate" data-name="${esc(s.name)}">Rate shop ⭐</button></div></div>`
+          : `<div class="cx-rsv">
+              <div class="cx-tabs"><button type="button" data-tab="now" class="${tab === "now" ? "on" : ""}">Join now</button><button type="button" data-tab="later" class="${tab === "later" ? "on" : ""}">Book later</button></div>
+              ${tab === "later" ? `<div id="cx-bkhost"></div><div id="cx-bkmsg" class="cx-bkmsg"></div>` : `
+              <div class="cx-rsv-t"><span>${esc(sel ? sel.name : "")} · ${esc(sel ? sel.dur : "")} min</span><strong>₹${esc(sel ? sel.price : 0)}</strong></div>
+              <div class="cx-cta">
+                <button type="button" class="cx-go" data-act="join" ${s.open ? "" : "disabled"}>${s.open ? `🎫 Get my token · ₹${esc(sel ? sel.price : 0)}` : "Shop is closed"}</button>
+                <button type="button" class="cx-alt" data-act="book" title="Book for later">📅</button>
+              </div>`}
+            </div>`}</div>
+        <div class="cx-prv">
+          <div class="cx-sec"><span>What people say</span></div>
+          <div id="cx-rev"><div class="cx-rv">Loading reviews…</div></div>
+        </div>
+      </div>
+      <div id="bq-gallery"></div>
+      <div style="height:24px"></div>
+    </div>`;
+  }
+
+  async function loadReviews(s) {
+    const box = $("cx-rev");
+    if (!box) return;
+    try {
+      const r = await fetch(BQ_BASE + "/api/shops/reviews?shop_name=" + encodeURIComponent(s.name));
+      const j = await r.json();
+      const cur = document.querySelector(".cx-det");
+      if (!cur || Number(cur.dataset.shop) !== s.id || !$("cx-rev")) return;
+      const list = (j && j.success && j.reviews) || [];
+      $("cx-rev").innerHTML = list.length
+        ? list.slice(0, 4).map(rv => `<div class="cx-rv"><b>${esc(rv.name || "Customer")}</b><i>${"★".repeat(rv.stars || 0)}</i><div>${esc(rv.review || "")}</div></div>`).join("")
+        : '<div class="cx-rv">No written reviews yet.</div>';
+    } catch (e) { if ($("cx-rev")) $("cx-rev").innerHTML = ""; }
+  }
+
+  function showDetail(s) {
+    const box = $("cx-detail");
+    if (!box) return;
+    releaseBooking();
+    box.innerHTML = detailHtml(s);
+    loadReviews(s);
+    if (tab === "later") attachBooking(s);
+  }
+  let bkObs = null;
+  function releaseBooking() {
+    const ov = $("m-advbook");
+    if (bkObs) { bkObs.disconnect(); bkObs = null; }
+    if (ov) {
+      ov.classList.remove("cx-inline", "open");
+      if (ov.parentNode !== document.body) document.body.appendChild(ov);
+    }
+  }
+  function attachBooking(s) {
+    S.selectedShop = s.id;
+    const p = window.bkOpen && window.bkOpen();            
+    const ov = $("m-advbook"), host = $("cx-bkhost"), msg = $("cx-bkmsg");
+    if (!ov || !host) return;
+    ov.classList.add("cx-inline");
+    host.appendChild(ov);
+    if (msg) msg.innerHTML = "";
+    if (bkObs) bkObs.disconnect();
+    bkObs = new MutationObserver(() => {                  
+      if (!ov.classList.contains("open") && $("cx-bkmsg")) {
+        $("cx-bkmsg").innerHTML = 'Check <b>My Queue → My Bookings</b> for the status.<br><button type="button" data-act="rebook">Choose another time</button>';
+      }
+    });
+    bkObs.observe(ov, { attributes: true, attributeFilter: ["class"] });
+    Promise.resolve(p).catch(() => {});
+  }
+  document.addEventListener("click", e => {
+    const det = e.target.closest(".cx-det");
+    if (!det) return;
+    const s = S.shops[Number(det.dataset.shop)];
+    if (!s) return;
+    S.selectedShop = s.id;
+    const svc = e.target.closest("[data-svc]");
+    if (svc) {
+      S.selectedSvc = Number(svc.dataset.svc);
+      det.querySelectorAll(".cx-svc").forEach(b => b.classList.toggle("on", b === svc));
+      const v = svcOf(s, S.selectedSvc), go = det.querySelector('[data-act="join"]');
+      if (v && go && s.open) go.textContent = "🎫 Get my token · ₹" + v.price;
+      lastSig = "";
+      return;
+    }
+    const tb = e.target.closest("[data-tab]");
+    if (tb) { tab = tb.dataset.tab; lastSig = ""; showDetail(s); return; }
+    const act = e.target.closest("[data-act]");
+    if (!act) return;
+    switch (act.dataset.act) {
+      case "join": if (s.open) { buildJoinModalKeep(s); confirmJoin(); } break;
+      case "book": window.bkOpen && window.bkOpen(); break;
+      case "rebook": showDetail(s); break;
+      case "leave": window.leaveQ && window.leaveQ(); break;
+      case "rate":
+        openModal("m-rate");
+        const n = $("rate-shop-name"); if (n) n.textContent = act.dataset.name;
+        break;
+    }
+  });
+  function buildJoinModalKeep(s) {      
+    S.selectedShop = s.id;
+    S.selectedSvc = Math.min(S.selectedSvc || 0, s.svcs.length - 1);
+  }
+  const baseRender = window.renderShops;
+  window.renderShops = function () {
+    const out = baseRender.apply(this, arguments);
+    try { paint(); } catch (err) { console.error("customer UI:", err); }
+    return out;
+  };
+
+  const baseOpen = window.openShop;
+  window.openShop = function (id) {
+    const s = S.shops[id];
+    if (!s) return;
+    if (desk() && $("cx-detail")) {
+      S.selectedShop = id;
+      S.selectedSvc = 0;
+      tab = "now";
+      if (s.open) buildJoinModal();
+      lastSig = "";
+      paint();
+      return;
+    }
+    const out = baseOpen.apply(this, arguments);       
+    const body = $("sh-body");
+    if (body) { body.innerHTML = detailHtml(s); loadReviews(s); }
+    return out;
+  };
+
+  window.addEventListener("resize", () => { lastSig = ""; if (!desk()) { tab = "now"; releaseBooking(); } try { paint(); } catch (e) {} });
+  (async function init() {
+    try { await componentsReady; } catch (e) { return; }
+    try { paint(); } catch (e) { console.error(e); }
+  })();
+})();
+
+/* =========================================================
+   BARBER-Q  —  MY QUEUE STATUS  +  "You're in the Queue!" popup
+   Phone + computer.  Paste at the VERY END of script.js
+   (after customer_redesign.js and payment_support_redesign.js).
+   Re-uses: cqCalc(), leaveQ(), cTab(), the My Bookings block,
+   the "Rate your last visit" button and the #ok-* ids.
+   ========================================================= */
+(function () {
+  "use strict";
+  const $ = id => document.getElementById(id);
+  const esc = v => String(v == null ? "" : v).replace(/[&<>"']/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  const css = document.createElement("style");
+  css.textContent = `
+  .qs{--c:#0c1030;--ln:rgba(120,120,255,.2);--mu:#98a1cc;--gold:#f5b73b;--grn:#34d399;color:#eef1ff;font-family:'DM Sans',sans-serif;max-width:1100px;margin:0 auto;padding-bottom:18px}
+  .qs *{box-sizing:border-box}
+  .qs button{font-family:inherit}
+  .qs-h{margin:0 0 4px;font:800 26px 'Syne',sans-serif}
+  .qs-sub{margin:0 0 16px;font-size:13px;color:var(--mu)}
+  .qs-banner{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:18px;margin-bottom:14px;border:1px solid rgba(52,211,153,.55);
+    background:linear-gradient(100deg,rgba(16,185,129,.28),rgba(16,185,129,.07) 70%)}
+  .qs-banner .ck{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;flex:none;font-size:20px;font-weight:800;color:#06281c;background:var(--grn);box-shadow:0 0 18px -2px var(--grn)}
+  .qs-banner b{display:block;font:700 17px 'DM Sans',sans-serif;color:var(--grn)}
+  .qs-banner small{font-size:12.5px;color:#bfeede}
+  .qs-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:12px}
+  .qs-box{background:var(--c);border:1px solid var(--ln);border-radius:20px;padding:16px;min-width:0}
+  .qs-tok{grid-column:1/-1;display:flex;align-items:center;gap:14px;border:1.5px solid var(--gold);background:linear-gradient(135deg,rgba(245,183,59,.16),rgba(245,183,59,.03));box-shadow:0 0 34px -14px var(--gold)}
+  .qs-tok .ic{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;flex:none;font-size:24px;border:1.5px solid var(--gold);background:rgba(245,183,59,.1)}
+  .qs-tok .l{flex:1;min-width:0}
+  .qs-tok .l b{display:block;font:700 18px 'DM Sans',sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .qs-tok .l small{display:block;margin-top:3px;font-size:12.5px;color:var(--mu);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .qs-tok .r{flex:none;text-align:center;padding-left:14px;border-left:1px solid var(--ln)}
+  .qs-tok .r small{display:block;font-size:12px;color:var(--mu)}
+  .qs-tok .r strong{display:block;font:700 46px/1.05 'Playfair Display',Georgia,serif;color:var(--gold)}
+  .qs-stat{grid-column:span 6;display:flex;flex-direction:column;gap:8px}
+  .qs-stat .ic{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-size:20px;background:linear-gradient(135deg,#4a63ff,#2a3bb8)}
+  .qs-stat small{font-size:13px;color:var(--mu)}
+  .qs-stat .v{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .qs-stat strong{font:800 28px 'Syne',sans-serif}
+  .qs-live{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:var(--grn);background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.35);padding:3px 9px;border-radius:999px}
+  .qs-live::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--grn);animation:qsp 1.4s infinite}
+  @keyframes qsp{50%{opacity:.25}}
+  .qs-time{grid-column:1/-1;display:flex;align-items:center;gap:14px}
+  .qs-time .ic{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;flex:none;font-size:24px;border:1.5px solid var(--gold);background:rgba(245,183,59,.08)}
+  .qs-time .m{flex:1;min-width:0}
+  .qs-time small{font-size:12.5px;color:var(--mu)}
+  .qs-time strong{display:block;font:800 24px 'Syne',sans-serif;color:var(--gold)}
+  .qs-bar{height:7px;border-radius:7px;background:#1a2050;overflow:hidden;margin-top:8px}
+  .qs-bar i{display:block;height:100%;border-radius:7px;background:linear-gradient(90deg,#f5b73b,#ff9a3d);transition:width .6s}
+  .qs-time .n{font-size:11.5px;color:var(--mu);margin-top:6px}
+  .qs-leave{grid-column:1/-1;display:flex;align-items:center;justify-content:center;gap:10px;min-height:58px;cursor:pointer;border-radius:18px;
+    font:700 16px 'DM Sans',sans-serif;color:#ff6b8b;background:rgba(255,80,120,.1);border:1.5px solid rgba(255,80,120,.65)}
+  .qs-leave:hover{background:rgba(255,80,120,.18)}
+  .qs-sec{margin:26px 0 10px;font:700 18px 'Syne',sans-serif}
+  .qs-bk>div:first-child{display:none}              /* hide the old "My Bookings" heading */
+  .qs-bk{margin-top:0!important}
+  .qs-bk .card{background:var(--c)!important;border:1px solid var(--ln)!important;border-radius:16px!important;padding:14px!important}
+  .qs-rate{text-align:center;margin-top:16px}
+  /* empty */
+  .qs-empty{text-align:center;padding:48px 16px 30px;border-radius:26px;border:1px solid var(--ln);background:radial-gradient(70% 60% at 50% 30%,rgba(245,183,59,.09),transparent 70%),var(--c)}
+  .qs-empty .tk{font-size:62px;line-height:1;margin-bottom:14px;filter:drop-shadow(0 0 18px rgba(245,183,59,.5))}
+  .qs-empty h3{margin:0 0 6px;font:800 26px 'Syne',sans-serif}
+  .qs-empty p{margin:0 0 22px;font-size:14px;color:#c2c9ee}
+  .qs-btn{border:0;cursor:pointer;border-radius:999px;padding:15px 34px;font:800 16px 'DM Sans',sans-serif;color:#1a1200;background:linear-gradient(90deg,#f5b73b,#ff9a3d);box-shadow:0 14px 30px -12px #f5b73b}
+  @media (min-width:900px){
+    .qs-h{font-size:30px}
+    .qs-tok{grid-column:span 6}
+    .qs-stat{grid-column:span 3}
+    .qs-time{grid-column:span 7}
+    .qs-leave{grid-column:span 5}
+  }
+  @media (max-width:380px){.qs-tok{flex-wrap:wrap}.qs-tok .r{border-left:0;padding-left:0;width:100%;display:flex;align-items:center;justify-content:space-between}.qs-tok .r strong{font-size:38px}}
+
+  /* ---------- "You're in the Queue!" popup ---------- */
+  #m-ok .modal.qo{width:100%;max-width:400px;max-height:94vh;overflow:auto;text-align:center;padding:26px 22px;border-radius:28px;color:#eef1ff;font-family:'DM Sans',sans-serif;
+    background:radial-gradient(120% 70% at 50% 100%,rgba(124,58,237,.3),transparent 60%),linear-gradient(180deg,#0a0e2e,#070a22);border:1px solid rgba(120,120,255,.22)}
+  .qo .em{font-size:46px;line-height:1;margin-bottom:8px}
+  .qo h3{margin:0 0 6px;font:800 26px 'Syne',sans-serif}
+  .qo #ok-sub{font-size:14.5px;color:#b3bcf0}
+  .qo #ok-pay-note{display:inline-block;margin:12px 0 16px;padding:7px 14px;border-radius:12px;font-size:13.5px;font-weight:600;background:rgba(20,26,70,.7);border:1px solid rgba(120,130,255,.25)}
+  .qo-tok{padding:18px 12px;border-radius:22px;border:1.5px solid var(--gold,#f5b73b);background:linear-gradient(135deg,rgba(245,183,59,.16),rgba(245,183,59,.03));box-shadow:0 0 34px -14px #f5b73b}
+  .qo-tok small{display:block;font-size:14px;color:#b3bcf0}
+  .qo-tok #ok-tok{display:block;font:700 76px/1.05 'Playfair Display',Georgia,serif;color:#f5b73b}
+  .qo-tok #ok-svc{display:block;font-size:16px;color:#e4e8ff}
+  .qo p{margin:16px 6px 18px;font-size:13.5px;line-height:1.5;color:#b3bcf0}
+  .qo .qs-btn{width:100%;border-radius:18px;padding:16px}`;
+  document.head.appendChild(css);
+
+  /* ---------------- My Queue Status ---------------- */
+  const baseMyQ = window.renderMyQ;
+  window.renderMyQ = function () {
+    const out = baseMyQ.apply(this, arguments);        // keeps polling, bookings and rate logic running
+    try { rebuild(); } catch (e) { console.error("queue status UI:", e); }
+    return out;
+  };
+  renderMyQ = window.renderMyQ;
+
+  function rebuild() {
+    const el = $("my-q");
+    if (!el || el.querySelector(".qs")) return;
+
+    // keep the pieces other add-ons put there
+    const kids = [...el.children];
+    const bookings = kids.find(k => /My Bookings/.test((k.firstElementChild || {}).textContent || "") && k.children.length > 1);
+    const rate = kids.find(k => k.querySelector && k.querySelector('button[onclick*="rateLastVisit"]'));
+    if (bookings) bookings.remove();
+    if (rate) rate.remove();
+
+    let html;
+    const s = S.inQueue && S.shops[S.myShopId];
+    if (!s) {
+      html = `
+        <div class="qs-empty">
+          <div class="tk">🎫</div>
+          <h3>No Active Queue</h3>
+          <p>Browse nearby shops and join a queue!</p>
+          <button type="button" class="qs-btn" onclick="cTab('home',null)">Find Barbers →</button>
+        </div>`;
+    } else {
+      const info = (typeof cqCalc === "function") ? cqCalc() : null;
+      let ahead, serving, head, detail, prog, almost;
+      if (info) {
+        ahead = info.ahead; serving = info.serving;
+        head = info.inService ? "~" + info.svc + " min" : "~" + info.done + " min";
+        detail = info.inService ? "Your service is in progress" : "Your turn starts in ~" + info.wait + " min";
+        prog = info.inService
+          ? Math.max(5, Math.min(100, Math.round(100 - (info.svc / (info.dur || 1)) * 100)))
+          : Math.max(5, Math.round(100 - ahead * 15));
+        almost = info.inService ? "Your service is in progress" : ahead + " customer" + (ahead !== 1 ? "s" : "") + " ahead of you";
+      } else {
+        ahead = Math.max(0, Number(S.myTok) - s.cur) || 0; serving = s.cur;
+        head = "Checking…"; detail = "Getting your live position"; prog = 5; almost = "";
+      }
+      const turn = info && (info.inService || ahead <= 2);
+      html = `
+        ${turn ? `<div class="qs-banner"><span class="ck">✓</span><div><b>${info.inService ? "It's your turn!" : "Almost your turn!"}</b><small>${esc(almost)}</small></div></div>` : ""}
+        <div class="qs-grid">
+          <div class="qs-box qs-tok">
+            <span class="ic">✂️</span>
+            <div class="l"><b>${esc(s.name)}</b><small>${esc(S.mySvc)}${s.addr ? " · " + esc(s.addr) : ""}</small></div>
+            <div class="r"><small>Your Token</small><strong>#${esc(S.myTok)}</strong><small>${esc(S.mySvc)}</small></div>
+          </div>
+          <div class="qs-box qs-stat"><span class="ic">👤</span><small>Serving Now</small>
+            <div class="v"><strong>#${esc(serving)}</strong><span class="qs-live">Live</span></div></div>
+          <div class="qs-box qs-stat"><span class="ic">👥</span><small>Ahead of You</small>
+            <div class="v"><strong>${esc(ahead)}</strong><span class="qs-live">Live</span></div></div>
+          <div class="qs-box qs-time">
+            <span class="ic">🕒</span>
+            <div class="m"><small>Time left</small><strong>${esc(head)}</strong>
+              <div class="qs-bar"><i style="width:${prog}%"></i></div>
+              <div class="n">${esc(detail)}</div></div>
+          </div>
+          <button type="button" class="qs-leave" onclick="leaveQ();cTab('queue',null)">⎋ Leave Queue</button>
+        </div>`;
+    }
+
+    el.innerHTML = `<div class="qs">
+      <h2 class="qs-h">My Queue Status</h2>
+      <p class="qs-sub">Track your current queue and manage your bookings</p>
+      ${html}
+      <div id="qs-after"></div>
+    </div>`;
+
+    const after = $("qs-after");
+    if (rate) after.appendChild(rate);
+    if (bookings) {
+      const h = document.createElement("div");
+      h.className = "qs-sec"; h.textContent = "My Bookings";
+      bookings.classList.add("qs-bk");
+      after.appendChild(h);
+      after.appendChild(bookings);
+    }
+  }
+
+  /* ---------------- "You're in the Queue!" popup ---------------- */
+  function buildOk() {
+    const m = $("m-ok");
+    if (!m || m.dataset.qo) return;
+    const box = m.querySelector(".modal") || m.firstElementChild;
+    if (!box) return;
+    m.dataset.qo = "1";
+    box.classList.add("qo");
+    box.innerHTML = `
+      <div class="em">🎉</div>
+      <h3>You're in the Queue!</h3>
+      <div id="ok-sub"></div>
+      <div id="ok-pay-note"></div>
+      <div class="qo-tok"><small>Your Token</small><span id="ok-tok">0</span><span id="ok-svc"></span></div>
+      <p>We'll notify you when your turn is near.<br>Feel free to step out!</p>
+      <button type="button" class="qs-btn" id="ok-view">View My Queue Status →</button>`;
+    $("ok-view").addEventListener("click", () => {
+      closeModal("m-ok");
+      try { go("s-cust"); } catch (e) {}
+      const tabs = document.querySelectorAll("#c-tabs .tab");
+      cTab("queue", tabs[1] || null);
+    });
+  }
+
+  (async function init() {
+    try { await componentsReady; } catch (e) { return; }
+    buildOk();
+    if ($("my-q") && $("my-q").offsetParent !== null) window.renderMyQ();
+  })();
+})();
+
+// booking-panel.js
+// Renders the shop detail body (stats + services + action card) with ONE stable layout.
+// Only the right-hand action card changes between "Join now" and "Book later".
+//
+// Assumed shop shape (rename to match your API):
+// shop = { id, name, waitMin, serving, ahead, closesAt,
+//          services: [{ id, name, icon, price, duration }] }
+
+const panelState = {
+  mode: 'join',      // 'join' | 'book'
+  serviceId: null,
+  slot: null,        // { date, time } once chosen
+};
+
+const esc = (s) =>
+  String(s ?? '').replace(/[&<>"']/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+const rupee = (n) => `₹${Number(n).toLocaleString('en-IN')}`;
+
+// Never show a negative wait; show "—" if the value is missing.
+function fmtWait(min) {
+  const n = Number(min);
+  return Number.isFinite(n) ? `${Math.max(0, Math.round(n))} min` : '—';
+}
+
+function selectedService(shop) {
+  const found = shop.services.find((s) => s.id === panelState.serviceId);
+  const svc = found || shop.services[0] || null;
+  panelState.serviceId = svc ? svc.id : null;
+  return svc;
+}
+
+function renderStats(shop) {
+  const items = [
+    ['Your wait', fmtWait(shop.waitMin), 'is-accent'],
+    ['Serving', shop.serving != null ? `#${shop.serving}` : '—', ''],
+    ['Ahead', shop.ahead ?? 0, ''],
+    ['Closes', shop.closesAt || 'Open today', ''],
+  ];
+  return `
+    <div class="stat-row">
+      ${items.map(([label, value, cls]) => `
+        <div class="stat ${cls}">
+          <span class="stat-label">${label}</span>
+          <span class="stat-value">${esc(value)}</span>
+        </div>`).join('')}
+    </div>`;
+}
+
+function renderServices(shop) {
+  return `
+    <section class="services">
+      <div class="section-head">
+        <h3>Pick a service</h3>
+        <span class="muted">${shop.services.length} available</span>
+      </div>
+      <div class="service-grid" role="radiogroup" aria-label="Services">
+        ${shop.services.map((s) => `
+          <button type="button" role="radio"
+                  class="service ${s.id === panelState.serviceId ? 'is-selected' : ''}"
+                  aria-checked="${s.id === panelState.serviceId}"
+                  data-service="${esc(s.id)}">
+            <span class="service-name">${esc(s.icon || '')} ${esc(s.name)}</span>
+            <span class="service-meta">${rupee(s.price)} · ${esc(s.duration)} min</span>
+          </button>`).join('')}
+      </div>
+    </section>`;
+}
+
+function renderActionCard(shop, svc) {
+  const isJoin = panelState.mode === 'join';
+  const slot = panelState.slot;
+
+  const toggle = `
+    <div class="mode-toggle" role="tablist">
+      <button type="button" role="tab" aria-selected="${isJoin}"
+              class="${isJoin ? 'is-active' : ''}" data-mode="join">Join now</button>
+      <button type="button" role="tab" aria-selected="${!isJoin}"
+              class="${!isJoin ? 'is-active' : ''}" data-mode="book">Book later</button>
+    </div>`;
+
+  const summary = svc
+    ? `<div class="summary">
+         <span>${esc(svc.name)} · ${esc(svc.duration)} min</span>
+         <strong class="price">${rupee(svc.price)}</strong>
+       </div>`
+    : `<div class="summary muted">Select a service to continue</div>`;
+
+  const body = isJoin
+    ? `<button type="button" class="cta" data-action="join" ${svc ? '' : 'disabled'}>
+         Get my token · ${svc ? rupee(svc.price) : ''}
+       </button>`
+    : `<button type="button" class="btn-secondary" data-action="pick-slot" ${svc ? '' : 'disabled'}>
+         ${slot ? `${esc(slot.date)} · ${esc(slot.time)} (change)` : 'Choose date &amp; time'}
+       </button>
+       <button type="button" class="cta" data-action="confirm-booking"
+               ${svc && slot ? '' : 'disabled'}>
+         Confirm booking · ${svc ? rupee(svc.price) : ''}
+       </button>`;
+
+  return `<aside class="action-card">${toggle}${summary}${body}</aside>`;
+}
+
+function renderShopDetail(shop, mount = document.getElementById('shopDetailBody')) {
+  const svc = selectedService(shop);
+  mount.innerHTML = `
+    ${renderStats(shop)}
+    <div class="detail-grid">
+      ${renderServices(shop)}
+      ${renderActionCard(shop, svc)}
+    </div>`;
+  mount.__shop = shop;
+}
+
+// One delegated listener: no re-binding after each render.
+function bindShopDetail(mount = document.getElementById('shopDetailBody')) {
+  mount.addEventListener('click', (e) => {
+    const shop = mount.__shop;
+    if (!shop) return;
+
+    const serviceBtn = e.target.closest('[data-service]');
+    if (serviceBtn) {
+      panelState.serviceId = serviceBtn.dataset.service;
+      panelState.slot = null; // a new service may change available slots
+      return renderShopDetail(shop, mount);
+    }
+
+    const modeBtn = e.target.closest('[data-mode]');
+    if (modeBtn) {
+      panelState.mode = modeBtn.dataset.mode;
+      return renderShopDetail(shop, mount);
+    }
+
+    const actionBtn = e.target.closest('[data-action]');
+    if (!actionBtn || actionBtn.disabled) return;
+    const svc = selectedService(shop);
+
+    switch (actionBtn.dataset.action) {
+      case 'join':
+        // hook into your existing join-queue call
+        if (typeof joinQueue === 'function') joinQueue(shop.id, svc.id);
+        break;
+      case 'pick-slot':
+        // hook into your existing date/time picker; call it with a callback
+        if (typeof openSlotPicker === 'function') {
+          openSlotPicker(shop, svc, (slot) => {
+            panelState.slot = slot; // { date, time }
+            renderShopDetail(shop, mount);
+          });
+        }
+        break;
+      case 'confirm-booking':
+        if (typeof createBooking === 'function') {
+          createBooking(shop.id, svc.id, panelState.slot);
+        }
+        break;
+    }
+  });
+}
