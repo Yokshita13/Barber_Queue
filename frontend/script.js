@@ -12766,3 +12766,254 @@ S.shops.forEach((s, i) => {
     }
   }
 })();
+
+/* =========================================================
+   BARBERQ PATCH: FIX EMPTY RIGHT-SIDE SHOP DETAILS
+   Paste at the VERY END of script.js
+   ========================================================= */
+(function fixBarberQShopDetails() {
+  'use strict';
+
+  function repairShopData() {
+    if (typeof S === 'undefined' || !Array.isArray(S.shops)) return;
+
+    if (!Array.isArray(S.services)) S.services = [];
+
+    S.shops.forEach(function (shop, index) {
+      if (!shop || typeof shop !== 'object') return;
+
+      // Preserve the real backend ID, but keep UI IDs compatible
+      // with code that accesses S.shops[id].
+      if (shop.backendId == null && shop.id != null) {
+        shop.backendId = shop.id;
+      }
+      shop.id = index;
+
+      // The detail panel expects a list of service indexes.
+      if (!Array.isArray(shop.svcs)) shop.svcs = [];
+
+      shop.svcs = shop.svcs.filter(function (serviceIndex) {
+        return Number.isInteger(serviceIndex) &&
+          serviceIndex >= 0 &&
+          serviceIndex < S.services.length &&
+          S.services[serviceIndex] != null;
+      });
+
+      // Normalize backend fields used by the customer UI.
+      shop.name = String(shop.name || 'Barber Shop');
+      shop.addr = String(shop.addr || shop.address || 'Address not provided');
+      shop.open = typeof shop.open === 'boolean'
+        ? shop.open
+        : String(shop.status || '').toLowerCase() === 'open';
+
+      if (shop.rating == null) shop.rating = 0;
+      if (shop.rev == null) shop.rev = shop.review_count || 0;
+      if (shop.q == null) shop.q = shop.queue_count || 0;
+      if (shop.cur == null) shop.cur = shop.current_token || 0;
+      if (shop.wait == null) shop.wait = shop.wait_minutes || 0;
+      if (!shop.ico) shop.ico = '💈';
+      if (!shop.clr) shop.clr = '#D4AF37';
+    });
+  }
+
+  // Repair data before existing shop functions run.
+  ['openShop', 'renderShops'].forEach(function (name) {
+    var original = window[name];
+    if (typeof original !== 'function' || original.__bqDetailFix) return;
+
+    var wrapped = function () {
+      repairShopData();
+      return original.apply(this, arguments);
+    };
+
+    wrapped.__bqDetailFix = true;
+    window[name] = wrapped;
+  });
+
+  // The newer customer interface uses clicks inside #cx-list.
+  // Capture the click first so missing svcs cannot crash its renderer.
+  document.addEventListener('click', function (event) {
+    if (event.target.closest('#cx-list, #cx-fast')) {
+      repairShopData();
+    }
+  }, true);
+
+  // Also handles shops loaded asynchronously from the backend.
+  repairShopData();
+
+  var attempts = 0;
+  var repairTimer = setInterval(function () {
+    repairShopData();
+    attempts++;
+
+    // Stop after 30 seconds; click handling remains available.
+    if (attempts >= 120) clearInterval(repairTimer);
+  }, 250);
+
+  // Show a useful message instead of a blank service list.
+  var detailObserver = new MutationObserver(function () {
+    var detail = document.getElementById('cx-detail');
+    if (!detail) return;
+
+    var shopDetails = detail.querySelector('.cx-det');
+    var serviceList = detail.querySelector('.cx-svs');
+
+    if (shopDetails && serviceList && !serviceList.children.length &&
+        !serviceList.dataset.emptyMessageAdded) {
+      serviceList.dataset.emptyMessageAdded = 'true';
+      serviceList.innerHTML =
+        '<div class="cx-empty">Shop details loaded. Services have not been added yet.</div>';
+    }
+  });
+
+  function watchDetail() {
+    var detail = document.getElementById('cx-detail');
+    if (detail && !detail.dataset.bqDetailObserved) {
+      detail.dataset.bqDetailObserved = 'true';
+      detailObserver.observe(detail, { childList: true, subtree: true });
+    }
+  }
+
+  watchDetail();
+  document.addEventListener('DOMContentLoaded', watchDetail);
+})();
+
+/* =========================================================
+   BARBERQ: SHOW ONLY CURRENTLY REGISTERED SHOPS
+   Temporary allowlist: Sanjana Makeovers is the only
+   confirmed registered shop. Paste at end of script.js.
+   ========================================================= */
+(function () {
+  'use strict';
+
+  const API = 'https://barber-queue-backend-9z52.onrender.com/api';
+  const ALLOWED_SHOPS = new Set(['sanjana makeovers']);
+  let loading = false;
+
+  function normalize(shop, index) {
+    return {
+      ...shop,
+      backendId: shop.id,
+      id: index,
+      name: String(shop.name || 'Barber Shop'),
+      owner: shop.owner || '',
+      addr: shop.address || shop.addr || 'Address not provided',
+      open: typeof shop.open === 'boolean'
+        ? shop.open
+        : String(shop.status || '').toLowerCase() === 'open',
+      rating: Number(shop.rating || 0),
+      rev: Number(shop.rev || shop.review_count || 0),
+      q: Number(shop.queue_count || shop.q || 0),
+      cur: Number(shop.current_token || shop.cur || 0),
+      wait: Number(shop.wait_minutes || shop.wait || 0),
+      svcs: Array.isArray(shop.svcs) ? shop.svcs : [],
+      photo: shop.photos?.[0]?.photo_url ||
+             shop.photos?.[0]?.url || shop.photo || '',
+      ico: '💈',
+      clr: '#D4AF37'
+    };
+  }
+
+  function refreshUI() {
+    try {
+      if (typeof window.renderShops === 'function') {
+        window.renderShops();
+      }
+
+      // Refresh the newer customer-shop interface if it is present.
+      const allChip = document.querySelector(
+        '#cx-chips [data-f="all"]'
+      );
+      if (allChip) allChip.click();
+
+      document.querySelectorAll('#cx-list .cx-card').forEach(card => {
+        card.classList.remove('on');
+      });
+
+      const detail = document.getElementById('cx-detail');
+      if (detail && (!window.S || !S.shops.length)) {
+        detail.innerHTML =
+          '<div class="cx-empty">No registered barber shops are available.</div>';
+      }
+    } catch (error) {
+      console.warn('BarberQ shop UI refresh issue:', error);
+    }
+  }
+
+  async function loadRegisteredShops() {
+    if (loading || typeof S === 'undefined' || !Array.isArray(S.shops)) {
+      return;
+    }
+
+    loading = true;
+
+    try {
+      const response = await fetch(API + '/shops', {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+        cache: 'no-store'
+      });
+
+      if (!response.ok) {
+        throw new Error('Shop API returned HTTP ' + response.status);
+      }
+
+      const result = await response.json();
+      const records = Array.isArray(result)
+        ? result
+        : Array.isArray(result.shops) ? result.shops : [];
+
+      // Do not trust old localStorage or demo shop records.
+      // Only the confirmed registered shop is displayed for now.
+      const realShops = records.filter(shop =>
+        shop &&
+        shop.id != null &&
+        ALLOWED_SHOPS.has(String(shop.name || '').trim().toLowerCase())
+      );
+
+      S.shops = realShops.map(normalize);
+
+      if (S.shops.length) {
+        S.selectedShop = 0;
+      }
+
+      refreshUI();
+
+      console.log(
+        'BarberQ registered shops loaded:',
+        S.shops.map(shop => ({ id: shop.backendId, name: shop.name }))
+      );
+    } catch (error) {
+      console.error('Could not load registered shops:', error);
+
+      // Avoid showing stale/unverified local shop cards on API failure.
+      S.shops = [];
+      refreshUI();
+
+      const list = document.getElementById('cx-list');
+      if (list) {
+        list.innerHTML =
+          '<div class="cx-empty">Could not load registered shops. Please refresh and try again.</div>';
+      }
+    } finally {
+      loading = false;
+    }
+  }
+
+  // Wait for the app's state and HTML components to initialize.
+  let attempts = 0;
+  const startup = setInterval(function () {
+    attempts++;
+
+    if (typeof S !== 'undefined' && Array.isArray(S.shops)) {
+      clearInterval(startup);
+      loadRegisteredShops();
+    } else if (attempts >= 80) {
+      clearInterval(startup);
+      console.error('BarberQ: app state did not initialize in time.');
+    }
+  }, 250);
+
+  // Expose a refresh function without replacing existing app functions.
+  window.refreshRegisteredBarberQShops = loadRegisteredShops;
+})();
