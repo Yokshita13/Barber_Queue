@@ -12,23 +12,60 @@
 </head>
 
 <body>
+
   <div class="screen active" id="s-land">
-    <div class="scroll"style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100%;padding:40px 24px;text-align:center;position:relative;overflow:hidden">
-      <div class="glow-gold"></div>
-      <div class="glow-cyan"></div>
-      <div style="font-size:64px;margin-bottom:12px;filter:drop-shadow(0 0 20px rgba(245,200,66,.3))">✂️</div>
-      <div style="font-size:56px;font-weight:800;letter-spacing:-2px;line-height:1;margin-bottom:10px;font-family:'Syne',sans-serif">Barber<span style="color:var(--gold)"> - Q</span></div>
-      <p style="color:var(--txt2);font-size:16px;max-width:260px;line-height:1.6;margin-bottom:48px">Skip the wait. Book your barber in real-time.</p>
-      <div style="width:100%;max-width:340px;display:flex;flex-direction:column;gap:12px">
-        <button class="btn btn-gold btn-full" style="height:54px;font-size:16px" onclick="go('s-auth')">Get Started</button>
-        <button class="btn btn-outline btn-full" style="height:54px;font-size:16px" onclick="demoAs('customer')">👤 Demo as Customer</button>
-        <button class="btn btn-outline btn-full" style="height:54px;font-size:16px" onclick="demoAs('barber')">✂️ Demo as Barber</button>
+    <div class="scroll landing-scroll">
+
+      <div class="landing-content">
+
+        <div class="landing-badge">
+          <span class="status-dot"></span>
+          YOUR NEXT FRESH LOOK STARTS HERE
+        </div>
+
+        <div class="landing-logo">✂️</div>
+
+        <h1 class="landing-title">
+          <!-- UniSalon<span>Q.</span> -->
+          Glowora
+        </h1>
+
+        <p class="landing-tagline">
+          Good hair. Great style. <br>
+          <span>Zero waiting.</span>
+        </p>
+
+        <p class="landing-description">
+          Find your barber, book your spot, and
+          enjoy a smarter salon experience.
+        </p>
+
+        <div class="landing-actions">
+          <button class="btn btn-gold btn-full landing-primary" onclick="go('s-auth')">
+            Get Started <span>→</span>
+          </button>
+
+          <button class="btn btn-outline btn-full landing-secondary" onclick="demoAs('customer')">
+            👤 &nbsp; Explore as Customer
+          </button>
+
+          <button class="btn btn-outline btn-full landing-secondary" onclick="demoAs('barber')">
+            ✂️ &nbsp; Enter Barber Mode
+          </button>
+        </div>
+
+        <div class="landing-footer">
+          <span>✦ SMART QUEUE MANAGEMENT</span>
+          <span>✦ BUILT FOR BETTER GROOMING</span>
+        </div>
+
       </div>
     </div>
   </div>
 
   <script src="script.js"></script>
- <script src="layout_fix.js"></script>
+  <script src="layout_fix.js"></script>
+
 </body>
 
 </html>
