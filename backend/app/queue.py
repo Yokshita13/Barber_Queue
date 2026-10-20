@@ -1737,3 +1737,27 @@ def shop_analytics():
         import logging
         logging.exception("Analytics failed")
         return error_response("Could not load analytics.", 500)
+# --------------------------------------------------
+# GET THE LOGGED-IN BARBER'S REGISTERED SHOP
+# --------------------------------------------------
+
+@queue_bp.route("/api/barbers/my-shop", methods=["GET"])
+@barber_required
+def get_my_registered_shop():
+    try:
+        shop = g.barber.shop
+
+        if shop is None:
+            return error_response(
+                "No shop is linked to this barber account.", 404
+            )
+
+        return jsonify({
+            "success": True,
+            "shop": shop_json(shop)
+        }), 200
+
+    except Exception:
+        db.session.rollback()
+        current_app.logger.exception("Could not load barber shop")
+        return error_response("Could not load your registered shop.", 500)
