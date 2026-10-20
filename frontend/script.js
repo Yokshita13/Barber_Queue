@@ -13017,3 +13017,52 @@ S.shops.forEach((s, i) => {
   // Expose a refresh function without replacing existing app functions.
   window.refreshRegisteredBarberQShops = loadRegisteredShops;
 })();
+
+/* BARBERQ: RESTORE PREDEFINED SERVICES FOR REGISTERED SHOPS */
+(function () {
+  'use strict';
+
+  const PREDEFINED_SERVICES = [
+    { name: 'Haircut', price: 250, duration: 20 },
+    { name: 'Beard Trim', price: 150, duration: 15 },
+    { name: 'Hair Color', price: 800, duration: 60 },
+    { name: 'Facial', price: 600, duration: 45 },
+    { name: 'Hair Spa', price: 1200, duration: 90 },
+    { name: 'Head Massage', price: 200, duration: 20 },
+    { name: 'Manicure', price: 300, duration: 30 },
+    { name: 'Pedicure', price: 400, duration: 40 }
+  ];
+
+  function restoreServices() {
+    if (typeof S === 'undefined' || !Array.isArray(S.shops)) return;
+
+    if (!Array.isArray(S.services) || !S.services.length) {
+      S.services = PREDEFINED_SERVICES.map((service, index) => ({
+        id: index,
+        name: service.name,
+        price: service.price,
+        duration: service.duration,
+        minutes: service.duration
+      }));
+    }
+
+    S.shops.forEach(shop => {
+      if (!Array.isArray(shop.svcs) || !shop.svcs.length) {
+        shop.svcs = S.services.map((_, index) => index);
+      }
+    });
+
+    if (typeof window.renderShops === 'function') {
+      window.renderShops();
+    }
+
+    console.log('BarberQ: predefined services restored', S.services);
+  }
+
+  // Wait until the shop-loading patch has finished.
+  window.addEventListener('load', function () {
+    setTimeout(restoreServices, 1500);
+  });
+
+  window.restoreBarberQServices = restoreServices;
+})();
