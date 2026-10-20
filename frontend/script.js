@@ -12652,3 +12652,98 @@ function bindShopDetail(mount = document.getElementById('shopDetailBody')) {
     return out;
   };
 })();
+
+/* Load real registered shops from the BarberQ backend */
+(async function loadRealBarberQShops() {
+  const API = 'https://barber-queue-backend-9z52.onrender.com/api';
+
+  const list = document.getElementById('shop-list');
+  if (list) {
+    list.innerHTML =
+      '<div class="cx-empty">Loading registered barber shops...</div>';
+  }
+
+  try {
+    const response = await fetch(`${API}/shops`, {
+      method: 'GET',
+      headers: { Accept: 'application/json' }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Shops API returned ${response.status}`);
+    }
+
+    const result = await response.json();
+
+    // Support either {shops: [...]} or a direct array response.
+    const shops = Array.isArray(result)
+      ? result
+      : Array.isArray(result.shops)
+        ? result.shops
+        : [];
+
+    // Never show the old demo shops.
+    const demoNames = new Set([
+      'royal cuts',
+      'the blade room',
+      'style studio',
+      'classic barber'
+    ]);
+
+    const realShops = shops.filter(shop =>
+      shop &&
+      shop.id != null &&
+      shop.name &&
+      !demoNames.has(String(shop.name).trim().toLowerCase())
+    );
+
+    // Keep any local barber-profile entry used by the barber dashboard.
+    const barberProfile = (S.shops || []).find(shop => shop.isBarberProfile);
+
+    // The existing UI uses array indexes for openShop(id).
+    // Keep the real database ID separately as backendId.
+    S.shops = realShops.map((shop, index) => ({
+      ...shop,
+      backendId: shop.id,
+      id: index,
+      name: shop.name,
+      owner: shop.owner || '',
+      addr: shop.address || shop.addr || 'Address not provided',
+      open: String(shop.status || '').toLowerCase() === 'open',
+      rating: Number(shop.rating || 0),
+      rev: Number(shop.rev || shop.review_count || 0),
+      q: Number(shop.queue_count || shop.q || 0),
+      cur: Number(shop.current_token || shop.cur || 0),
+      wait: Number(shop.wait_minutes || shop.wait || 0),
+      photo: shop.photos?.[0]?.photo_url ||
+             shop.photos?.[0]?.url ||
+             shop.photo ||
+             '',
+      ico: '💈',
+      clr: '#D4AF37'
+    }));
+
+    // Keep the barber's own profile available to existing dashboard code.
+    if (barberProfile) {
+      S.shops.push(barberProfile);
+    }
+
+    if (typeof renderShops === 'function') {
+      renderShops();
+    }
+
+    console.log('Registered shops loaded:', realShops.length);
+
+    if (realShops.length === 0 && list) {
+      list.innerHTML =
+        '<div class="cx-empty">No registered barber shops are available yet.</div>';
+    }
+  } catch (error) {
+    console.error('Could not load registered shops:', error);
+
+    if (list) {
+      list.innerHTML =
+        '<div class="cx-empty">Could not load shops. Please refresh and try again.</div>';
+    }
+  }
+})();
