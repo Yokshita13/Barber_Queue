@@ -43,12 +43,7 @@ const S={
     {id:4,name:'Facial',price:600,dur:45,ico:'✨'},
     {id:5,name:'Hair Spa',price:1200,dur:90,ico:'💆'},
   ],
-  shops:[
-    {id:0,name:'Royal Cuts',owner:'Rahul Sharma',rating:4.8,rev:234,addr:'Hazratganj, Lucknow',cur:3,q:6,wait:28,open:true,clr:'#f5c842',ico:'👑',svcs:[0,1,2,3]},
-    {id:1,name:'The Blade Room',owner:'Amit Singh',rating:4.6,rev:189,addr:'Gomtinagar, Lucknow',cur:7,q:4,wait:18,open:true,clr:'#00d4aa',ico:'⚔️',svcs:[0,1,4]},
-    {id:2,name:'Style Studio',owner:'Priya Verma',rating:4.9,rev:312,addr:'Alambagh, Lucknow',cur:12,q:2,wait:8,open:true,clr:'#ff6b9d',ico:'💎',svcs:[0,1,2,3,4]},
-    {id:3,name:'Classic Barber',owner:'Suresh Kumar',rating:3.4,rev:98,addr:'Chowk, Lucknow',cur:0,q:8,wait:36,open:false,clr:'#a29bfe',ico:'🪒',svcs:[0,1]},
-  ],
+  shops:[],
   bq:[],
   earn:0,
   doneCnt:0,
@@ -7059,10 +7054,10 @@ window.S = S;   // expose the state object so the add-on code can read S.barber
           <div><label>Closes</label><input class="inp" type="time" id="bk-close"></div>
           <div><label>Slot length</label><select class="inp" id="bk-slot">
             <option value="15">15 min</option><option value="20">20 min</option><option value="30">30 min</option>
-            <option value="45">45 min</option><option value="60">60 min</option></select></div>
+            <option value="45">45 min</option><option value="120">120 min</option></select></div>
           <div><label>Book ahead</label><select class="inp" id="bk-ahead">
             <option value="7">7 days</option><option value="14">14 days</option>
-            <option value="30">30 days</option><option value="60">60 days</option></select></div>
+            <option value="30">30 days</option><option value="60">60 days</option><option value="120">120 days</option><option value="365">365 days</option></select></div>
           <div style="grid-column:1/-1"><label>Customers can cancel until</label><select class="inp" id="bk-cutoff">
             <option value="0">Any time before the slot</option><option value="1">1 hour before</option>
             <option value="2">2 hours before</option><option value="4">4 hours before</option>
@@ -10319,38 +10314,6 @@ window.S = S;   // expose the state object so the add-on code can read S.barber
   })();
 })();
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 (function () {
   "use strict";
   const $ = id => document.getElementById(id);
@@ -10955,13 +10918,6 @@ window.S = S;   // expose the state object so the add-on code can read S.barber
   })();
 })();
 
-/* =========================================================
-   BARBER-Q  —  MY QUEUE STATUS  +  "You're in the Queue!" popup
-   Phone + computer.  Paste at the VERY END of script.js
-   (after customer_redesign.js and payment_support_redesign.js).
-   Re-uses: cqCalc(), leaveQ(), cTab(), the My Bookings block,
-   the "Rate your last visit" button and the #ok-* ids.
-   ========================================================= */
 (function () {
   "use strict";
   const $ = id => document.getElementById(id);
@@ -11161,14 +11117,6 @@ window.S = S;   // expose the state object so the add-on code can read S.barber
   })();
 })();
 
-// booking-panel.js
-// Renders the shop detail body (stats + services + action card) with ONE stable layout.
-// Only the right-hand action card changes between "Join now" and "Book later".
-//
-// Assumed shop shape (rename to match your API):
-// shop = { id, name, waitMin, serving, ahead, closesAt,
-//          services: [{ id, name, icon, price, duration }] }
-
 const panelState = {
   mode: 'join',      // 'join' | 'book'
   serviceId: null,
@@ -11321,3 +11269,1386 @@ function bindShopDetail(mount = document.getElementById('shopDetailBody')) {
     }
   });
 }
+
+/* =====================================================================
+   BARBERQ — FIX PATCH  (paste at the VERY END of script.js)
+   Overrides the faulty functions above. Nothing else is changed.
+   ===================================================================== */
+(function () {
+  'use strict';
+
+  const $ = id => document.getElementById(id);
+  const digits = p => String(p || '').replace(/\D/g, '').slice(-10);
+  // remove < and > so user text can never become HTML
+  const cleanText = v => String(v == null ? '' : v).replace(/[<>]/g, '').trim();
+
+  /* ---------- 1. toast: works with toast('msg') and toast('✅','msg') ---------- */
+  let toastTimer;
+  window.toast = function (ico, msg) {
+    if (msg === undefined) { msg = ico; ico = 'ℹ️'; }
+    try {
+      const prefs = JSON.parse(localStorage.getItem('bqPrefs') || '{}');
+      if (prefs.bookingAlerts === false && /New booking request/.test(String(msg))) return;
+    } catch (e) {}
+    const el = $('toast');
+    if (!el) return;
+    if ($('t-ico')) $('t-ico').textContent = ico;
+    if ($('t-msg')) $('t-msg').textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+  };
+
+  /* ---------- 2. stop double joins / double "Leave queue" prompts ----------
+     The customer home UI was pasted twice, so every tap ran twice. */
+  const baseConfirmJoin = window.confirmJoin;
+  window.confirmJoin = function () {
+    if (S.inQueue) {
+      toast('ℹ️', "You're already in a queue. Leave it before joining another.");
+      return;
+    }
+    return baseConfirmJoin.apply(this, arguments);
+  };
+
+  function once(name, ms) {
+    const base = window[name];
+    if (typeof base !== 'function') return;
+    let last = 0;
+    window[name] = function () {
+      if (Date.now() - last < ms) return;
+      try { return base.apply(this, arguments); }
+      finally { last = Date.now(); }       // set AFTER, so a confirm() dialog can't let a repeat through
+    };
+  }
+  once('confirmJoin', 600);
+  once('leaveQ', 600);
+  once('bkOpen', 600);
+
+  const baseFinalize = window.finalizeJoin;   // blocks a double-tap on "Pay & Join"
+  let joining = false;
+  window.finalizeJoin = async function () {
+    if (joining) return;
+    joining = true;
+    try { return await baseFinalize.apply(this, arguments); }
+    finally { joining = false; }
+  };
+
+  /* ---------- 3. services: deleting one no longer breaks shops ----------
+     Shops store service POSITIONS, so a delete shifted every shop's menu
+     and openShop crashed on an undefined service. */
+  function dropBadServiceIndexes() {
+    const n = S.services.length;
+    S.shops.forEach(s => {
+      if (Array.isArray(s.svcs)) s.svcs = s.svcs.filter(i => Number.isInteger(i) && i >= 0 && i < n);
+    });
+  }
+  ['openShop', 'buildJoinModal', 'renderShops'].forEach(name => {
+    const base = window[name];
+    if (typeof base !== 'function') return;
+    window[name] = function () { dropBadServiceIndexes(); return base.apply(this, arguments); };
+  });
+
+  const baseDelSvc = window.delSvc;
+  window.delSvc = function (i) {
+    if (!S.services[i]) return;
+    S.shops.forEach(s => {                       // keep demo shops pointing at the right services
+      if (s.isBarberProfile || !Array.isArray(s.svcs)) return;
+      s.svcs = s.svcs.filter(x => x !== i).map(x => (x > i ? x - 1 : x));
+    });
+    const out = baseDelSvc.apply(this, arguments);
+    if (S.barber && S.barber.shopName) syncBarberToCustomerShop();   // customers see the new menu
+    return out;
+  };
+
+  const baseAddSvc = window.addSvc;
+  window.addSvc = function () {
+    const out = baseAddSvc.apply(this, arguments);
+    if (S.barber && S.barber.shopName) syncBarberToCustomerShop();
+    return out;
+  };
+
+  /* ---------- 4. security: names can't inject HTML ---------- */
+  const baseLoadPublished = window.loadPublishedShop;
+  window.loadPublishedShop = function () {
+    const ok = baseLoadPublished.apply(this, arguments);
+    S.shops.forEach(s => {
+      ['name', 'owner', 'addr'].forEach(k => { if (typeof s[k] === 'string') s[k] = cleanText(s[k]); });
+    });
+    return ok;
+  };
+
+  const baseSaveBarber = window.saveBarberProfile;
+  window.saveBarberProfile = function () {
+    ['bp-name', 'bp-shop', 'bp-address', 'bp-bank'].forEach(id => { const el = $(id); if (el) el.value = cleanText(el.value); });
+    return baseSaveBarber.apply(this, arguments);
+  };
+
+  const baseRestoreBarber = window.restoreBarberProfile;
+  window.restoreBarberProfile = function () {
+    const out = baseRestoreBarber.apply(this, arguments);
+    ['name', 'shopName', 'address', 'payoutBank', 'email'].forEach(k => {
+      if (typeof S.barber[k] === 'string') S.barber[k] = cleanText(S.barber[k]);
+    });
+    if (S.barber.shopName) syncBarberToCustomerShop();
+    return out;
+  };
+
+  const baseWalkin = window.addWalkinCustomer;
+  window.addWalkinCustomer = function () {
+    const el = $('walkin-name');
+    if (el) el.value = cleanText(el.value);
+    return baseWalkin.apply(this, arguments);
+  };
+
+  /* The old queue/shop renderers write raw, unescaped HTML into hidden lists.
+     Hidden HTML still runs scripts, so switch those two writes off. The new
+     screens (which escape everything) are what the user actually sees. */
+  function muteInnerHTML(id) {
+    const el = $(id);
+    if (!el || el.__muted) return;
+    el.__muted = true;
+    Object.defineProperty(el, 'innerHTML', { configurable: true, get() { return ''; }, set() {} });
+  }
+  componentsReady.then(() => { muteInnerHTML('shop-list'); muteInnerHTML('b-qlist'); });
+
+  /* ---------- 5. customer profile: phone keeps its "+91 " format ---------- */
+  const baseSaveProfileEdit = window.saveProfileEdit;
+  window.saveProfileEdit = function () {
+    ['ep-name', 'ep-location'].forEach(id => { const el = $(id); if (el) el.value = cleanText(el.value); });
+    const out = baseSaveProfileEdit.apply(this, arguments);
+    const d = digits(S.user.phone);
+    if (d.length === 10 && S.user.phone !== '+91 ' + d) {
+      S.user.phone = '+91 ' + d;
+      saveCurrentCustomer();
+      if ($('s-prof') && $('s-prof').classList.contains('active')) renderProfile();
+    }
+    return out;
+  };
+
+  /* ---------- 6. barber profile screen: wrong buttons ----------
+     Logout called logout() (customer logout), Update Shop Photo said "coming soon",
+     Delete Account only showed a message. */
+  const baseRenderProfile = window.renderProfile;
+  window.renderProfile = function () {
+    const out = baseRenderProfile.apply(this, arguments);
+    if (S.role === 'barber') {
+      document.querySelectorAll('#prof-body button').forEach(b => {
+        const t = b.textContent.trim();
+        if (t === 'Logout') b.setAttribute('onclick', 'logoutBarber()');
+        else if (t === 'Update Shop Photo') b.setAttribute('onclick', 'updateShopPhoto()');
+        else if (/^Delete Account/.test(t)) b.setAttribute('onclick', 'deleteBarberAccount()');
+      });
+    }
+    return out;
+  };
+
+  /* ---------- 7. OTP: no console leak, expires, limited tries ---------- */
+  let otp = '', otpExpires = 0, otpTries = 0;
+
+  window.sendOtp = function () {
+    const phone = ($('ph') ? $('ph').value : '').trim();
+    if (!/^\d{10}$/.test(phone)) { toast('⚠️', 'Please enter a valid 10-digit phone number'); return; }
+    S.user.phone = '+91 ' + phone;
+    S.user.name = cleanText($('pname') ? $('pname').value : '') || 'Customer';
+    S.user.location = cleanText($('ploc') ? $('ploc').value : '') || 'Not set';
+
+    const a = new Uint32Array(1);
+    crypto.getRandomValues(a);
+    otp = String(1000 + (a[0] % 9000));
+    otpExpires = Date.now() + 5 * 60 * 1000;
+    otpTries = 0;
+
+    if ($('ph-show')) $('ph-show').textContent = '+91 ' + phone;
+    if ($('otp-message')) $('otp-message').innerHTML = 'Use code <strong>' + otp + '</strong> to continue';
+    if ($('auth-p1')) $('auth-p1').style.display = 'none';
+    if ($('auth-p2')) $('auth-p2').style.display = 'block';
+    [0, 1, 2, 3].forEach(i => { const f = $('o' + i); if (f) f.value = ''; });
+    if ($('o0')) $('o0').focus();
+  };
+
+  window.verifyOtp = async function () {
+    const fields = [0, 1, 2, 3].map(i => $('o' + i));
+    if (fields.some(f => !f)) { toast('⚠️', 'OTP fields are missing'); return; }
+    const entered = fields.map(f => f.value.trim()).join('');
+    const reset = () => { fields.forEach(f => { f.value = ''; }); fields[0].focus(); };
+
+    if (!otp || Date.now() > otpExpires) { toast('⚠️', 'That code has expired. Please request a new one.'); reset(); return; }
+    if (entered !== otp) {
+      otpTries++;
+      if (otpTries >= 5) { otp = ''; toast('⚠️', 'Too many wrong attempts. Please request a new code.'); }
+      else toast('⚠️', 'Invalid OTP — please try again');
+      reset();
+      return;
+    }
+    try { await componentsReady; } catch (e) { toast('⚠️', 'Please wait for the app to load'); return; }
+    const phone = ($('ph') ? $('ph').value : '').trim();
+    const name = cleanText($('pname') ? $('pname').value : '');
+    if (!loadCustomer(phone, name)) { toast('⚠️', 'Could not load customer profile'); return; }
+    otp = '';
+    go('s-role');
+    toast('✅', 'Profile loaded successfully');
+  };
+
+  /* ---------- 8. emoji list had an empty slot that rendered as "undefined" ---------- */
+  try {
+    const clean = serviceEmojis.filter(Boolean);
+    serviceEmojis.length = 0;
+    clean.forEach(e => serviceEmojis.push(e));
+  } catch (e) { /* list not present */ }
+})();
+(function () {
+  'use strict';
+  if (document.getElementById('bq-phone-fixes')) return;   // never add it twice
+
+  const css = `
+  html, body { max-width: 100%; overflow-x: hidden; }
+  #b-settings-tab, #b-staffstats-tab, #b-svc-tab, #support-body { min-width: 0; max-width: 100%; }
+
+  /* 1. Services: search box */
+  body .sv-head { flex-wrap: wrap; }
+  body .sv-search { flex: 1 1 100%; max-width: none; width: 100%; min-width: 0; margin-left: 0; }
+  body .sv-search input { min-width: 0; width: 100%; }
+
+  /* 2. Profile: Edit button */
+  body .pf .pf-h3 { gap: 10px; }
+  body .pf .pf-btn { flex: none; white-space: nowrap; width: auto; min-width: 0; }
+
+  /* 3. Settings: Advance booking */
+  #bk-settings { max-width: 100%; box-sizing: border-box; overflow: hidden; }
+  #bk-settings * { box-sizing: border-box; }
+  #bk-settings > div[style*="grid-template-columns"] { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  #bk-settings > div[style*="grid-template-columns"] > div { min-width: 0; }
+  #bk-settings .inp, #bk-settings select,
+  #bk-settings input[type="time"], #bk-settings input[type="date"] {
+    width: 100%; min-width: 0; max-width: 100%; display: block;
+  }
+  #bk-settings label { display: block; }
+  #bk-offdate { flex: 1 1 auto; min-width: 0; width: auto; }
+  #bk-addoff { flex: none; white-space: nowrap; }
+  #bk-days { gap: 8px 14px !important; }
+  #bk-savecfg { white-space: nowrap; }
+
+  /* 4. Help & Support */
+  body .sp { width: 100%; min-width: 0; max-width: 100%; overflow-x: hidden; }
+  body .sp .sp-cards { grid-template-columns: minmax(0, 1fr); }
+  body .sp .sp-card { min-width: 0; max-width: 100%; }
+  body .sp .sp-card .tx { min-width: 0; }
+  body .sp .sp-card small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  body .sp .sp-card .ch { flex: none; }
+  body .sp .sp-top h2 { font-size: clamp(22px, 7vw, 30px); overflow-wrap: anywhere; }
+  body .sp .sp-fh { flex-wrap: wrap; }
+  body .sp .bq-faq-q .qt { min-width: 0; overflow-wrap: anywhere; }
+
+  /* 5. Staff analytics */
+  #sa-root { width: 100%; min-width: 0; max-width: 100%; overflow-x: hidden; box-sizing: border-box; }
+  #sa-root *, #sa-root *::before, #sa-root *::after { box-sizing: border-box; }
+  #sa-root [class*="head"] { flex-wrap: wrap; gap: 10px; }
+  #sa-root :has(> table) { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  @media (max-width: 600px) {
+    #sa-root [class*="kpis"] { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    #sa-root [class*="kpi"]:not([class*="kpis"]) {
+      flex-direction: column; align-items: flex-start; gap: 8px; padding: 12px; min-width: 0;
+    }
+    #sa-root [class*="kpi"]:not([class*="kpis"]) > * { min-width: 0; max-width: 100%; }
+    #sa-root [class*="kico"] { width: 40px; height: 40px; }
+    #sa-root [class*="kico"] svg { width: 20px; height: 20px; }
+    #sa-root .sa-ktrend { font-size: 11.5px; overflow-wrap: anywhere; }
+    #sa-root select { max-width: 100%; }
+  }`;
+
+  const style = document.createElement('style');
+  style.id = 'bq-phone-fixes';
+  style.textContent = css;
+  document.head.appendChild(style);
+})();
+
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const toMin = t => { const [h, m] = String(t || '').split(':').map(Number); return h * 60 + (m || 0); };
+
+  function insideHours() {
+    const b = S.barber || {};
+    if (!b.openingTime || !b.closingTime) return null;            // hours not set yet
+    const n = new Date(), now = n.getHours() * 60 + n.getMinutes();
+    const o = toMin(b.openingTime), c = toMin(b.closingTime);
+    return o < c ? (now >= o && now < c) : (now >= o || now < c); // also handles past-midnight hours
+  }
+
+  function paintBadge() {
+    const el = $('shop-status');
+    if (!el) return;
+    el.textContent = S.shopOpen ? '● Open' : '● Closed';
+    el.className = 'tag ' + (S.shopOpen ? 'tgreen pulse' : 'tred');
+  }
+
+  // set the state without a toast; saves it and tells customers
+  function setOpen(open) {
+    S.shopOpen = open;
+    try { localStorage.setItem('barberShopOpen', open ? '1' : '0'); } catch (e) {}
+    if (typeof syncShopStats === 'function') syncShopStats();
+    paintBadge();
+  }
+
+  let lastInside = null;
+  function tick() {
+    paintBadge();                                                  // always keep the badge honest
+    if (S.role !== 'barber') return;
+    if (localStorage.getItem('bqAutoHours') === '0') return;       // "0" turns auto open/close off
+    const inside = insideHours();
+    if (inside === null) return;
+    if (lastInside === null || inside !== lastInside) {            // first check after load, or clock crossed a time
+      lastInside = inside;
+      if (S.shopOpen !== inside) setOpen(inside);
+    }
+  }
+
+  // repaint whenever a screen changes and whenever the barber presses the toggle
+  const baseGo = window.go;
+  window.go = function () { const out = baseGo.apply(this, arguments); tick(); return out; };
+
+  const baseToggle = window.toggleShop;
+  window.toggleShop = function () { const out = baseToggle.apply(this, arguments); paintBadge(); return out; };
+
+  // if the barber changes opening/closing time, apply the new hours straight away
+  const baseSave = window.saveBarberProfile;
+  window.saveBarberProfile = function () {
+    const out = baseSave.apply(this, arguments);
+    lastInside = null; tick();
+    return out;
+  };
+
+  componentsReady.then(() => { tick(); });
+  setInterval(tick, 5000);
+})();
+
+/* =====================================================================
+   FIX: stop the screen flipping + restyle the "Book a time slot" panel
+   Paste at the VERY END of script.js
+   ===================================================================== */
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  /* ---------- 1. one layout only ---------- */
+  const desc = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML');
+
+  function guardDetailPanel() {
+    const box = $('cx-detail');
+    if (!box) return false;
+    if (box.__guarded) return true;
+    box.__guarded = true;
+    Object.defineProperty(box, 'innerHTML', {
+      configurable: true,
+      get() { return desc.get.call(this); },
+      set(html) {
+        const s = String(html);
+        if (s.indexOf('cx-pane') !== -1 && s.indexOf('cx-pick') === -1) return;
+        desc.set.call(this, html);
+      }
+    });
+    const now = desc.get.call(box);
+    if (now.indexOf('cx-pane') !== -1 && now.indexOf('cx-pick') === -1) {   
+      desc.set.call(box, '');
+      if (typeof renderShops === 'function') renderShops();
+    }
+    return true;
+  }
+  componentsReady.then(() => {
+    if (guardDetailPanel()) return;
+    const t = setInterval(() => { if (guardDetailPanel()) clearInterval(t); }, 300);
+  });
+
+  const baseLeave = window.leaveQ;
+  if (typeof baseLeave === 'function' && !baseLeave.__once) {
+    let last = 0;
+    window.leaveQ = function () {
+      if (Date.now() - last < 800) return;
+      try { return baseLeave.apply(this, arguments); } finally { last = Date.now(); }
+    };
+    window.leaveQ.__once = true;
+  }
+  const css = `
+  /* "~28 min" showed as "-28 min" in the heading font */
+  .cx-st strong, .cx-rsv-t strong { font-family: 'DM Sans', sans-serif !important; letter-spacing: -.3px; }
+
+  #m-advbook:not(.cx-inline) .modal {
+    position: relative; width: 100%; max-width: 440px; max-height: 92vh; overflow: auto; box-sizing: border-box;
+    padding: 20px; border-radius: 26px; color: #eef1ff; font-family: 'DM Sans', sans-serif;
+    background: radial-gradient(120% 70% at 100% 0%, rgba(124,58,237,.3), transparent 55%), linear-gradient(180deg, #0a0e2e, #070a22);
+    border: 1px solid rgba(120,120,255,.25); box-shadow: 0 30px 80px -20px rgba(0,0,0,.8);
+  }
+  #m-advbook .modal * { box-sizing: border-box; }
+
+  .bkx-head { display: flex; align-items: center; gap: 14px; margin-bottom: 4px; padding-right: 34px; }
+  .bkx-ico { width: 52px; height: 52px; border-radius: 50%; flex: none; display: grid; place-items: center; font-size: 22px;
+    border: 1.5px solid #f5b73b; background: rgba(245,183,59,.1); box-shadow: 0 0 22px -6px #f5b73b; }
+  .bkx-t { font: 800 24px 'DM Sans', sans-serif; }
+  .bkx-t em { font-style: normal; color: #f5b73b; }
+  #bk-shop { margin: 2px 0 0 !important; font-size: 14px !important; color: #8fa0ff !important; }
+  .bkx-x { position: absolute; top: 14px; right: 14px; width: 34px; height: 34px; border-radius: 50%; cursor: pointer;
+    color: #f5b73b; font-size: 20px; line-height: 1; background: rgba(245,183,59,.08); border: 1.5px solid #f5b73b; }
+  .cx-inline .bkx-x { display: none; }
+
+  .bkx-lab { display: flex; align-items: center; gap: 10px; margin: 20px 0 10px; font: 700 17px 'DM Sans', sans-serif; }
+  .bkx-n { width: 28px; height: 28px; flex: none; border-radius: 50%; display: grid; place-items: center;
+    font: 700 14px 'DM Sans', sans-serif; color: #f5b73b; border: 1.5px solid #f5b73b; }
+
+  /* services */
+  #m-advbook #bk-svcs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  #m-advbook #bk-svcs button, #m-advbook #bk-dates button {
+    position: relative; padding: 12px 6px; border-radius: 16px; color: #eef1ff;
+    background: rgba(20,26,70,.55) !important; border: 1.5px solid rgba(120,130,255,.28) !important;
+  }
+  #m-advbook #bk-svcs button > div:first-child {
+    width: 46px; height: 46px; margin: 0 auto 8px; border-radius: 50%; display: grid; place-items: center;
+    font-size: 22px !important; background: rgba(70,90,200,.3); border: 1px solid rgba(120,130,255,.4);
+  }
+  #m-advbook #bk-svcs button > div:nth-child(2) { font-size: 15px !important; font-weight: 700 !important; margin: 0 !important; }
+  #m-advbook #bk-svcs button > div:nth-child(3) { font-size: 12px !important; color: #aab4e0 !important; margin-top: 2px; }
+
+  /* dates */
+  #m-advbook #bk-dates { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; }
+  #m-advbook #bk-dates button { flex: 1 0 64px; min-width: 64px !important; }
+  #m-advbook #bk-dates button > div:nth-child(2) { font-size: 22px !important; font-weight: 800; }
+  #m-advbook #bk-dates button > div:first-child, #m-advbook #bk-dates button > div:last-child { color: #aab4e0 !important; }
+
+  /* selected service / date (the script marks it with a gold border) */
+  #m-advbook #bk-svcs button[style*="solid var(--gold)"],
+  #m-advbook #bk-dates button[style*="solid var(--gold)"] {
+    background: linear-gradient(180deg, rgba(245,183,59,.2), rgba(245,183,59,.06)) !important;
+    border-color: #f5b73b !important; box-shadow: 0 0 24px -10px #f5b73b;
+  }
+  #m-advbook #bk-svcs button[style*="solid var(--gold)"]::after,
+  #m-advbook #bk-dates button[style*="solid var(--gold)"]::after {
+    content: "✓"; position: absolute; top: 6px; right: 6px; width: 20px; height: 20px; border-radius: 50%;
+    display: grid; place-items: center; font: 800 12px 'DM Sans', sans-serif; background: #f5b73b; color: #1a1200;
+  }
+  #m-advbook #bk-dates button[style*="solid var(--gold)"] > div:nth-child(2) { color: #f5b73b; }
+
+  /* time slots */
+  #m-advbook #bk-slots { gap: 10px !important; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  #m-advbook #bk-slots button {
+    min-height: 44px; border-radius: 12px; color: #eef1ff;
+    background: rgba(20,26,70,.55) !important; border: 1px solid rgba(120,130,255,.3) !important;
+  }
+  #m-advbook #bk-slots button[style*="solid var(--gold)"] {
+    background: rgba(245,183,59,.16) !important; border: 1.5px solid #f5b73b !important; color: #f5b73b;
+  }
+  #m-advbook #bk-slots > span {
+    display: flex; align-items: center; gap: 12px; padding: 16px; border-radius: 14px;
+    border: 1px solid rgba(120,130,255,.25); background: rgba(20,26,70,.5); color: #8fa0ff !important; font-size: 15px !important;
+  }
+  #m-advbook #bk-slots > span::before { content: "🕒"; font-size: 22px; }
+
+  /* note + buttons */
+  #m-advbook #bk-note {
+    display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px;
+    background: rgba(40,60,160,.25); border: 1px solid rgba(120,130,255,.3); color: #b8c4ff !important; font-size: 12.5px !important;
+  }
+  #m-advbook #bk-note::before { content: "i"; flex: none; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center;
+    background: #5b6cff; color: #fff; font: 700 12px 'DM Sans', sans-serif; }
+  .bkx-btns { display: grid !important; grid-template-columns: 1fr 1.3fr; gap: 12px !important; }
+  #bk-cancel, #bk-submit { min-height: 54px; border-radius: 16px; display: flex; align-items: center; justify-content: center; gap: 10px;
+    font: 700 16px 'DM Sans', sans-serif; }
+  #bk-cancel { color: #eef1ff; background: rgba(20,26,70,.6); border: 1px solid rgba(120,130,255,.35); }
+  #bk-cancel::before { content: "←"; font-size: 20px; color: #8fa0ff; }
+  #bk-submit { color: #1a1200; border: 0; background: linear-gradient(90deg, #f5b73b, #ff9a3d); box-shadow: 0 12px 28px -12px #f5b73b; }
+  #bk-submit::before { content: "📅"; }
+  #bk-submit:disabled { opacity: .7; }
+  @media (max-width: 420px) { #m-advbook:not(.cx-inline) .modal { padding: 16px; border-radius: 22px; } .bkx-t { font-size: 21px; } }`;
+
+  if (!$('bq-booking-ui')) {
+    const st = document.createElement('style');
+    st.id = 'bq-booking-ui';
+    st.textContent = css;
+    document.head.appendChild(st);
+  }
+
+  /* ---------- 3. booking panel: structure (done once, after it is created) ---------- */
+  function decorate() {
+    const ov = $('m-advbook');
+    const modal = ov && ov.querySelector('.modal');
+    if (!modal || modal.dataset.bkx) return;
+    modal.dataset.bkx = '1';
+
+    const head = modal.firstElementChild, shop = $('bk-shop');
+    if (head && shop) {
+      head.className = 'bkx-head';
+      head.removeAttribute('style');
+      head.innerHTML = '<span class="bkx-ico">📅</span><div><div class="bkx-t">Book a <em>time slot</em></div></div>';
+      head.lastElementChild.appendChild(shop);
+    }
+
+    modal.querySelectorAll(':scope > div').forEach(d => {            // "1. Choose a service" -> numbered step
+      if (d.children.length || d.classList.contains('bkx-head')) return;
+      const m = /^\s*(\d)\.\s+(.+)$/.exec(d.textContent);
+      if (!m) return;
+      d.className = 'bkx-lab';
+      d.removeAttribute('style');
+      d.innerHTML = '<span class="bkx-n">' + m[1] + '</span><span>' + esc(m[2]) + '</span>';
+    });
+
+    const submit = $('bk-submit');
+    if (submit && submit.parentElement) submit.parentElement.classList.add('bkx-btns');
+
+    const x = document.createElement('button');
+    x.type = 'button'; x.className = 'bkx-x'; x.setAttribute('aria-label', 'Close'); x.textContent = '×';
+    x.addEventListener('click', () => closeModal('m-advbook'));
+    modal.appendChild(x);
+  }
+
+  const baseBkOpen = window.bkOpen;
+  if (typeof baseBkOpen === 'function') {
+    window.bkOpen = function () {
+      const out = baseBkOpen.apply(this, arguments);   // creates the panel synchronously
+      decorate();
+      return out;
+    };
+  }
+  new MutationObserver(decorate).observe(document.body, { childList: true });
+  decorate();
+})();
+
+(function () {
+  'use strict';
+  if (document.getElementById('bq-booking-desktop')) return;
+
+  const css = `
+  @media (min-width: 980px) {
+
+    /* when the booking form is open: one full-width column, no empty left box */
+    .cx-pick:has(#cx-bkhost) {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-areas: "pr" "rv";
+    }
+    .cx-pick:has(#cx-bkhost) .cx-psv { display: none; }
+    .cx-pick:has(#cx-bkhost) .cx-pr  { margin-top: 16px; }
+    .cx-pick:has(#cx-bkhost) .cx-rsv { padding: 18px 22px; }
+    .cx-pick:has(#cx-bkhost) .cx-tabs { max-width: 360px; }
+
+    /* the form itself: two columns */
+    #m-advbook.cx-inline .modal {
+      display: grid !important;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+      column-gap: 36px;
+      align-items: start;
+    }
+
+    /* left: 1 service + 2 date */
+    #m-advbook.cx-inline .modal > :nth-child(2) { grid-column: 1; grid-row: 1; margin-top: 4px; }   /* "1 Choose a service" */
+    #m-advbook.cx-inline #bk-svcs   { grid-column: 1; grid-row: 2; }
+    #m-advbook.cx-inline .modal > :nth-child(4) { grid-column: 1; grid-row: 3; }                   /* "2 Choose a date" */
+    #m-advbook.cx-inline #bk-dates  { grid-column: 1; grid-row: 4; flex-wrap: wrap; overflow: visible; }
+
+    /* right: 3 time */
+    #m-advbook.cx-inline .modal > :nth-child(6) { grid-column: 2; grid-row: 1; margin-top: 4px; }   /* "3 Choose a time" */
+    #m-advbook.cx-inline #bk-slots  { grid-column: 2; grid-row: 2 / span 3; align-content: start; }
+    #m-advbook.cx-inline #bk-who    { grid-column: 2; grid-row: 5; }
+    #m-advbook.cx-inline #bk-note   { grid-column: 1 / -1; grid-row: 6; margin: 18px 0 14px; }
+    #m-advbook.cx-inline .bkx-btns  { grid-column: 1 / -1; grid-row: 7; max-width: 520px; margin-left: auto; width: 100%; }
+
+    /* the step labels were hidden in some layouts; make sure they show here */
+    #m-advbook.cx-inline .bkx-lab   { display: flex; }
+
+    /* tidy: services 3 across, taller time list stays inside the card */
+    #m-advbook.cx-inline #bk-svcs   { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    #m-advbook.cx-inline #bk-slots  { max-height: 360px; overflow-y: auto; padding-right: 4px; }
+    #m-advbook.cx-inline #bk-dates button { flex: 0 0 74px; }
+  }`;
+
+  const st = document.createElement('style');
+  st.id = 'bq-booking-desktop';
+  st.textContent = css;
+  document.head.appendChild(st);
+})();
+/* put the patch styles last, once (no observers) */
+(function () {
+  function order() {
+    ['bq-phone-fixes', 'bq-booking-ui', 'bq-booking-desktop'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) document.head.appendChild(el);
+    });
+  }
+  window.addEventListener('load', () => { order(); setTimeout(order, 2000); });
+})();
+
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const pad = n => String(n).padStart(2, '0');
+  const isoOf = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  const monthOf = s => { const [y, m] = s.split('-').map(Number); return new Date(y, m - 1, 1); };
+  const fmt12 = t => { const [h, m] = String(t || '').split(':').map(Number);
+    return isNaN(h) ? '' : (h % 12 || 12) + ':' + pad(m || 0) + ' ' + (h < 12 ? 'AM' : 'PM'); };
+  const fmtDate = s => new Date(s + 'T00:00:00').toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+  const digits10 = p => String(p || '').replace(/\D/g, '').slice(-10);
+  const innerDesc = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML');
+
+  /* ---------- styles ---------- */
+  if (!$('bq-cal-css')) {
+    const st = document.createElement('style');
+    st.id = 'bq-cal-css';
+    st.textContent = `
+    #m-advbook #bk-dates.bkc { display: block !important; overflow: visible !important; max-width: 380px; }
+    .bkc-h { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; font: 700 16px 'DM Sans', sans-serif; }
+    .bkc-nav { width: 34px; height: 34px; border-radius: 50%; cursor: pointer; color: #eef1ff; font-size: 18px; line-height: 1;
+      background: rgba(20,26,70,.6); border: 1px solid rgba(120,130,255,.35); }
+    .bkc-nav:disabled { opacity: .3; cursor: default; }
+    .bkc-g { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+    .bkc-w { text-align: center; font-size: 11px; color: #98a1cc; padding: 2px 0; }
+    #m-advbook #bk-dates button.bkc-day { flex: none !important; min-width: 0 !important; padding: 0 !important; height: 40px; border-radius: 12px;
+      font: 700 15px 'DM Sans', sans-serif; color: #eef1ff; cursor: pointer;
+      background: rgba(20,26,70,.55) !important; border: 1px solid rgba(120,130,255,.3) !important; }
+    #m-advbook #bk-dates button.bkc-day:disabled { opacity: .28; cursor: not-allowed; }
+    #m-advbook #bk-dates button.bkc-day.today { box-shadow: inset 0 -3px 0 #f5b73b; }
+    #m-advbook #bk-dates button.bkc-day.on { color: #1a1200; background: linear-gradient(90deg,#f5b73b,#ff9a3d) !important; border-color: #f5b73b !important; }
+    .bkc-note { margin-top: 8px; font-size: 11.5px; color: #98a1cc; }
+
+    #bq-mybk { margin: 14px 0 6px; padding: 14px; border-radius: 18px; background: #0c1030; border: 1px solid rgba(120,120,255,.2); color: #eef1ff; font-family: 'DM Sans', sans-serif; }
+    #bq-mybk h4 { margin: 0 0 10px; font: 700 15px 'Syne', sans-serif; }
+    .mb-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid rgba(120,120,255,.16); }
+    .mb-row:first-of-type { border-top: 0; }
+    .mb-main { flex: 1; min-width: 0; }
+    .mb-main b { display: block; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .mb-main small { font-size: 12px; color: #98a1cc; }
+    .mb-st { flex: none; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px; text-transform: capitalize; background: #2a2f66; }
+    .mb-st.confirmed, .mb-st.completed { background: #0f7a5a; }
+    .mb-st.pending { background: #8a5a0a; }
+    .mb-st.cancelled, .mb-st.rejected { background: #8f2340; }
+    .mb-x { flex: none; cursor: pointer; border-radius: 8px; padding: 5px 10px; font: 600 12px 'DM Sans', sans-serif; color: #ff6b8b;
+      background: none; border: 1px solid rgba(255,107,139,.5); }`;
+    document.head.appendChild(st);
+  }
+
+  function renderCal(el) {
+    const data = el.__data || [];
+    const map = {}; data.forEach(d => { map[d.date] = d; });
+    const keys = Object.keys(map).sort();
+    if (!keys.length) return;
+    const sel = data.find(d => d.on);
+    if (!el.__nav || !el.__month) {
+      const first = sel || data.find(d => !d.disabled) || data[0];
+      el.__month = monthOf(first.date);
+    }
+    const m = el.__month, y = m.getFullYear(), mo = m.getMonth();
+    const minM = monthOf(keys[0]), maxM = monthOf(keys[keys.length - 1]);
+    const todayIso = isoOf(new Date());
+    const lead = (new Date(y, mo, 1).getDay() + 6) % 7;            // Monday first
+    const days = new Date(y, mo + 1, 0).getDate();
+
+    let cells = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(w => '<div class="bkc-w">' + w + '</div>').join('');
+    for (let i = 0; i < lead; i++) cells += '<div></div>';
+    for (let d = 1; d <= days; d++) {
+      const key = y + '-' + pad(mo + 1) + '-' + pad(d), info = map[key];
+      const ok = info && !info.disabled;
+      cells += '<button type="button" class="bkc-day' + (info && info.on ? ' on' : '') + (key === todayIso ? ' today' : '') + '"' +
+        (ok ? ' data-date="' + key + '"' : ' disabled') + '>' + d + '</button>';
+    }
+    const html =
+      '<div class="bkc-h"><button type="button" class="bkc-nav" data-bkc="prev" aria-label="Previous month"' + (m <= minM ? ' disabled' : '') + '>‹</button>' +
+      '<span>' + m.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) + '</span>' +
+      '<button type="button" class="bkc-nav" data-bkc="next" aria-label="Next month"' + (m >= maxM ? ' disabled' : '') + '>›</button></div>' +
+      '<div class="bkc-g">' + cells + '</div>' +
+      '<div class="bkc-note">Greyed days are days off or beyond the barber\'s booking window.</div>';
+    innerDesc.set.call(el, html);
+  }
+
+  function hookDates() {
+    const el = $('bk-dates');
+    if (!el || el.__bkc) return;
+    el.__bkc = true;
+    el.classList.add('bkc');
+    Object.defineProperty(el, 'innerHTML', {
+      configurable: true,
+      get() { return innerDesc.get.call(this); },
+      set(html) {
+        const tmp = document.createElement('div');
+        innerDesc.set.call(tmp, String(html));
+        const btns = tmp.querySelectorAll('[data-date]');
+        if (!btns.length) { this.__data = null; innerDesc.set.call(this, html); return; }   // "Loading…"
+        this.__data = Array.prototype.map.call(btns, b => ({
+          date: b.dataset.date,
+          disabled: b.hasAttribute('disabled'),
+          on: (b.getAttribute('style') || '').indexOf('var(--gold)') !== -1
+        }));
+        renderCal(this);
+      }
+    });
+    el.addEventListener('click', e => {
+      const n = e.target.closest('[data-bkc]');
+      if (!n || n.disabled) return;
+      e.stopPropagation();
+      const m = el.__month;
+      el.__month = new Date(m.getFullYear(), m.getMonth() + (n.dataset.bkc === 'next' ? 1 : -1), 1);
+      el.__nav = true;
+      renderCal(el);
+    });
+    if (innerDesc.get.call(el).indexOf('data-date') !== -1) el.innerHTML = innerDesc.get.call(el);
+  }
+
+  const baseBkOpen = window.bkOpen;
+  if (typeof baseBkOpen === 'function') {
+    window.bkOpen = function () {
+      const out = baseBkOpen.apply(this, arguments);
+      hookDates();
+      const el = $('bk-dates'); if (el) el.__nav = false;
+      return out;
+    };
+  }
+  hookDates();
+
+  let myBookings = [];
+  const bkPhone = () => digits10(S.user && S.user.phone) || digits10(localStorage.getItem('bqBookPhone'));
+
+  function paintBookings() {
+    const left = document.querySelector('#cx-home .cx-left');
+    if (!left) return;
+    let box = $('bq-mybk');
+    if (!myBookings.length) { if (box) box.remove(); return; }
+    if (!box) {
+      box = document.createElement('div');
+      box.id = 'bq-mybk';
+      const anchor = left.querySelector('.cx-h.fastH') || left.querySelector('.cx-h');
+      left.insertBefore(box, anchor);
+      box.addEventListener('click', e => {
+        const b = e.target.closest('[data-cancel]');
+        if (b && typeof window.bkCancel === 'function') window.bkCancel(Number(b.dataset.cancel));
+      });
+    }
+    const now = isoOf(new Date()) + ' ' + pad(new Date().getHours()) + ':' + pad(new Date().getMinutes());
+    const rows = myBookings.slice().sort((a, b) => (b.date + b.start).localeCompare(a.date + a.start)).slice(0, 6);
+    const html = '<h4><span class="tab-ico">📅</span>My Bookings</h4>' + rows.map(b => {
+      const live = (b.status === 'pending' || b.status === 'confirmed') && (b.date + ' ' + b.start) > now;
+      return '<div class="mb-row"><div class="mb-main"><b>' + esc(b.service_name) + ' · ' + esc(b.shop_name) + '</b><small>' +
+        esc(fmtDate(b.date)) + ' · ' + esc(fmt12(b.start)) + '</small></div>' +
+        '<span class="mb-st ' + esc(b.status) + '">' + esc(b.status === 'pending' ? 'Waiting for barber' : b.status) + '</span>' +
+        (live ? '<button type="button" class="mb-x" data-cancel="' + esc(b.id) + '">Cancel</button>' : '') + '</div>';
+    }).join('');
+    if (box.__html !== html) { box.__html = html; box.innerHTML = html; }
+  }
+
+  async function refreshBookings() {
+    if (S.role !== 'customer') return;
+    const p = bkPhone();
+    if (p.length !== 10) return;
+    try {
+      const r = await fetch(BQ_BASE + '/api/bookings?phone=' + p);
+      const j = await r.json();
+      if (r.ok && j.success && Array.isArray(j.bookings)) { myBookings = j.bookings; paintBookings(); }
+    } catch (e) { /* offline: keep what is shown */ }
+  }
+
+  const baseToast = window.toast;
+  window.toast = function (a, b) {
+    const out = baseToast.apply(this, arguments);
+    if (/booking/i.test(String(b || a))) setTimeout(refreshBookings, 600);
+    return out;
+  };
+
+  /* =====================================================================
+     3. REVIEWS: show star-only ratings instead of "No written reviews yet"
+     ===================================================================== */
+  async function fillReviews() {
+    const box = $('cx-rev'), det = document.querySelector('.cx-det');
+    if (!box || !det || box.dataset.bqRev) return;
+    box.dataset.bqRev = '1';
+    const id = Number(det.dataset.shop);
+    const shop = S.shops.find(s => s.id === id) || S.shops[id];
+    if (!shop) return;
+    let list = [];
+    try {
+      const r = await fetch(BQ_BASE + '/api/shops/reviews?shop_name=' + encodeURIComponent(shop.name));
+      const j = await r.json();
+      if (r.ok && j.success && Array.isArray(j.reviews)) list = j.reviews;
+    } catch (e) { return; }
+    await new Promise(res => setTimeout(res, 900));              // let the old loader finish first, then overwrite
+    const now = $('cx-rev');
+    if (!now || now !== box) return;
+    const total = Number(shop.rev) || 0;
+    let html = list.slice(0, 5).map(rv =>
+      '<div class="cx-rv"><b>' + esc(rv.name || 'Customer') + '</b><i>' + '★'.repeat(Math.max(0, Math.min(5, rv.stars || 0))) + '</i>' +
+      '<div>' + (String(rv.review || '').trim() ? esc(rv.review) : '<span style="opacity:.6">Rated without a comment</span>') + '</div></div>').join('');
+    if (!list.length && total > 0) {
+      html = '<div class="cx-rv"><b>★ ' + esc(shop.rating) + '</b> from ' + total + ' rating' + (total === 1 ? '' : 's') +
+        '<div style="opacity:.7;margin-top:4px">Customers have not written comments yet.</div></div>';
+    } else if (total > list.length && list.length) {
+      html += '<div class="cx-rv" style="opacity:.75">+' + (total - list.length) + ' more rating' + (total - list.length === 1 ? '' : 's') + ' without comments</div>';
+    } else if (!list.length) {
+      html = '<div class="cx-rv">No ratings yet.</div>';
+    }
+    box.innerHTML = html;
+  }
+
+  const baseOpenShop = window.openShop;
+  if (typeof baseOpenShop === 'function') {
+    window.openShop = function () {
+      const out = baseOpenShop.apply(this, arguments);
+      setTimeout(fillReviews, 50);
+      return out;
+    };
+  }
+
+  /* one light timer for all three */
+  let tick = 0;
+  setInterval(() => {
+    if (document.hidden) return;
+    fillReviews();
+    paintBookings();
+    if (++tick % 12 === 0) refreshBookings();                    // about every 18 s
+  }, 1500);
+  componentsReady.then(() => setTimeout(refreshBookings, 1500));
+})();
+
+(function () {
+  "use strict";
+  const $ = id => document.getElementById(id);
+  const esc = v => String(v == null ? "" : v).replace(/[&<>"']/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const pad = n => String(n).padStart(2, "0");
+  const digits10 = p => String(p || "").replace(/\D/g, "").slice(-10);
+  const phone = () => digits10(S.user && S.user.phone) || digits10(localStorage.getItem("bqBookPhone"));
+  const fmtDate = s => new Date(s + "T00:00:00").toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
+  const fmt12 = t => { const [h, m] = String(t).split(":").map(Number); return (h % 12 || 12) + ":" + pad(m) + " " + (h < 12 ? "AM" : "PM"); };
+  const STAT = {
+    pending:   ["Waiting for barber", "#f5b73b"],
+    confirmed: ["Confirmed ✓", "#34d399"],
+    rejected:  ["Declined", "#ff6b8b"],
+    cancelled: ["Cancelled", "#98a1cc"],
+    completed: ["Completed", "#6aa8ff"],
+    expired:   ["Expired", "#98a1cc"]
+  };
+  let list = [], loaded = false;
+
+  const css = document.createElement("style");
+  css.textContent = `
+  #cust-bookings{display:none}
+  .mb{max-width:900px;margin:0 auto;color:#eef1ff;font-family:'DM Sans',sans-serif;padding-bottom:24px}
+  .mb h2{margin:0 0 4px;font:800 26px 'Syne',sans-serif}
+  .mb .sub{margin:0 0 16px;font-size:13px;color:#98a1cc}
+  .mb-sec{margin:22px 0 10px;font:700 15px 'Syne',sans-serif;color:#c9d2ff}
+  .mb-card{display:flex;align-items:center;gap:14px;padding:14px;margin-bottom:10px;border-radius:18px;background:#0c1030;border:1px solid rgba(120,120,255,.2)}
+  .mb-card .ic{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;flex:none;font-size:22px;background:rgba(124,92,255,.22)}
+  .mb-card .tx{flex:1;min-width:0}
+  .mb-card b{display:block;font:700 15px 'DM Sans',sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mb-card small{display:block;margin-top:3px;font-size:12.5px;color:#98a1cc}
+  .mb-r{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+  .mb-tag{font-size:12px;font-weight:700;padding:4px 10px;border-radius:8px;white-space:nowrap;border:1px solid var(--k);color:var(--k);background:color-mix(in srgb,var(--k) 14%,transparent)}
+  .mb-x{cursor:pointer;font:700 12.5px 'DM Sans',sans-serif;color:#ff6b8b;background:none;border:1px solid rgba(255,107,139,.7);border-radius:10px;padding:6px 12px}
+  .mb-empty{text-align:center;padding:44px 16px;border-radius:24px;background:#0c1030;border:1px solid rgba(120,120,255,.2)}
+  .mb-empty .e{font-size:48px;margin-bottom:8px}
+  .mb-empty h3{margin:0 0 6px;font:800 21px 'Syne',sans-serif}
+  .mb-empty p{margin:0 0 16px;font-size:14px;color:#c2c9ee}
+  .mb-btn{border:0;cursor:pointer;border-radius:999px;padding:13px 28px;font:800 15px 'DM Sans',sans-serif;color:#1a1200;background:linear-gradient(90deg,#f5b73b,#ff9a3d)}
+  .mb-ph{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+  .mb-ph input{padding:12px 14px;border-radius:12px;border:1px solid rgba(120,120,255,.3);background:#080b26;color:#eef1ff;font:15px 'DM Sans',sans-serif;width:200px}
+  @media (max-width:520px){.mb-card{flex-wrap:wrap}.mb-r{flex-direction:row;width:100%;justify-content:space-between;align-items:center}}`;
+  document.head.appendChild(css);
+
+  /* ---------- data ---------- */
+  async function load() {
+    const ph = phone();
+    if (ph.length !== 10) { list = []; loaded = true; paint(); return; }
+    try {
+      const r = await fetch(BQ_BASE + "/api/bookings?phone=" + ph);
+      const j = await r.json();
+      if (r.ok && j.bookings) list = j.bookings;
+    } catch (e) { /* keep what we have */ }
+    loaded = true;
+    paint();
+  }
+
+  async function cancel(id) {
+    if (!confirm("Cancel this booking?")) return;
+    try {
+      const r = await fetch(BQ_BASE + "/api/bookings/" + id, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "cancel", by: "customer", phone: phone() })
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok || j.success === false) throw new Error(j.error || "Could not cancel");
+      toast("✅", "Booking cancelled");
+    } catch (e) { toast("⚠️", e.message || "Could not cancel"); }
+    load();
+  }
+
+  /* ---------- view ---------- */
+  function card(b) {
+    const st = STAT[b.status] || [esc(b.status), "#98a1cc"];
+    const now = new Date();
+    const when = b.date + " " + b.start;
+    const nowKey = now.getFullYear() + "-" + pad(now.getMonth() + 1) + "-" + pad(now.getDate()) + " " + pad(now.getHours()) + ":" + pad(now.getMinutes());
+    const canCancel = (b.status === "pending" || b.status === "confirmed") && when > nowKey;
+    return `<div class="mb-card">
+      <div class="ic">📅</div>
+      <div class="tx"><b>${esc(b.service_name)} · ${esc(b.shop_name)}</b><small>${esc(fmtDate(b.date))} · ${esc(fmt12(b.start))}</small></div>
+      <div class="mb-r"><span class="mb-tag" style="--k:${st[1]}">${st[0]}</span>
+        ${canCancel ? `<button type="button" class="mb-x" data-cancel="${b.id}">Cancel booking</button>` : ""}</div>
+    </div>`;
+  }
+
+  function paint() {
+    const box = $("cust-bookings");
+    if (!box) return;
+    let body;
+    if (phone().length !== 10) {
+      body = `<div class="mb-empty"><div class="e">📱</div><h3>Enter your phone number</h3>
+        <p>Use the number you booked with to see your bookings.</p>
+        <div class="mb-ph"><input id="mb-phone" type="tel" inputmode="numeric" maxlength="10" placeholder="10-digit mobile number"><button type="button" class="mb-btn" id="mb-save">Show bookings</button></div></div>`;
+    } else if (!loaded) {
+      body = `<div class="mb-empty"><p>Loading your bookings…</p></div>`;
+    } else if (!list.length) {
+      body = `<div class="mb-empty"><div class="e">📅</div><h3>No bookings yet</h3>
+        <p>Pick a shop and use <b>Book later</b> to reserve a time slot.</p>
+        <button type="button" class="mb-btn" onclick="cTab('home',document.querySelector('#c-tabs .tab'))">Find Barbers →</button></div>`;
+    } else {
+      const today = new Date(); const tk = today.getFullYear() + "-" + pad(today.getMonth() + 1) + "-" + pad(today.getDate());
+      const up = list.filter(b => b.date >= tk && b.status !== "cancelled" && b.status !== "rejected" && b.status !== "completed")
+                     .sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start));
+      const past = list.filter(b => !up.includes(b)).sort((a, b) => (b.date + b.start).localeCompare(a.date + a.start));
+      body = (up.length ? `<div class="mb-sec">Upcoming</div>${up.map(card).join("")}` : "") +
+             (past.length ? `<div class="mb-sec">Past &amp; cancelled</div>${past.slice(0, 15).map(card).join("")}` : "");
+    }
+    box.innerHTML = `<div class="mb"><h2>My Bookings</h2><p class="sub">Your advance bookings and their status</p>${body}</div>`;
+  }
+
+  /* ---------- tab ---------- */
+  function visible() { const b = $("cust-bookings"); return b && b.style.display === "block"; }
+
+  window.bqShowBookings = function () {
+    try { go("s-cust"); } catch (e) {}
+    const tabs = document.querySelectorAll("#c-tabs .tab");
+    cTab("bookings", $("mb-tab") || tabs[tabs.length - 1] || null);
+  };
+
+  const baseTab = window.cTab;
+  window.cTab = function (name, el) {
+    const out = baseTab.apply(this, arguments);
+    const box = $("cust-bookings");
+    if (box) {
+      box.style.display = name === "bookings" ? "block" : "none";
+      if (name === "bookings") { paint(); load(); }
+    }
+    return out;
+  };
+  cTab = window.cTab;
+
+  async function init() {
+    try { await componentsReady; } catch (e) { return; }
+    const q = $("cust-queue");
+    const tabs = document.querySelectorAll("#c-tabs .tab");
+    if (!q || !tabs.length || $("cust-bookings")) return;
+    const box = document.createElement("div");
+    box.id = "cust-bookings";
+    q.insertAdjacentElement("afterend", box);
+
+    const t = tabs[tabs.length - 1].cloneNode(true);
+    t.id = "mb-tab";
+    t.removeAttribute("onclick");
+    t.classList.remove("on");
+    {
+      // reuse the same icon-over-label structure as Home / Profile
+      const texts = [];
+      const w = document.createTreeWalker(t, NodeFilter.SHOW_TEXT);
+      for (let n = w.nextNode(); n; n = w.nextNode()) if (n.nodeValue.trim()) texts.push(n);
+      if (texts.length >= 2) {
+        texts[0].nodeValue = "📅";
+        texts[texts.length - 1].nodeValue = "My Bookings";
+        for (let i = 1; i < texts.length - 1; i++) texts[i].nodeValue = "";
+      } else {
+        t.innerHTML = '<span style="display:block;line-height:1.1">📅</span>' +
+                      '<span style="display:block">My Bookings</span>';
+      }
+    }
+    tabs[tabs.length - 1].insertAdjacentElement("afterend", t);
+    t.addEventListener("click", () => cTab("bookings", t));
+    document.addEventListener("click", e => {
+      const c = e.target.closest && e.target.closest("[data-cancel]");
+      if (c) cancel(c.dataset.cancel);
+      if (e.target.id === "mb-save") {
+        const v = digits10(($("mb-phone") || {}).value);
+        if (v.length !== 10) { toast("⚠️", "Enter a 10-digit number"); return; }
+        try { localStorage.setItem("bqBookPhone", v); } catch (err) {}
+        load();
+      }
+    });
+    setInterval(() => { if (visible()) load(); }, 20000);
+  }
+  init();
+})();
+
+(function () {
+  const css = document.createElement("style");
+  css.textContent = `
+    #toast{z-index:100000!important}
+    .bq-f.bad{border-color:#ff6b8b!important;box-shadow:0 0 0 2px rgba(255,107,139,.25)}`;
+  document.head.appendChild(css);
+
+  document.addEventListener("click", e => {
+    if (!e.target.closest || !e.target.closest("#bq-tk-send")) return;
+    const sub = document.getElementById("bq-tk-sub");
+    const msg = document.getElementById("bq-tk-msg");
+    if (!sub || !msg) return;
+    sub.classList.toggle("bad", sub.value.trim().length < 3);
+    msg.classList.toggle("bad", msg.value.trim().length < 5);
+    if (sub.classList.contains("bad")) sub.focus();
+    else if (msg.classList.contains("bad")) msg.focus();
+  }, true);
+
+  document.addEventListener("input", e => {
+    if (e.target.classList && e.target.classList.contains("bq-f")) e.target.classList.remove("bad");
+  });
+
+  const sub = () => document.getElementById("bq-tk-sub");
+  new MutationObserver(() => {
+    const s = sub();
+    if (s && !s.dataset.req) { s.dataset.req = "1"; s.placeholder = "Subject (required)"; }
+  }).observe(document.body, { childList: true, subtree: true });
+})();
+
+(function () {
+  "use strict";
+  const $ = id => document.getElementById(id);
+  const esc = v => String(v == null ? "" : v).replace(/[&<>"']/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const d10 = p => String(p || "").replace(/\D/g, "").slice(-10);
+  const COL = { "Open": "#f5b73b", "In progress": "#6aa8ff", "Resolved": "#34d399" };
+  const KEY = "bqTicketTokens", SEEN = "bqTicketSeen";
+  const jget = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) || d; } catch (e) { return d; } };
+  const jset = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+
+  /* ---------------- styles ---------------- */
+  const css = document.createElement("style");
+  css.textContent = `
+  #toast{z-index:100000!important}
+  .bq-f.bad{border-color:#ff6b8b!important;box-shadow:0 0 0 2px rgba(255,107,139,.25)}
+  .tk-wrap{margin-top:22px;font-family:'DM Sans',sans-serif}
+  .tk-wrap h4{margin:0 0 10px;font:700 17px 'Syne',sans-serif;color:"burlywood"}
+  .tk-card{padding:14px;margin-bottom:10px;border-radius:16px;color:"burlywood";background:#0c1030;border:1px solid rgba(120,120,255,.2);color:#eef1ff}
+  .tk-top{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:14px;font-weight:700}
+  .tk-st{font-size:12px;padding:2px 9px;border-radius:8px;border:1px solid var(--k);color:var(--k);white-space:nowrap}
+  .tk-d{font-size:13px;color:"burlywood";;margin:6px 0;white-space:pre-wrap}
+  .tk-m{font-size:12px;color:#98a1cc}
+  .tk-rp{margin-top:8px;padding:8px 10px;border-left:3px solid #f5b73b;color:"burlywood";background:rgba(245,183,59,.08);border-radius:0 10px 10px 0;font-size:13.5px;color:#eef1ff}
+  .tk-rp small{display:block;color:#98a1cc;margin-top:3px}
+  .tk-hint{font-size:12.5px;line-height:1.45;margin:0 0 10px;padding:9px 11px;border-radius:10px;background:rgba(245,183,59,.1);border:1px solid rgba(245,183,59,.35);color:"burlywood"}
+  .tk-ta,.tk-sel{width:100%;margin-top:10px;padding:10px 12px;border-radius:12px;border:1px solid rgba(120,120,255,.3);background:#080b26;color:"burlywood";font:14px 'DM Sans',sans-serif}
+  .tk-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .tk-row .tk-sel{width:auto;margin-top:0}
+  .tk-btn{cursor:pointer;border:0;border-radius:12px;padding:10px 16px;font:700 14px 'DM Sans',sans-serif;color:"burlywood";background:linear-gradient(90deg,#f5b73b,#ff9a3d)}
+  #sx-issues{display:none}
+  #b-settings-tab.sx-detail.iss #sx-issues{display:block}
+  #b-settings-tab.sx-detail.iss #sx-home{display:none!important}
+  #sx-issues .tk-card{background:var(--c,#0c1030);color:"burlywood"}`;
+  document.head.appendChild(css);
+
+  /* ---------------- 1. private tickets via fetch wrapper ---------------- */
+  const _fetch = window.fetch.bind(window);
+  const tokens = () => jget(KEY, {});
+  async function mine() {
+    const t = tokens(), items = Object.keys(t).map(id => ({ id: Number(id), token: t[id] }));
+    if (!items.length) return [];
+    const r = await _fetch(BQ_BASE + "/api/support/mine", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ items })
+    });
+    const j = await r.json();
+    return (j && j.tickets) || [];
+  }
+  const jres = (obj, status = 200) => new Response(JSON.stringify(obj), { status, headers: { "Content-Type": "application/json" } });
+
+  window.fetch = function (url, opts) {
+    try {
+      if (typeof url === "string") {
+        if (/\/api\/tickets$/.test(url) && opts && opts.method === "POST") {
+          const body = JSON.parse(opts.body || "{}");
+          const sel = $("bq-tk-shop");
+          body.shop_name = sel ? sel.value : "";
+          return _fetch(url.replace(/\/api\/tickets$/, "/api/support/tickets"),
+            Object.assign({}, opts, { body: JSON.stringify(body) })).then(async res => {
+            const copy = res.clone();
+            try {
+              const j = await copy.json();
+              if (j && j.success && j.token) { const t = tokens(); t[j.ticket.id] = j.token; jset(KEY, t); }
+            } catch (e) {}
+            return res;
+          });
+        }
+        if (/\/api\/tickets\?phone=/.test(url) && (!opts || !opts.method || opts.method === "GET")) {
+          return mine().then(list => jres({ success: true, tickets: list })).catch(() => jres({ success: true, tickets: [] }));
+        }
+      }
+    } catch (e) {}
+    return _fetch(url, opts);
+  };
+
+  /* ---------------- 2. "My Tickets" with replies ---------------- */
+  async function paintTickets() {
+    const el = $("bq-my-tickets");
+    if (!el) return;
+    try {
+      const list = await mine();
+      if (!list.length) return;
+      el.innerHTML = `<div class="tk-wrap"><h4>My Tickets</h4>${list.slice(0, 8).map(t => `
+        <div class="tk-card">
+          <div class="tk-top"><span>${esc(t.ref)} · ${esc(t.subject)}</span><span class="tk-st" style="--k:${COL[t.status] || "#98a1cc"}">${esc(t.status)}</span></div>
+          ${t.shop_name ? `<div class="tk-m">About: ${esc(t.shop_name)}</div>` : ""}
+          <div class="tk-d">${esc(t.description)}</div>
+          ${t.replies.map(r => `<div class="tk-rp">${esc(r.message)}<small>${r.author === "shop" ? "The shop" : "Support"} · ${new Date(r.created_at).toLocaleString()}</small></div>`).join("")}
+          ${t.status !== "Resolved" && !t.replies.length ? '<div class="tk-d">We have your request and will reply here.</div>' : ""}
+        </div>`).join("")}</div>`;
+    } catch (e) {}
+  }
+  const baseSupport = window.renderSupport;
+  window.renderSupport = function () {
+    const out = baseSupport.apply(this, arguments);
+    setTimeout(paintTickets, 500);
+    return out;
+  };
+  renderSupport = window.renderSupport;
+
+  /* ---------------- 3. reply notifications ---------------- */
+  async function checkReplies() {
+    if (document.hidden && !("Notification" in window)) return;
+    try {
+      const list = await mine();
+      const seen = jget(SEEN, null);
+      const now = {}; list.forEach(t => { now[t.id] = t.replies.length; });
+      if (seen) {
+        list.forEach(t => {
+          if (t.replies.length > (seen[t.id] || 0)) {
+            const msg = "Reply on " + t.ref + ": " + t.replies[t.replies.length - 1].message.slice(0, 80);
+            try { toast("💬", msg); } catch (e) {}
+            try { if ("Notification" in window && Notification.permission === "granted") new Notification("Glowora support", { body: msg }); } catch (e) {}
+          }
+        });
+      }
+      jset(SEEN, now);
+    } catch (e) {}
+  }
+  setInterval(checkReplies, 30000);
+  setTimeout(checkReplies, 4000);
+
+  /* ---------------- 4. ticket form: shop picker, hint, validation ---------------- */
+  function lastShop() {
+    if (S.inQueue && S.shops[S.myShopId]) return S.shops[S.myShopId].name;
+    return (S.lastCompletedVisit && S.lastCompletedVisit.shop) || "";
+  }
+  function prepSheet() {
+    const sheet = $("bq-ticket"), cat = $("bq-tk-cat");
+    if (!sheet || !cat) return;
+    let sel = $("bq-tk-shop");
+    if (!sel) {
+      const hint = document.createElement("div"); hint.className = "tk-hint"; hint.id = "bq-tk-hint";
+      sel = document.createElement("select"); sel.className = "bq-f"; sel.id = "bq-tk-shop";
+      cat.insertAdjacentElement("beforebegin", hint);
+      cat.insertAdjacentElement("afterend", sel);
+      cat.addEventListener("change", updHint);
+      $("bq-tk-sub").placeholder = "Subject (required)";
+    }
+    const cur = lastShop();
+    sel.innerHTML = '<option value="">Which shop is this about? (optional)</option>' +
+      S.shops.filter(s => !s.isDemo).map(s => `<option ${s.name === cur ? "selected" : ""}>${esc(s.name)}</option>`).join("");
+    updHint();
+  }
+  function updHint() {
+    const h = $("bq-tk-hint"), c = $("bq-tk-cat");
+    if (!h || !c) return;
+    h.textContent = /mistake|Wrong token/i.test(c.value)
+      ? "Joined the wrong shop? Open Queue Status and tap Leave Queue — it works instantly. Raise a ticket only if you cannot leave."
+      : "Include your token number or payment ID so we can find it faster.";
+  }
+  new MutationObserver(() => {
+    const sheet = $("bq-ticket");
+    if (sheet && !sheet.dataset.w) {
+      sheet.dataset.w = "1";
+      new MutationObserver(() => { if (sheet.classList.contains("on")) prepSheet(); })
+        .observe(sheet, { attributes: true, attributeFilter: ["class"] });
+    }
+  }).observe(document.body, { childList: true, subtree: true });
+
+  document.addEventListener("click", e => {
+    if (!e.target.closest || !e.target.closest("#bq-tk-send")) return;
+    const sub = $("bq-tk-sub"), msg = $("bq-tk-msg");
+    if (!sub || !msg) return;
+    sub.classList.toggle("bad", sub.value.trim().length < 3);
+    msg.classList.toggle("bad", msg.value.trim().length < 5);
+    (sub.classList.contains("bad") ? sub : msg.classList.contains("bad") ? msg : null) && (sub.classList.contains("bad") ? sub : msg).focus();
+    try { if ("Notification" in window && Notification.permission === "default") Notification.requestPermission(); } catch (err) {}
+  }, true);
+  document.addEventListener("input", e => { if (e.target.classList && e.target.classList.contains("bq-f")) e.target.classList.remove("bad"); });
+
+  /* ---------------- 5. barber: Customer Issues ---------------- */
+  const shopName = () => (S.barber && S.barber.shopName) || "";
+  async function loadIssues() {
+    const box = $("sx-issues");
+    if (!box) return;
+    if (!shopName()) { box.innerHTML = '<div class="tk-card">Set your shop name first.</div>'; return; }
+    box.innerHTML = '<div class="tk-card">Loading…</div>';
+    try {
+      const r = await _fetch(BQ_BASE + "/api/support/shop?shop_name=" + encodeURIComponent(shopName()));
+      const j = await r.json();
+      const list = (j && j.tickets) || [];
+      box.innerHTML = list.length ? list.map(t => `
+        <div class="tk-card" data-id="${t.id}">
+          <div class="tk-top"><span>${esc(t.ref)} · ${esc(t.subject)}</span><span class="tk-st" style="--k:${COL[t.status] || "#98a1cc"}">${esc(t.status)}</span></div>
+          <div class="tk-m">${esc(t.category)} · ${esc(t.phone)} · ${new Date(t.created_at).toLocaleString()}</div>
+          <div class="tk-d">${esc(t.description)}</div>
+          ${t.replies.map(x => `<div class="tk-rp">${esc(x.message)}<small>${x.author === "shop" ? "You" : "Support"} · ${new Date(x.created_at).toLocaleString()}</small></div>`).join("")}
+          <textarea class="tk-ta" rows="2" placeholder="Reply to the customer…"></textarea>
+          <div class="tk-row"><select class="tk-sel">${["Open", "In progress", "Resolved"].map(s => `<option ${s === t.status ? "selected" : ""}>${s}</option>`).join("")}</select>
+            <button type="button" class="tk-btn" data-issue-send>Send / Update</button></div>
+        </div>`).join("") : '<div class="tk-card">No customer issues for your shop. 🎉</div>';
+    } catch (e) { box.innerHTML = '<div class="tk-card">Could not load tickets. Try again.</div>'; }
+  }
+
+  function addRow() {
+    const root = $("sx-root");
+    if (!root || root.querySelector('[data-sx="issues"]')) return;
+    const help = root.querySelector('[data-sx="help"]');
+    if (!help) return;
+    const row = help.cloneNode(true);
+    row.setAttribute("data-sx", "issues");
+    const w = document.createTreeWalker(row, NodeFilter.SHOW_TEXT);
+    for (let n = w.nextNode(); n; n = w.nextNode()) {
+      n.nodeValue = n.nodeValue.replace("Help Center", "Customer Issues").replace("FAQs and guides", "Tickets from your customers");
+    }
+    help.insertAdjacentElement("afterend", row);
+    const panel = document.createElement("div");
+    panel.id = "sx-issues";
+    root.appendChild(panel);
+  }
+  new MutationObserver(addRow).observe(document.body, { childList: true, subtree: true });
+  addRow();
+
+  document.addEventListener("click", e => {
+    const tab = $("b-settings-tab");
+    const sx = e.target.closest && e.target.closest("[data-sx]");
+    if (sx && tab) {
+      if (sx.dataset.sx === "issues") {
+        tab.classList.add("sx-detail", "iss");
+        const t = $("sx-detail-title"); if (t) t.textContent = "Customer Issues";
+        tab.scrollTop = 0;
+        loadIssues();
+      } else tab.classList.remove("iss");
+    }
+    const send = e.target.closest && e.target.closest("[data-issue-send]");
+    if (send) {
+      const card = send.closest(".tk-card");
+      _fetch(BQ_BASE + "/api/support/shop/" + card.dataset.id + "/reply", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ shop_name: shopName(), message: card.querySelector("textarea").value, status: card.querySelector("select").value })
+      }).then(r => r.json()).then(j => {
+        if (!j.success) throw new Error(j.error || "Could not save");
+        toast("✅", "Reply sent"); loadIssues();
+      }).catch(err => toast("⚠️", err.message));
+    }
+  }, true);
+  const baseB = window.bTab;
+  if (baseB) window.bTab = function (tab) { const o = baseB.apply(this, arguments); const t = $("b-settings-tab"); if (t) t.classList.remove("iss"); return o; };
+  setInterval(() => { const t = $("b-settings-tab"); if (t && t.classList.contains("iss")) loadIssues(); }, 45000);
+})();
+
+/* Ticket form: burlywood text, readable dropdown */
+(function () {
+  const css = document.createElement("style");
+  css.textContent = `
+    #bq-ticket .bq-f,
+    #bq-ticket select.bq-f,
+    #bq-ticket input.bq-f,
+    #bq-ticket textarea.bq-f{color:burlywood!important}
+    #bq-ticket .bq-f::placeholder{color:rgba(222,184,135,.6)!important}
+    #bq-ticket select.bq-f option{background:#0c1030;color:burlywood}
+    #bq-ticket .tk-hint{color:burlywood!important}
+    #bq-ticket .bq-sub{color:rgba(222,184,135,.8)!important}`;
+  document.head.appendChild(css);
+})();
+
+(function () {
+  'use strict';
+  const st = document.createElement('style');
+  st.id = 'bq-tabbar-fix';
+  st.textContent = `
+  #c-tabs { display: flex !important; align-items: stretch; justify-content: space-around; }
+  #c-tabs .tab {
+    flex: 1 1 0 !important; min-width: 0;
+    display: flex !important; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    text-align: center; padding-top: 8px; padding-bottom: 8px;
+  }
+  #c-tabs .tab .bq-ti { font-size: 20px; line-height: 1; }
+  #c-tabs .tab .bq-tl { font-size: 11px; line-height: 1.1; white-space: nowrap; }
+  #cust-queue, #my-q { padding-top: 18px; }
+  #cust-queue h1, #cust-queue h2, #my-q h1, #my-q h2 { scroll-margin-top: 70px; }`;
+  document.head.appendChild(st);
+
+  function fixTab() {
+    const bar = document.getElementById('c-tabs');
+    const b = bar && bar.querySelector('[data-bkbtn]');
+    if (!b || b.dataset.fixed) return;
+    const ref = [...bar.querySelectorAll('.tab')].find(t => !t.hasAttribute('data-bkbtn'));
+    // reuse the same classes as the Home tab's icon and label so they match exactly
+    const leaves = ref ? [...ref.querySelectorAll('*')].filter(n => !n.children.length) : [];
+    const iconCls  = leaves[0] ? leaves[0].className : '';
+    const labelCls = leaves[1] ? leaves[1].className : '';
+    b.innerHTML = '<span class="bq-ti ' + iconCls + '">📅</span><span class="bq-tl ' + labelCls + '">Bookings</span>';
+    b.dataset.fixed = '1';
+  }
+
+  function run() { fixTab(); setTimeout(fixTab, 1500); }
+  if (typeof componentsReady !== 'undefined') componentsReady.then(run); else run();
+})();
+/* Booking settings: slot length up to 120 min, book ahead up to 365 days */
+(function () {
+  'use strict';
+  const SLOTS = [15, 20, 30, 45, 60, 90, 120];
+  const AHEAD = [7, 14, 30, 60, 90, 180, 365];
+
+  function fill(id, values, unit, fallback) {
+    const sel = document.getElementById(id);
+    if (!sel || sel.dataset.filled) return;
+    const keep = Number(sel.value);
+    sel.innerHTML = values.map(v => '<option value="' + v + '">' + v + ' ' + unit + '</option>').join('');
+    sel.value = String(values.includes(keep) ? keep : fallback);
+    sel.dataset.filled = '1';
+  }
+
+  setInterval(() => {
+    if (document.hidden) return;
+    fill('bk-slot', SLOTS, 'min', 30);
+    fill('bk-ahead', AHEAD, 'days', 14);
+  }, 1500);
+})();
+/* Demo shops removed: keep the app safe when the list is empty */
+(function () {
+  'use strict';
+
+  // remove any leftover demo shops (also covers a cached old version)
+  const DEMO = ['royal cuts', 'the blade room', 'style studio', 'classic barber'];
+  function stripDemo() {
+    S.shops = S.shops.filter(s => s.isBarberProfile || !DEMO.includes(String(s.name).toLowerCase()));
+    S.shops.forEach((s, i) => { s.id = i; });          // keep ids matching positions
+  }
+  stripDemo();
+
+  // never open a shop that doesn't exist
+  const baseOpenShop = window.openShop;
+  window.openShop = function (id) {
+    if (!S.shops[id]) return;
+    return baseOpenShop.apply(this, arguments);
+  };
+
+  // friendly message when there are no shops yet
+  const baseRender = window.renderShops;
+  window.renderShops = function () {
+    const out = baseRender.apply(this, arguments);
+    const list = document.getElementById('cx-list');
+    if (list && !S.shops.length) {
+      list.innerHTML = '<div class="cx-empty">No barber shops have joined yet. Check back soon!</div>';
+    }
+    return out;
+  };
+})();
