@@ -83,7 +83,7 @@ h3,
   background-image:
     linear-gradient(rgba(5, 5, 9, 0.58),
       rgba(5, 5, 9, 0.68)),
-    url("background.webp");
+    url("image.png");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -181,7 +181,7 @@ h3,
   padding: 10px 4px;
   cursor: pointer;
   color: var(--txt2);
-  font-size: 11px;
+  font-size: 17px;
   border: none;
   background: none;
   font-family: 'DM Sans', sans-serif;
@@ -1969,24 +1969,6 @@ label {
 .ab-sync{color:var(--green,#4ade80)}
 @media (max-width:420px){.ab-set-grid{grid-template-columns:1fr}}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /* =========================================================
    layout_fix.css
    Paste this at the VERY END of style.css (no other change needed).
@@ -2105,3 +2087,702 @@ label {
 
 /* toast: never wider than the screen */
 #toast { max-width: 92vw; white-space: normal; text-align: center; }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* ==========================================
+   BARBER-Q PROFILE — DESKTOP + MOBILE FIX
+   Paste at the END of the existing style tag
+========================================== */
+
+.bq-profile-dashboard,
+.bq-profile-dashboard * {
+  box-sizing: border-box;
+}
+
+.bq-profile-dashboard {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.bq-profile-dashboard .bq-layout,
+.bq-profile-dashboard .bq-content,
+.bq-profile-dashboard .bq-card,
+.bq-profile-dashboard .bq-side {
+  min-width: 0;
+  max-width: none;
+}
+
+/* ---------- DESKTOP / LARGE LAPTOP ---------- */
+
+@media (min-width: 1100px) {
+  .bq-profile-dashboard .bq-topbar {
+    min-height: 64px;
+    padding: 0 22px;
+    gap: 30px;
+    margin-bottom: 18px;
+  }
+
+  .bq-profile-dashboard .bq-brand {
+    font-size: 20px;
+  }
+
+  .bq-profile-dashboard .bq-nav {
+    gap: 12px;
+  }
+
+  .bq-profile-dashboard .bq-nav button {
+    font-size: 13px;
+    padding: 10px 17px;
+  }
+
+  .bq-profile-dashboard .bq-top-avatar {
+    width: 38px;
+    height: 38px;
+    font-size: 15px;
+  }
+
+  .bq-profile-dashboard .bq-layout {
+    grid-template-columns: minmax(290px, 0.30fr) minmax(0, 1fr);
+    gap: 18px;
+    align-items: stretch;
+  }
+
+  .bq-profile-dashboard .bq-side {
+    padding: 25px 22px;
+    border-radius: 20px;
+  }
+
+  .bq-profile-dashboard .bq-identity {
+    padding-bottom: 22px;
+  }
+
+  .bq-profile-dashboard .bq-ring {
+    width: 94px;
+    height: 94px;
+    margin-bottom: 12px;
+  }
+
+  .bq-profile-dashboard .bq-ring b {
+    font-size: 32px;
+  }
+
+  .bq-profile-dashboard .bq-percent {
+    font-size: 11px;
+  }
+
+  .bq-profile-dashboard .bq-identity h2 {
+    font-size: 23px;
+    margin: 8px 0;
+  }
+
+  .bq-profile-dashboard .bq-muted {
+    font-size: 13px;
+  }
+
+  .bq-profile-dashboard .bq-pill {
+    font-size: 12px;
+    padding: 6px 12px;
+  }
+
+  .bq-profile-dashboard .bq-stats {
+    gap: 9px;
+    margin-bottom: 16px;
+  }
+
+  .bq-profile-dashboard .bq-stat {
+    padding: 17px 7px;
+    border-radius: 13px;
+  }
+
+  .bq-profile-dashboard .bq-stat strong {
+    font-size: 23px;
+  }
+
+  .bq-profile-dashboard .bq-stat span {
+    font-size: 10px;
+  }
+
+  .bq-profile-dashboard .bq-finish {
+    padding: 16px;
+    border-radius: 14px;
+  }
+
+  .bq-profile-dashboard .bq-finish h3 {
+    font-size: 14px;
+  }
+
+  .bq-profile-dashboard .bq-finish p {
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  .bq-profile-dashboard .bq-progress {
+    height: 6px;
+  }
+
+  .bq-profile-dashboard .bq-progress-meta {
+    font-size: 10px;
+    margin-top: 9px;
+  }
+
+  .bq-profile-dashboard .bq-actions {
+    gap: 10px;
+    padding-top: 22px;
+  }
+
+  .bq-profile-dashboard .bq-primary,
+  .bq-profile-dashboard .bq-logout {
+    padding: 14px;
+    font-size: 13px;
+  }
+
+  .bq-profile-dashboard .bq-content {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    align-content: start;
+  }
+
+  .bq-profile-dashboard .bq-card {
+    padding: 20px;
+    border-radius: 18px;
+  }
+
+  .bq-profile-dashboard .bq-card-head {
+    margin-bottom: 17px;
+    gap: 12px;
+  }
+
+  .bq-profile-dashboard .bq-heading {
+    font-size: 15px;
+    gap: 10px;
+  }
+
+  .bq-profile-dashboard .bq-icon {
+    width: 27px;
+    height: 27px;
+    border-radius: 7px;
+    font-size: 13px;
+  }
+
+  .bq-profile-dashboard .bq-link {
+    font-size: 11px;
+  }
+
+  .bq-profile-dashboard .bq-detail-list,
+  .bq-profile-dashboard .bq-rows {
+    gap: 10px;
+  }
+
+  .bq-profile-dashboard .bq-detail,
+  .bq-profile-dashboard .bq-inset {
+    padding: 13px;
+    gap: 12px;
+    border-radius: 12px;
+  }
+
+  .bq-profile-dashboard .bq-eyebrow {
+    font-size: 10px;
+    margin-bottom: 5px;
+  }
+
+  .bq-profile-dashboard .bq-value {
+    font-size: 13px;
+  }
+
+  .bq-profile-dashboard .bq-mini-btn {
+    font-size: 11px;
+    padding: 8px 12px;
+  }
+
+  .bq-profile-dashboard .bq-chevron {
+    font-size: 21px;
+  }
+
+  .bq-profile-dashboard .bq-row {
+    gap: 12px;
+  }
+
+  .bq-profile-dashboard .bq-status-dot {
+    width: 9px;
+    height: 9px;
+  }
+
+  .bq-profile-dashboard .bq-row strong,
+  .bq-profile-dashboard .bq-inset-copy strong {
+    font-size: 13px;
+    margin-bottom: 5px;
+  }
+
+  .bq-profile-dashboard .bq-row small,
+  .bq-profile-dashboard .bq-inset-copy small {
+    font-size: 10px;
+    line-height: 1.5;
+  }
+
+  .bq-profile-dashboard .bq-gold,
+  .bq-profile-dashboard .bq-price {
+    font-size: 13px;
+  }
+
+  .bq-profile-dashboard .bq-shop-icon,
+  .bq-profile-dashboard .bq-payment-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    font-size: 14px;
+  }
+
+  .bq-profile-dashboard .bq-rating-label {
+    font-size: 11px;
+  }
+
+  .bq-profile-dashboard .bq-paid {
+    font-size: 9px;
+    padding: 3px 5px;
+  }
+
+  .bq-profile-dashboard .bq-support {
+    grid-column: 1 / -1;
+  }
+
+  .bq-profile-dashboard .bq-support-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .bq-profile-dashboard .bq-support-item {
+    padding: 15px;
+    gap: 12px;
+    border-radius: 13px;
+  }
+
+  .bq-profile-dashboard .bq-support-icon {
+    width: 29px;
+    height: 29px;
+    font-size: 15px;
+  }
+
+  .bq-profile-dashboard .bq-support-item strong {
+    font-size: 13px;
+    margin-bottom: 6px;
+  }
+
+  .bq-profile-dashboard .bq-support-item small {
+    font-size: 10px;
+    line-height: 1.5;
+  }
+
+  .bq-profile-dashboard .bq-empty {
+    font-size: 12px;
+    padding: 12px 4px;
+  }
+}
+
+/* ---------- TABLETS / SMALL LAPTOPS ---------- */
+
+@media (min-width: 601px) and (max-width: 1099px) {
+  .bq-profile-dashboard .bq-layout {
+    grid-template-columns: minmax(220px, 0.32fr) minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .bq-profile-dashboard .bq-side {
+    padding: 16px 12px;
+  }
+
+  .bq-profile-dashboard .bq-content {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .bq-profile-dashboard .bq-card {
+    padding: 13px;
+  }
+
+  .bq-profile-dashboard .bq-heading {
+    font-size: 12px;
+  }
+
+  .bq-profile-dashboard .bq-row strong,
+  .bq-profile-dashboard .bq-inset-copy strong {
+    font-size: 11px;
+  }
+
+  .bq-profile-dashboard .bq-row small,
+  .bq-profile-dashboard .bq-inset-copy small {
+    font-size: 9px;
+  }
+
+  .bq-profile-dashboard .bq-support {
+    grid-column: 1 / -1;
+  }
+
+  .bq-profile-dashboard .bq-support-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* ---------- MOBILE PHONES ---------- */
+
+@media (max-width: 600px) {
+  .bq-profile-dashboard {
+    font-size: 14px;
+  }
+
+  .bq-profile-dashboard .bq-topbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px 4px;
+    min-height: 56px;
+  }
+
+  .bq-profile-dashboard .bq-brand {
+    font-size: 15px;
+  }
+
+  .bq-profile-dashboard .bq-nav {
+    flex: 1;
+    justify-content: center;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .bq-profile-dashboard .bq-nav button {
+    font-size: 10px;
+    padding: 9px 8px;
+  }
+
+  .bq-profile-dashboard .bq-top-avatar {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+  }
+
+  .bq-profile-dashboard .bq-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .bq-profile-dashboard .bq-side {
+    min-height: auto;
+    padding: 18px 14px;
+    border-radius: 16px;
+  }
+
+  .bq-profile-dashboard .bq-identity {
+    padding-bottom: 17px;
+  }
+
+  .bq-profile-dashboard .bq-ring {
+    width: 78px;
+    height: 78px;
+  }
+
+  .bq-profile-dashboard .bq-ring b {
+    font-size: 27px;
+  }
+
+  .bq-profile-dashboard .bq-percent {
+    font-size: 10px;
+  }
+
+  .bq-profile-dashboard .bq-identity h2 {
+    font-size: 20px;
+  }
+
+  .bq-profile-dashboard .bq-muted {
+    font-size: 12px;
+  }
+
+  .bq-profile-dashboard .bq-pill {
+    font-size: 11px;
+  }
+
+  .bq-profile-dashboard .bq-stats {
+    gap: 6px;
+  }
+
+  .bq-profile-dashboard .bq-stat {
+    padding: 13px 4px;
+  }
+
+  .bq-profile-dashboard .bq-stat strong {
+    font-size: 19px;
+  }
+
+  .bq-profile-dashboard .bq-stat span {
+    font-size: 8px;
+  }
+
+  .bq-profile-dashboard .bq-finish {
+    padding: 13px;
+  }
+
+  .bq-profile-dashboard .bq-finish h3 {
+    font-size: 12px;
+  }
+
+  .bq-profile-dashboard .bq-finish p {
+    font-size: 10px;
+    line-height: 1.6;
+  }
+
+  .bq-profile-dashboard .bq-progress-meta {
+    font-size: 9px;
+  }
+
+  .bq-profile-dashboard .bq-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .bq-profile-dashboard .bq-primary,
+  .bq-profile-dashboard .bq-logout {
+    min-height: 44px;
+    padding: 11px 6px;
+    font-size: 11px;
+  }
+
+  .bq-profile-dashboard .bq-content {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .bq-profile-dashboard .bq-card {
+    padding: 15px;
+    border-radius: 14px;
+  }
+
+  .bq-profile-dashboard .bq-card-head {
+    margin-bottom: 13px;
+    gap: 8px;
+  }
+
+  .bq-profile-dashboard .bq-heading {
+    font-size: 13px;
+  }
+
+  .bq-profile-dashboard .bq-icon {
+    width: 23px;
+    height: 23px;
+    font-size: 11px;
+  }
+
+  .bq-profile-dashboard .bq-link {
+    font-size: 10px;
+  }
+
+  .bq-profile-dashboard .bq-detail-list,
+  .bq-profile-dashboard .bq-rows {
+    gap: 9px;
+  }
+
+  .bq-profile-dashboard .bq-detail,
+  .bq-profile-dashboard .bq-inset {
+    padding: 12px 10px;
+    gap: 9px;
+  }
+
+  .bq-profile-dashboard .bq-eyebrow {
+    font-size: 9px;
+  }
+
+  .bq-profile-dashboard .bq-value {
+    font-size: 12px;
+  }
+
+  .bq-profile-dashboard .bq-mini-btn {
+    min-height: 34px;
+    padding: 7px 10px;
+    font-size: 10px;
+  }
+
+  .bq-profile-dashboard .bq-row {
+    gap: 9px;
+  }
+
+  .bq-profile-dashboard .bq-row strong,
+  .bq-profile-dashboard .bq-inset-copy strong {
+    font-size: 11px;
+    line-height: 1.4;
+  }
+
+  .bq-profile-dashboard .bq-row small,
+  .bq-profile-dashboard .bq-inset-copy small {
+    font-size: 9px;
+    line-height: 1.5;
+  }
+
+  .bq-profile-dashboard .bq-gold,
+  .bq-profile-dashboard .bq-price {
+    font-size: 11px;
+  }
+
+  .bq-profile-dashboard .bq-shop-icon,
+  .bq-profile-dashboard .bq-payment-icon {
+    width: 25px;
+    height: 25px;
+  }
+
+  .bq-profile-dashboard .bq-support {
+    grid-column: auto;
+  }
+
+  .bq-profile-dashboard .bq-support-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 9px;
+  }
+
+  .bq-profile-dashboard .bq-support-item {
+    min-height: 62px;
+    padding: 12px;
+    gap: 11px;
+  }
+
+  .bq-profile-dashboard .bq-support-icon {
+    width: 27px;
+    height: 27px;
+  }
+
+  .bq-profile-dashboard .bq-support-item strong {
+    font-size: 11px;
+  }
+
+  .bq-profile-dashboard .bq-support-item small {
+    font-size: 9px;
+  }
+
+  .bq-profile-dashboard .bq-empty {
+    font-size: 10px;
+    padding: 12px 4px;
+  }
+}
+
+/* ---------- VERY SMALL PHONES ---------- */
+
+@media (max-width: 360px) {
+  .bq-profile-dashboard .bq-topbar {
+    gap: 5px;
+  }
+
+  .bq-profile-dashboard .bq-brand {
+    font-size: 12px;
+  }
+
+  .bq-profile-dashboard .bq-nav button {
+    font-size: 9px;
+    padding: 8px 5px;
+  }
+
+  .bq-profile-dashboard .bq-card {
+    padding: 11px;
+  }
+
+  .bq-profile-dashboard .bq-stats {
+    gap: 4px;
+  }
+
+  .bq-profile-dashboard .bq-stat span {
+    font-size: 7px;
+  }
+
+  .bq-profile-dashboard .bq-card-head {
+    align-items: flex-start;
+  }
+
+  .bq-profile-dashboard .bq-heading {
+    font-size: 12px;
+  }
+
+  .bq-profile-dashboard .bq-link {
+    font-size: 9px;
+  }
+}
+.bq-profile-dashboard .bq-delete-account {
+  width: 100%;
+  min-height: 44px;
+  padding: 11px;
+  border: 1px solid #7b3038;
+  border-radius: 99px;
+  background: #501d2526;
+  color: #ff707b;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background .2s ease;
+}
+
+.bq-profile-dashboard .bq-delete-account:hover {
+  background: #7b303833;
+}
+.queue-empty-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  margin-top: 24px;
+}
+
+.btn-secondary {
+  position: static;          /* remove any absolute/relative offset */
+  margin: 0;                 /* remove negative margins */
+  padding: 10px 22px;
+  background: transparent;
+  color: #f5c542;
+  border: 1px solid rgba(245, 197, 66, 0.4);
+  border-radius: 999px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.btn-secondary:hover {
+  background: rgba(245, 197, 66, 0.1);
+  border-color: #f5c542;
+}
+
+/* make sure the card has room at the bottom */
+.queue-card {
+  padding-bottom: 36px;
+}
