@@ -12694,12 +12694,27 @@ S.shops.forEach((s, i) => {
       'classic barber'
     ]);
 
-    const realShops = shops.filter(shop =>
-      shop &&
-      shop.id != null &&
-      shop.name &&
-      !demoNames.has(String(shop.name).trim().toLowerCase())
-    );
+    const realShops = shops.filter(shop => {
+  if (!shop || shop.id == null || !shop.name) return false;
+
+  const name = String(shop.name).trim().toLowerCase();
+  const status = String(shop.status || '').trim().toLowerCase();
+
+  // Never display demo shops.
+  if (demoNames.has(name)) return false;
+
+  // Never display shops marked as deleted.
+  if (
+    shop.is_deleted === true ||
+    shop.deleted === true ||
+    shop.deleted_at ||
+    ['deleted', 'removed'].includes(status)
+  ) {
+    return false;
+  }
+
+  return true;
+});
 
     // Keep any local barber-profile entry used by the barber dashboard.
     const barberProfile = (S.shops || []).find(shop => shop.isBarberProfile);
