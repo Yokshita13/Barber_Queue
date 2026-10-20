@@ -1400,30 +1400,10 @@ def create_ticket():
         logging.exception("Ticket creation failed")
         return error_response("Could not save the ticket.", 500)
 
-
 @queue_bp.route("/api/tickets", methods=["GET"])
 def list_tickets():
-    phone = phone10(request.args.get("phone"))
-    if len(phone) != 10:
-        return error_response("Invalid phone number.")
-
-    rows = (
-        SupportTicket.query
-        .filter_by(phone=phone)
-        .order_by(SupportTicket.id.desc())
-        .limit(20)
-        .all()
-    )
-
-    return jsonify({
-        "success": True,
-        "tickets": [ticket_json(t) for t in rows]
-    })
-
-
-# --------------------------------------------------
-# REVIEW PHOTOS & VIDEOS
-# --------------------------------------------------
+    # Tickets are private now - the app reads them through /api/support/mine
+    return jsonify({"success": True, "tickets": []})
 
 MAX_IMAGE_BYTES = 5 * 1024 * 1024
 MAX_VIDEO_BYTES = 25 * 1024 * 1024
