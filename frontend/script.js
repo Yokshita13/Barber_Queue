@@ -13066,3 +13066,20 @@ S.shops.forEach((s, i) => {
 
   window.restoreBarberQServices = restoreServices;
 })();
+const response = await fetch(
+  'https://barber-queue-backend-9z52.onrender.com/api/barbers/my-shop',
+  {
+    headers: {
+      Authorization: 'Bearer ' + yourSavedBarberToken,
+      Accept: 'application/json'
+    }
+  }
+);
+
+const result = await response.json();
+
+if (!response.ok || !result.success || !result.shop) {
+  throw new Error(result.error || 'Could not load your registered shop.');
+}
+
+const registeredShop = result.shop;
