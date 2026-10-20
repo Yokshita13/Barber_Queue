@@ -12630,7 +12630,11 @@ function bindShopDetail(mount = document.getElementById('shopDetailBody')) {
   const DEMO = ['royal cuts', 'the blade room', 'style studio', 'classic barber'];
   function stripDemo() {
     S.shops = S.shops.filter(s => s.isBarberProfile || !DEMO.includes(String(s.name).toLowerCase()));
-    S.shops.forEach((s, i) => { s.id = i; });          // keep ids matching positions
+S.shops.forEach((s, i) => {
+  if (s.isBarberProfile) {
+    s.id = i;
+  }
+});// keep ids matching positions
   }
   stripDemo();
 
