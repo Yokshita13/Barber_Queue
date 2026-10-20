@@ -234,12 +234,12 @@ def save_availability():
         return err("Closing time must be after opening time")
 
     slot = to_int(data.get("slot_minutes"), 30)
-    if slot not in (15, 20, 30, 45, 60):
-        return err("Slot length must be 15, 20, 30, 45 or 60 minutes")
+    if slot < 5 or slot > 120 or slot % 5 != 0:
+        return err("Slot length must be between 5 and 120 minutes (in steps of 5)")
 
     advance = to_int(data.get("advance_days"), 14)
-    if advance < 1 or advance > 60:
-        return err("Advance booking window must be 1 to 60 days")
+    if advance < 1 or advance > 365:
+        return err("Advance booking window must be 1 to 365 days")
 
     cancel = to_int(data.get("cancel_hours"), 2)
     if cancel < 0 or cancel > 72:
