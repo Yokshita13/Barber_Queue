@@ -12887,7 +12887,7 @@ S.shops.forEach((s, i) => {
   'use strict';
 
   const API = 'https://barber-queue-backend-9z52.onrender.com/api';
-  const ALLOWED_SHOPS = new Set(['sanjana makeovers']);
+  // const ALLOWED_SHOPS = new Set(['sanjana makeovers']);
   let loading = false;
 
   function normalize(shop, index) {
@@ -12963,13 +12963,9 @@ S.shops.forEach((s, i) => {
         ? result
         : Array.isArray(result.shops) ? result.shops : [];
 
-      // Do not trust old localStorage or demo shop records.
-      // Only the confirmed registered shop is displayed for now.
-      const realShops = records.filter(shop =>
-        shop &&
-        shop.id != null &&
-        ALLOWED_SHOPS.has(String(shop.name || '').trim().toLowerCase())
-      );
+      // Hide the old demo shops; show every real registered shop.
+      const demo = ['royal cuts', 'the blade room', 'style studio', 'classic barber'];
+      const realShops = records.filter(shop =>shop && shop.id != null && demo.includes(String(shop.name || '').trim().toLowerCase()));
 
       S.shops = realShops.map(normalize);
 
@@ -12979,11 +12975,9 @@ S.shops.forEach((s, i) => {
 
       refreshUI();
 
-      console.log(
-        'BarberQ registered shops loaded:',
-        S.shops.map(shop => ({ id: shop.backendId, name: shop.name }))
-      );
-    } catch (error) {
+      console.log('Glowora registered shops loaded:', S.shops.map(shop => ({ id: shop.backendId, name: shop.name })));
+    } 
+    catch (error) {
       console.error('Could not load registered shops:', error);
 
       // Avoid showing stale/unverified local shop cards on API failure.
@@ -13066,20 +13060,4 @@ S.shops.forEach((s, i) => {
 
   window.restoreBarberQServices = restoreServices;
 })();
-const response = await fetch(
-  'https://barber-queue-backend-9z52.onrender.com/api/barbers/my-shop',
-  {
-    headers: {
-      Authorization: 'Bearer ' + yourSavedBarberToken,
-      Accept: 'application/json'
-    }
-  }
-);
 
-const result = await response.json();
-
-if (!response.ok || !result.success || !result.shop) {
-  throw new Error(result.error || 'Could not load your registered shop.');
-}
-
-const registeredShop = result.shop;
