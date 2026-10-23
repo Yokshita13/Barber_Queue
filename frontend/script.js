@@ -13062,3 +13062,381 @@ S.shops.forEach((s, i) => {
 
   window.restoreBarberQServices = restoreServices;
 })();
+/* =====================================================================
+   GLOWORA / BARBERQ — REAL SHOP REGISTRATION, LOGIN & LIVE SHOP LIST
+   ===================================================================== */
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const TOKEN_KEY = 'bqBarberToken';
+  const getToken = () => { try { return localStorage.getItem(TOKEN_KEY) || ''; } catch (e) { return ''; } };
+  const setToken = t => { try { t ? localStorage.setItem(TOKEN_KEY, t) : localStorage.removeItem(TOKEN_KEY); } catch (e) {} };
+  const digits10 = p => String(p || '').replace(/\D/g, '').slice(-10);
+  const toApiGender = g => g === 'male' ? 'men' : g === 'female' ? 'women' : 'unisex';
+  const fromApiGender = g => g === 'men' ? 'male' : g === 'women' ? 'female' : 'unisex';
+  const JSON_H = { 'Content-Type': 'application/json' };
+  const DEFAULT_SERVICES = [
+    { id: 1, name: 'Hair Cut', price: 250, dur: 20, ico: '💇' },
+    { id: 2, name: 'Beard Trim', price: 150, dur: 15, ico: '🧔' },
+    { id: 3, name: 'Hair Color', price: 800, dur: 60, ico: '🎨' },
+    { id: 4, name: 'Facial', price: 600, dur: 45, ico: '✨' },
+    { id: 5, name: 'Hair Spa', price: 1200, dur: 90, ico: '💆' }
+  ];
+
+  /* ---------- 1. send the barber's token with every backend call ---------- */
+  const baseFetch = window.fetch.bind(window);
+  window.fetch = function (url, opts) {
+    try {
+      const t = getToken();
+      if (t && S.role === 'barber' && typeof url === 'string' && url.indexOf(BQ_BASE) === 0) {
+        opts = Object.assign({}, opts);
+        const h = new Headers(opts.headers || {});
+        if (!h.has('Authorization')) h.set('Authorization', 'Bearer ' + t);
+        opts.headers = h;
+      }
+    } catch (e) {}
+    return baseFetch(url, opts);
+  };
+
+  /* ---------- 2. stop the browser-only "published shop" (the flicker) ---------- */
+  window.publishBarberShop = function () {
+    try { localStorage.removeItem('barberShopPublic'); localStorage.removeItem('barberShopPublicPhoto'); } catch (e) {}
+  };
+  window.loadPublishedShop = function () {
+    S.shops = S.shops.filter(s => !s.isBarberProfile);
+    return false;
+  };
+
+  /* ---------- 3. barber data -> backend (debounced) ---------- */
+  let timer = 0, lastSig = '', lastPhoto = '', lastUpi = '';
+
+  function sessionExpired() {
+    setToken('');
+    toast('⚠️', 'Your session expired. Please log in again.');
+    openLogin();
+  }
+
+  async function pushAll() {
+    const t = getToken(), b = S.barber;
+    if (!t || !b.shopName || S.role !== 'barber') return;
+
+    const profile = {
+      name: b.name, phone: digits10(b.phone), shop_name: b.shopName, address: b.address,
+      opening_time: b.openingTime || '', closing_time: b.closingTime || '',
+      gender_served: toApiGender(b.shopType), open: S.shopOpen
+    };
+    const services = S.services.map(s => ({
+      name: s.name, price: s.price, duration: s.dur, icon: s.ico, description: s.desc || ''
+    }));
+    const sig = JSON.stringify([profile, services]);
+
+    if (sig !== lastSig) {
+      try {
+        let r = await fetch(BQ_BASE + '/api/barbers/me', { method: 'PUT', headers: JSON_H, body: JSON.stringify(profile) });
+        if (r.status === 401) return sessionExpired();
+        let j = await r.json().catch(() => ({}));
+        if (!r.ok || !j.success) throw new Error(j.error || 'Could not save your shop');
+        r = await fetch(BQ_BASE + '/api/barbers/me/services', { method: 'PUT', headers: JSON_H, body: JSON.stringify({ services }) });
+        j = await r.json().catch(() => ({}));
+        if (!r.ok || !j.success) throw new Error(j.error || 'Could not save your services');
+        lastSig = sig;
+      } catch (e) { toast('⚠️', e.message); return; }
+    }
+
+    const photo = b.photo || '';
+    if (photo && photo !== lastPhoto && photo.indexOf('data:image/') === 0) {
+      try {
+        const blob = await (await fetch(photo)).blob();
+        const me = await (await fetch(BQ_BASE + '/api/barbers/me')).json();
+        for (const p of ((me.shop && me.shop.photos) || [])) {
+          await fetch(BQ_BASE + '/api/barbers/me/photos/' + p.id, { method: 'DELETE' });
+        }
+        const fd = new FormData();
+        fd.append('photos', new File([blob], 'shop', { type: blob.type }));
+        const r = await fetch(BQ_BASE + '/api/barbers/me/photos', { method: 'POST', body: fd });
+        const j = await r.json().catch(() => ({}));
+        if (r.ok && j.success) lastPhoto = photo; else toast('⚠️', j.error || 'Could not upload the shop photo');
+      } catch (e) { /* retried on next change */ }
+    }
+  }
+
+  // every old call site (profile save, services, photo, rating change, open/closed) lands here
+  window.syncBarberToCustomerShop = function () { clearTimeout(timer); timer = setTimeout(pushAll, 700); };
+  window.syncShopStats = function () { window.syncBarberToCustomerShop(); };
+
+  const baseSaveSettings = window.bqSaveSettings;
+  if (typeof baseSaveSettings === 'function') {
+    window.bqSaveSettings = function () {
+      const out = baseSaveSettings.apply(this, arguments);
+      pushUpi();
+      return out;
+    };
+  }
+  async function pushUpi() {
+    if (!getToken()) return;
+    let u = {};
+    try { u = JSON.parse(localStorage.getItem('barberUpi') || '{}'); } catch (e) {}
+    const sig = (u.id || '') + '|' + (u.qr || '').length;
+    if ((!u.id && !u.qr) || sig === lastUpi) return;
+    try {
+      const fd = new FormData();
+      fd.append('upi_id', u.id || '');
+      if (u.qr && u.qr.indexOf('data:image/') === 0) {
+        const blob = await (await fetch(u.qr)).blob();
+        fd.append('qr_image', new File([blob], 'qr', { type: blob.type }));
+      }
+      const r = await fetch(BQ_BASE + '/api/shops/upi-qr', { method: 'POST', body: fd });
+      const j = await r.json().catch(() => ({}));
+      if (r.ok && j.success) { lastUpi = sig; toast('✅', 'UPI details are now visible to customers'); }
+      else toast('⚠️', j.error || 'Could not save UPI details');
+    } catch (e) { toast('⚠️', 'Could not save UPI details'); }
+  }
+
+  /* ---------- 4. fill the app from a backend shop (login / reload) ---------- */
+  function applyShop(sh) {
+    const b = S.barber;
+    b.name = sh.owner || b.name;
+    b.phone = sh.phone ? '+91 ' + sh.phone : b.phone;
+    b.shopName = sh.name;
+    b.address = sh.address || '';
+    b.openingTime = sh.opening_time || b.openingTime || '';
+    b.closingTime = sh.closing_time || b.closingTime || '';
+    b.shopType = fromApiGender(sh.gender_served);
+    b.email = sh.email || b.email || '';
+    b.rating = Number(sh.rating) || 0;
+    b.ratingCount = Number(sh.rating_count) || 0;
+    S.shopOpen = sh.status === 'open';
+    if (Array.isArray(sh.services) && sh.services.length) {
+      S.services = sh.services.map(s => ({
+        id: s.id, name: s.name, price: s.price, dur: s.duration, ico: s.icon || '✂️', desc: s.description || ''
+      }));
+      try { localStorage.setItem('barberServices', JSON.stringify(S.services)); } catch (e) {}
+    }
+    saveBarberProfileLocal();
+    lastSig = '';
+  }
+
+  async function hydrate() {
+    try {
+      const r = await fetch(BQ_BASE + '/api/barbers/me');
+      if (r.status === 401) { setToken(''); return; }
+      const j = await r.json();
+      if (r.ok && j.success) {
+        applyShop(j.shop);
+        renderBarberProfile();
+        loadBarberQueue(S.barber.shopName);
+      }
+    } catch (e) {}
+  }
+
+  /* ---------- 5. registration (needs email + password) and login ---------- */
+  function ensureAuthFields() {
+    const email = $('bp-email');
+    if (!email || $('bp-pass-box')) return;
+    const d = document.createElement('div');
+    d.id = 'bp-pass-box';
+    d.innerHTML =
+      '<label>Password (min 8 characters)</label>' +
+      '<input class="inp" id="bp-password" type="password" autocomplete="new-password" maxlength="64">' +
+      '<div style="margin-top:8px;font-size:12px"><a href="#" id="bp-login-link" style="color:var(--gold)">Already registered? Log in</a></div>';
+    email.parentElement.insertAdjacentElement('afterend', d);
+    $('bp-login-link').addEventListener('click', e => { e.preventDefault(); openLogin(); });
+  }
+
+  const baseEdit = window.editBarberProfile;
+  window.editBarberProfile = function () {
+    const out = baseEdit.apply(this, arguments);
+    ensureAuthFields();
+    const box = $('bp-pass-box');
+    if (box) box.style.display = getToken() ? 'none' : 'block';
+    return out;
+  };
+
+  const baseSave = window.saveBarberProfile;
+  window.saveBarberProfile = async function () {
+    if (getToken()) {                                   // already registered: normal edit
+      const out = baseSave.apply(this, arguments);
+      window.syncBarberToCustomerShop();
+      return out;
+    }
+    const email = (($('bp-email') || {}).value || '').trim();
+    const pass = ($('bp-password') || {}).value || '';
+    if (!email) { toast('⚠️', 'Email is required to register your shop'); return; }
+    if (pass.length < 8) { toast('⚠️', 'Password must be at least 8 characters'); return; }
+
+    const prev = JSON.parse(JSON.stringify(S.barber));
+    baseSave.apply(this, arguments);                    // runs all existing validation
+    const modal = $('m-editbarber');
+    if (modal && modal.classList.contains('open')) return;   // a validation failed
+
+    const b = S.barber;
+    try {
+      const r = await baseFetch(BQ_BASE + '/api/barbers/register', {
+        method: 'POST', headers: JSON_H,
+        body: JSON.stringify({
+          name: b.name, shop_name: b.shopName, address: b.address, email: b.email || email,
+          phone: digits10(b.phone), password: pass, gender_served: toApiGender(b.shopType),
+          opening_time: b.openingTime, closing_time: b.closingTime
+        })
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok || !j.success) throw new Error(j.error || 'Could not register the shop');
+      setToken(j.token);
+      if ($('bp-password')) $('bp-password').value = '';
+      lastSig = '';
+      await pushAll();                                  // services, photo, open/closed
+      toast('🎉', 'Your shop is live — customers can now see and book it');
+      loadBarberQueue(b.shopName);
+    } catch (e) {
+      S.barber = prev;                                  // undo the local save
+      saveBarberProfileLocal();
+      openModal('m-editbarber');                        // fields keep what was typed
+      toast('⚠️', e.message);
+    }
+  };
+
+  function openLogin() {
+    let m = $('m-blogin');
+    if (!m) {
+      m = document.createElement('div');
+      m.className = 'overlay'; m.id = 'm-blogin';
+      m.innerHTML =
+        '<div class="modal"><div style="font-size:20px;font-weight:800;font-family:\'Syne\',sans-serif;margin-bottom:14px">Shop owner login</div>' +
+        '<div style="margin-bottom:12px"><label>Email</label><input class="inp" id="bl-email" type="email" autocomplete="username"></div>' +
+        '<div style="margin-bottom:18px"><label>Password</label><input class="inp" id="bl-pass" type="password" autocomplete="current-password"></div>' +
+        '<div style="display:flex;gap:10px"><button class="btn btn-outline" style="flex:1" type="button" id="bl-cancel">Cancel</button>' +
+        '<button class="btn btn-gold" style="flex:1" type="button" id="bl-go">Log in</button></div></div>';
+      document.body.appendChild(m);
+      $('bl-cancel').addEventListener('click', () => closeModal('m-blogin'));
+      $('bl-go').addEventListener('click', doLogin);
+    }
+    openModal('m-blogin');
+  }
+
+  async function doLogin() {
+    const email = $('bl-email').value.trim(), password = $('bl-pass').value;
+    if (!email || !password) { toast('⚠️', 'Enter your email and password'); return; }
+    try {
+      const r = await baseFetch(BQ_BASE + '/api/barbers/login', {
+        method: 'POST', headers: JSON_H, body: JSON.stringify({ email, password })
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok || !j.success) throw new Error(j.error || 'Could not log in');
+      setToken(j.token);
+      applyShop(j.shop);
+      $('bl-pass').value = '';
+      closeModal('m-blogin'); closeModal('m-editbarber');
+      renderBarberProfile();
+      loadBarberQueue(S.barber.shopName);
+      toast('✅', 'Welcome back, ' + (S.barber.name || 'barber'));
+    } catch (e) { toast('⚠️', e.message); }
+  }
+
+  /* ---------- 6. role switching ---------- */
+  const baseDemo = window.demoAs;
+  window.demoAs = function (r) {
+    if (r === 'barber') {                               // barber always works on their own services
+      try {
+        const sv = JSON.parse(localStorage.getItem('barberServices') || 'null');
+        S.services = Array.isArray(sv) && sv.length ? sv : DEFAULT_SERVICES.map(s => Object.assign({}, s));
+      } catch (e) { S.services = DEFAULT_SERVICES.map(s => Object.assign({}, s)); }
+    }
+    const out = baseDemo.apply(this, arguments);
+    if (r === 'customer') loadShops();
+    if (r === 'barber') {
+      if (getToken() && !S.barber.shopName) hydrate();
+      else if (!getToken() && S.barber.shopName) {
+        setTimeout(() => {
+          toast('ℹ️', 'Add an email and password to publish your shop to customers');
+          window.editBarberProfile();
+        }, 700);
+      }
+    }
+    return out;
+  };
+
+  const baseDelete = window.deleteBarberAccount;
+  window.deleteBarberAccount = function () {
+    const t = getToken(), had = S.barber.shopName;
+    baseDelete.apply(this, arguments);
+    if (had && !S.barber.shopName) {                    // owner confirmed
+      if (t) baseFetch(BQ_BASE + '/api/barbers/me', { method: 'DELETE', headers: { Authorization: 'Bearer ' + t } }).catch(() => {});
+      setToken('');
+    }
+  };
+
+  /* ---------- 7. customer side: shops come ONLY from the backend ---------- */
+  async function loadShops() {
+    try {
+      const r = await baseFetch(BQ_BASE + '/api/shops', { cache: 'no-store' });
+      const j = await r.json();
+      if (!r.ok || !j.success || !Array.isArray(j.shops)) throw new Error('bad response');
+
+      const keyOf = s => String((s && s.name) || '').toLowerCase();
+      const selKey = keyOf(S.shops[S.selectedShop]);
+      const myKey = S.inQueue ? keyOf(S.shops[S.myShopId]) : '';
+      const catalog = [];
+
+      const shops = j.shops.map((sh, i) => {
+        const svcs = (sh.services || []).map(sv => {
+          const price = Number(sv.price) || 0, dur = Number(sv.duration) || 30;
+          let k = catalog.findIndex(c => c.name === sv.name && c.price === price && c.dur === dur);
+          if (k < 0) {
+            catalog.push({ id: 'c' + sv.id, name: sv.name, price, dur, ico: sv.icon || '✂️', desc: sv.description || '' });
+            k = catalog.length - 1;
+          }
+          return k;
+        });
+        const p0 = (sh.photos || [])[0];
+        return {
+          id: i, backendId: sh.id, name: sh.name, owner: sh.owner || '',
+          addr: sh.address || 'Address not provided', open: sh.status === 'open',
+          rating: Number(sh.rating) || 0, rev: Number(sh.rating_count) || 0,
+          q: Number(sh.queue_count) || 0, cur: Number(sh.current_token) || 0, wait: Number(sh.wait_minutes) || 0,
+          phone: sh.phone || '', openingTime: sh.opening_time || '', closingTime: sh.closing_time || '',
+          gender: fromApiGender(sh.gender_served),
+          photo: p0 ? BQ_BASE + p0.url : '', ico: '✂️', clr: '#00d4aa', svcs
+        };
+      });
+
+      S.shops = shops;
+      S.catalog = catalog;
+      S.shopsLoaded = true;
+      S.shopsError = false;
+
+      const si = shops.findIndex(s => keyOf(s) === selKey);
+      if (si >= 0) S.selectedShop = si;
+      if (myKey) { const mi = shops.findIndex(s => keyOf(s) === myKey); if (mi >= 0) S.myShopId = mi; }
+
+      if (S.role === 'customer') S.services = catalog;
+      if (typeof renderShops === 'function') renderShops();
+    } catch (e) {
+      S.shopsError = true;                              // keep the last good list on screen
+      if (typeof renderShops === 'function') renderShops();
+    }
+  }
+  window.refreshRegisteredBarberQShops = loadShops;
+
+  const baseRender = window.renderShops;
+  window.renderShops = function () {
+    if (S.role === 'customer' && S.catalog && S.services !== S.catalog) S.services = S.catalog;
+    const out = baseRender.apply(this, arguments);
+    const list = $('cx-list');
+    if (list && !S.shops.length) {
+      list.innerHTML = '<div class="cx-empty">' + (
+        S.shopsLoaded ? 'No barber shops have registered yet.'
+        : S.shopsError ? 'Could not reach the server. Retrying…'
+        : 'Loading shops… (the server can take up to a minute to wake up)') + '</div>';
+    }
+    return out;
+  };
+
+  const baseOpenShop = window.openShop;
+  window.openShop = function (id) {
+    if (!S.shops[id]) return;
+    return baseOpenShop.apply(this, arguments);
+  };
+
+  setInterval(() => { if (!document.hidden && S.role !== 'barber') loadShops(); }, 8000);
+  componentsReady.then(loadShops).catch(() => {});
+})();
