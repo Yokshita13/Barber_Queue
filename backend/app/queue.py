@@ -12,7 +12,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 
 from .extensions import db
-from .models import User, Shop, Barber, Service, Queue, ShopPhoto
+from .models import User, Shop, Barber, Service, Queue, ShopPhoto, ShopService
 
 
 queue_bp = Blueprint("queue", __name__)
@@ -100,6 +100,16 @@ GENDERS = ("men", "women", "unisex")
 MAX_SHOP_PHOTOS = 6
 UPI_RE = re.compile(r"^[A-Za-z0-9._\-]{2,}@[A-Za-z]{2,}$")
 
+GENDER_ALIASES = {"male": "men", "men": "men", "female": "women",
+                  "women": "women", "unisex": "unisex"}
+HHMM_RE = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
+ACTIVE_Q = ["waiting", "serving", "cur", "nxt", "wait"]
+DEFAULT_SERVICES = [
+    ("Hair Cut", "💇", 250, 20), ("Beard Trim", "🧔", 150, 15),
+    ("Hair Color", "🎨", 800, 60), ("Facial", "✨", 600, 45),
+    ("Hair Spa", "💆", 1200, 90),
+]
+
 
 def _serializer():
     return URLSafeTimedSerializer(
@@ -112,42 +122,30 @@ def make_token(user_id):
     return _serializer().dumps({"uid": user_id})
 
 
+def get_request_barber():
+    """Barber identified ONLY by a valid login token (or None)."""
+    auth = request.headers.get("Authorization", "")
+    token = auth[7:] if auth.startswith("Bearer ") else ""
+    if not token:
+        return None
+    try:
+        uid = _serializer().loads(token, max_age=30 * 24 * 3600)["uid"]
+    except (BadSignature, SignatureExpired, KeyError):
+        return None
+    barber = Barber.query.filter_by(user_id=uid).first()
+    if barber is None or barber.shop is None or barber.shop.status == "deleted":
+        return None
+    return barber
+
+
 def barber_required(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
-        barber = None
-
-        # 1) a valid login token, if the app sent one
-        auth = request.headers.get("Authorization", "")
-        token = auth[7:] if auth.startswith("Bearer ") else ""
-        if token:
-            try:
-                uid = _serializer().loads(
-                    token, max_age=30 * 24 * 3600
-                )["uid"]
-                barber = Barber.query.filter_by(user_id=uid).first()
-            except (BadSignature, SignatureExpired, KeyError):
-                barber = None
-
-        # 2) otherwise identify the shop by name, like the rest of the app
-        if barber is None:
-            body = request.get_json(silent=True) or {}
-            name = (
-                request.args.get("shop_name")
-                or request.form.get("shop_name")
-                or body.get("shop_name")
-                or body.get("name")
-            )
-            shop = find_by_name(Shop, name)
-            if shop is not None:
-                barber = Barber.query.filter_by(shop_id=shop.id).first()
-
+        barber = get_request_barber()
         if barber is None:
             return error_response("Please log in again.", 401)
-
         g.barber = barber
         return fn(*args, **kwargs)
-
     return wrapper
 
 
@@ -360,11 +358,19 @@ def queue_item_json(item):
 
 
 def shop_json(shop):
-    owner = (
-        shop.barbers[0].user.name
-        if shop.barbers and shop.barbers[0].user
-        else ""
-    )
+    owner = (shop.barbers[0].user.name
+             if shop.barbers and shop.barbers[0].user else "")
+
+    items = (Queue.query
+             .filter(Queue.shop_id == shop.id, Queue.status.in_(ACTIVE_Q))
+             .order_by(Queue.token_number.asc()).all())
+    current = next((q.token_number for q in items
+                    if q.status in ("serving", "cur")), 0)
+    wait = sum((q.service.duration or 0) for q in items if q.service)
+
+    avg, count = (db.session.query(func.avg(Rating.stars), func.count(Rating.id))
+                  .filter(Rating.shop_id == shop.id).one())
+
     return {
         "id": shop.id,
         "name": shop.name,
@@ -378,10 +384,17 @@ def shop_json(shop):
         "closing_time": shop.closing_time,
         "upi_id": shop.upi_id,
         "upi_qr_url": shop.upi_qr_url,
-        "photos": [
-            {"id": p.id, "url": p.image_url}
-            for p in shop.photos
-        ],
+        "rating": round(float(avg), 1) if avg else 0,
+        "rating_count": count or 0,
+        "queue_count": len(items),
+        "current_token": current,
+        "wait_minutes": wait,
+        "photos": [{"id": p.id, "url": p.image_url} for p in shop.photos],
+        "services": [{
+            "id": s.id, "name": s.name, "price": s.price,
+            "duration": s.duration, "icon": s.icon or "✂️",
+            "description": s.description or "",
+        } for s in shop.services],
     }
 
 
@@ -401,8 +414,20 @@ def service_json(service):
 
 @queue_bp.route("/api/queue/initialize-demo", methods=["POST"])
 def initialize_demo():
-    """Disabled: public requests must never seed demo shops into production."""
-    return error_response("Demo initialization is disabled.", 410)
+    try:
+        ensure_demo_data()
+        return jsonify({
+            "success": True,
+            "message": "Demo records are ready."
+        })
+    except Exception:
+        db.session.rollback()
+        import logging
+        logging.exception("Demo initialization failed")
+        return error_response(
+            "Could not initialize demo records. Check the Flask terminal.",
+            500
+        )
 
 
 # --------------------------------------------------
@@ -412,7 +437,6 @@ def initialize_demo():
 @queue_bp.route("/api/shops", methods=["GET"])
 def get_shops():
     try:
-        # Hide legacy demo shops created by the old demo initializer.
         demo_shop_ids = (
             db.session.query(Barber.shop_id)
             .join(User, User.id == Barber.user_id)
@@ -421,6 +445,7 @@ def get_shops():
         shops = (
             Shop.query
             .filter(~Shop.id.in_(demo_shop_ids))
+            .filter(func.coalesce(Shop.status, "open") != "deleted")
             .order_by(Shop.name.asc())
             .all()
         )
@@ -452,60 +477,22 @@ def get_services():
         logging.exception("Could not fetch services")
         return error_response("Could not load services.", 500)
 
-
-# @queue_bp.route("/api/shops/sync", methods=["POST"])
-# @barber_required
-# def sync_shop():
-#     data = request.get_json(silent=True) or {}
-#     shop = g.barber.shop
-
-#     try:
-#         if "open" in data:
-#             shop.status = "open" if data["open"] else "closed"
-
-#         if data.get("address"):
-#             shop.address = safe_text(data["address"], 255)
-
-#         db.session.commit()
-#         return jsonify({
-#             "success": True,
-#             "shop": shop_json(shop)
-#         })
-
-#     except Exception:
-#         db.session.rollback()
-#         return error_response("Could not update the shop.", 500)
 @queue_bp.route("/api/shops/sync", methods=["POST"])
 def sync_shop():
-    """Update only the shop belonging to a barber with a valid login token."""
-    auth = request.headers.get("Authorization", "")
-    token = auth[7:] if auth.startswith("Bearer ") else ""
-    if not token:
-        return error_response("Please log in as the shop owner first.", 401)
-
-    try:
-        uid = _serializer().loads(token, max_age=30 * 24 * 3600)["uid"]
-    except (BadSignature, SignatureExpired, KeyError):
-        return error_response("Your login session is invalid or expired.", 401)
-
-    barber = Barber.query.filter_by(user_id=uid).first()
-    if barber is None:
-        return error_response("A registered barber account is required.", 403)
-
-    g.barber = barber
     data = request.get_json(silent=True) or {}
-    shop = barber.shop
+    shop_name = clean_text(data.get("shop_name") or data.get("name"))
+
+    if not shop_name:
+        return error_response("Shop name is required.")
 
     try:
-        if "open" in data:
-            value = data.get("open")
-            if isinstance(value, str):
-                value = value.strip().lower() in ("1", "true", "yes", "open")
-            shop.status = "open" if bool(value) else "closed"
-
-        if data.get("address"):
-            shop.address = safe_text(data["address"], 255)
-
+        shop = register_shop(
+            shop_name,
+            data.get("address"),
+            data.get("barber_name"),
+            data.get("email"),
+            data.get("open"),
+        )
         db.session.commit()
         return jsonify({"success": True, "shop": shop_json(shop)})
     except Exception:
@@ -645,10 +632,6 @@ def upload_shop_upi_qr():
         return error_response("Could not save the QR image.", 500)
 
 
-# --------------------------------------------------
-# BARBER ACCOUNTS
-# --------------------------------------------------
-
 @queue_bp.route("/api/barbers/register", methods=["POST"])
 def barber_register():
     d = request.get_json(silent=True) or {}
@@ -658,7 +641,9 @@ def barber_register():
     email = clean_text(d.get("email")).lower()
     phone = phone10(d.get("phone"))
     password = str(d.get("password") or "")
-    gender = clean_text(d.get("gender_served")).lower()
+    gender = GENDER_ALIASES.get(clean_text(d.get("gender_served")).lower())
+    opening = clean_text(d.get("opening_time"))
+    closing = clean_text(d.get("closing_time"))
 
     if not name or not shop_name or not address:
         return error_response("Name, shop name and address are required.")
@@ -668,52 +653,38 @@ def barber_register():
         return error_response("Enter a valid 10-digit phone number.")
     if len(password) < 8:
         return error_response("Password must be at least 8 characters.")
-    if gender not in GENDERS:
-        return error_response("Choose men, women or unisex.")
-    if User.query.filter(
-        (User.email == email) | (User.phone == phone)
-    ).first():
+    if gender is None:
+        return error_response("Choose male, female or unisex.")
+    if User.query.filter((User.email == email) | (User.phone == phone)).first():
         return error_response(
-            "This email or phone number is already registered.", 409
-        )
+            "This email or phone number is already registered. Use 'Log in'.", 409)
     if find_by_name(Shop, shop_name):
         return error_response("A shop with this name already exists.", 409)
 
     try:
-        user = User(
-            name=name,
-            email=email,
-            phone=phone,
-            role="barber",
-            password=generate_password_hash(password)
-        )
+        user = User(name=name, email=email, phone=phone, role="barber",
+                    password=generate_password_hash(password))
         db.session.add(user)
         db.session.flush()
 
         shop = Shop(
-            name=shop_name,
-            address=address,
-            phone=phone,
-            contact_email=email,
-            gender_served=gender,
-            status="open"
+            name=shop_name, address=address, phone=phone, contact_email=email,
+            gender_served=gender, status="open",
+            opening_time=opening if HHMM_RE.match(opening) else None,
+            closing_time=closing if HHMM_RE.match(closing) else None,
         )
         db.session.add(shop)
         db.session.flush()
 
-        db.session.add(Barber(
-            user_id=user.id,
-            shop_id=shop.id,
-            specialization="General",
-            status="available"
-        ))
+        db.session.add(Barber(user_id=user.id, shop_id=shop.id,
+                              specialization="General", status="available"))
+        for pos, (sname, icon, price, dur) in enumerate(DEFAULT_SERVICES):
+            db.session.add(ShopService(shop_id=shop.id, name=sname, icon=icon,
+                                       price=price, duration=dur, position=pos))
         db.session.commit()
 
-        return jsonify({
-            "success": True,
-            "token": make_token(user.id),
-            "shop": shop_json(shop)
-        }), 201
+        return jsonify({"success": True, "token": make_token(user.id),
+                        "shop": shop_json(shop)}), 201
 
     except Exception:
         db.session.rollback()
@@ -733,6 +704,8 @@ def barber_login():
 
     if not user or not barber or not check_password_hash(user.password, password):
         return error_response("Wrong email or password.", 401)
+    if barber.shop is None or barber.shop.status == "deleted":
+        return error_response("This account was deleted.", 401)
 
     return jsonify({
         "success": True,
@@ -784,16 +757,17 @@ def barber_me():
             g.barber.user.name = safe_text(d["name"], 100)
 
         if d.get("gender_served"):
-            gs = clean_text(d["gender_served"]).lower()
-            if gs not in GENDERS:
-                return error_response("Choose men, women or unisex.")
+            gs = GENDER_ALIASES.get(clean_text(d["gender_served"]).lower())
+            if gs is None:
+                return error_response("Choose male, female or unisex.")
             shop.gender_served = gs
 
         if "opening_time" in d:
-            shop.opening_time = safe_text(d["opening_time"], 10)
-
+            v = clean_text(d["opening_time"])
+            shop.opening_time = v if HHMM_RE.match(v) else None
         if "closing_time" in d:
-            shop.closing_time = safe_text(d["closing_time"], 10)
+            v = clean_text(d["closing_time"])
+            shop.closing_time = v if HHMM_RE.match(v) else None
 
         if "open" in d:
             shop.status = "open" if d["open"] else "closed"
@@ -808,9 +782,64 @@ def barber_me():
         return error_response("Could not save changes.", 500)
 
 
-# --------------------------------------------------
-# SHOP PHOTOS
-# --------------------------------------------------
+
+@queue_bp.route("/api/barbers/me/services", methods=["PUT"])
+@barber_required
+def save_my_services():
+    shop = g.barber.shop
+    items = (request.get_json(silent=True) or {}).get("services")
+    if not isinstance(items, list) or len(items) > 60:
+        return error_response("Send a list of up to 60 services.")
+
+    clean, seen = [], set()
+    for it in items:
+        if not isinstance(it, dict):
+            continue
+        name = safe_text(it.get("name"), 100)
+        try:
+            price = float(it.get("price"))
+            duration = int(it.get("duration"))
+        except (TypeError, ValueError):
+            return error_response("Every service needs a price and duration.")
+        if not name or price < 0 or duration < 5 or duration > 480:
+            return error_response("Invalid service: " + (name or "no name"))
+        if name.lower() in seen:
+            continue
+        seen.add(name.lower())
+        clean.append((name, price, duration,
+                      safe_text(it.get("icon"), 8) or "✂️",
+                      safe_text(it.get("description"), 200)))
+    try:
+        ShopService.query.filter_by(shop_id=shop.id).delete()
+        for pos, (n, p, dur, ic, desc) in enumerate(clean):
+            db.session.add(ShopService(shop_id=shop.id, name=n, price=p,
+                                       duration=dur, icon=ic,
+                                       description=desc, position=pos))
+        db.session.commit()
+        return jsonify({"success": True, "shop": shop_json(shop)})
+    except Exception:
+        db.session.rollback()
+        return error_response("Could not save services.", 500)
+
+
+@queue_bp.route("/api/barbers/me", methods=["DELETE"])
+@barber_required
+def delete_my_account():
+    """Soft delete: hides the shop, frees the name/email, cancels open tokens."""
+    shop, user = g.barber.shop, g.barber.user
+    try:
+        Queue.query.filter(
+            Queue.shop_id == shop.id, Queue.status.in_(ACTIVE_Q)
+        ).update({"status": "cancelled"}, synchronize_session=False)
+        shop.name = f"{shop.name} (deleted {shop.id})"[:150]
+        shop.status = "deleted"
+        user.email = f"deleted.{user.id}.{uuid4().hex[:8]}@deleted.local"
+        user.phone = None
+        db.session.commit()
+        return jsonify({"success": True})
+    except Exception:
+        db.session.rollback()
+        return error_response("Could not delete the account.", 500)
 
 @queue_bp.route("/api/barbers/me/photos", methods=["POST"])
 @barber_required
@@ -934,9 +963,9 @@ def confirm_upi_payment(entry_id):
 
 @queue_bp.route("/api/queue", methods=["GET"])
 def get_queue():
-    shop_name = clean_text(request.args.get("shop_name"))
-    if not shop_name:
-        return error_response("Shop name is required.")
+    shop_name = clean_text(
+        request.args.get("shop_name") or "Royal Cuts"
+    )
 
     try:
         shop = find_by_name(Shop, shop_name)
@@ -975,110 +1004,104 @@ def get_queue():
         return error_response("Could not load queue.", 500)
 
 
-# --------------------------------------------------
-# CREATE QUEUE ENTRY
-# --------------------------------------------------
-
 @queue_bp.route("/api/queue", methods=["POST"])
 def create_queue_entry():
     data = request.get_json(silent=True) or {}
 
     shop_name = clean_text(data.get("shop_name"))
     service_name = clean_text(data.get("service_name"))
-    customer_name = clean_text(
-        data.get("customer_name")
-    ) or "Demo Customer"
+    customer_name = clean_text(data.get("customer_name")) or "Demo Customer"
 
     if not shop_name:
         return error_response("Shop name is required.")
-
     if not service_name:
         return error_response("Service name is required.")
 
     try:
         shop = find_by_name(Shop, shop_name)
-        if shop is None:
+        if shop is None or clean_text(shop.status).lower() == "deleted":
             return error_response("This shop is not registered on BarberQ.", 404)
-
-        service = None
-        try:
-            want_price = float(data.get("service_price"))
-            want_duration = int(data.get("service_duration"))
-
-            service = Service.query.filter(
-                func.lower(func.trim(Service.name)) == service_name.lower(),
-                Service.price == want_price,
-                Service.duration == want_duration,
-            ).first()
-
-            if service is None:
-                service = find_by_name(Service, service_name)
-
-        except (TypeError, ValueError):
-            service = find_by_name(Service, service_name)
-
-        if service is None:
-            return error_response("This service is not available for booking.", 404)
-
         if clean_text(shop.status).lower() != "open":
             return error_response("This shop is currently closed.", 400)
 
+        offered = ShopService.query.filter_by(shop_id=shop.id).count()
+        service = None
+        if offered:
+            row = ShopService.query.filter(
+                ShopService.shop_id == shop.id,
+                func.lower(func.trim(ShopService.name)) == service_name.lower(),
+            ).first()
+            if row is None:
+                return error_response("This shop does not offer that service.", 404)
+            # booking needs a global Service row with this exact price/duration
+            service = Service.query.filter(
+                func.lower(func.trim(Service.name)) == row.name.lower(),
+                Service.price == row.price,
+                Service.duration == row.duration,
+            ).first()
+            if service is None:
+                service = Service(name=row.name, price=row.price,
+                                  duration=row.duration, status="active")
+                db.session.add(service)
+                db.session.flush()
+        else:
+            service = find_by_name(Service, service_name)
+            if service is None:
+                return error_response("This service is not available for booking.", 404)
+
         if clean_text(service.status).lower() != "active":
-            return error_response(
-                "This service is currently unavailable.", 400
-            )
+            return error_response("This service is currently unavailable.", 400)
 
         barber = Barber.query.filter_by(shop_id=shop.id).first()
         if barber is None:
-            return error_response(
-                "No barber is configured for this shop.", 400
-            )
+            return error_response("No barber is configured for this shop.", 400)
 
         customer = get_or_create_customer(customer_name)
 
         last_token = (
             db.session.query(func.max(Queue.token_number))
-            .filter_by(shop_id=shop.id)
-            .scalar()
+            .filter_by(shop_id=shop.id).scalar()
         ) or 0
 
-        entry = Queue(
-            customer_id=customer.id,
-            barber_id=barber.id,
-            service_id=service.id,
-            shop_id=shop.id,
-            token_number=last_token + 1,
-            status="waiting",
-            joined_at=datetime.utcnow(),
-        )
+        method = clean_text(data.get("payment_method")).lower()
+        if method not in ("razorpay", "upi_qr", "shop"):
+            method = "shop"
+        rzp_id = safe_text(data.get("razorpay_payment_id"), 60)
+        if method == "razorpay" and rzp_id:
+            pay_status = "paid"
+        elif method == "upi_qr":
+            pay_status = "awaiting_confirmation"
+        else:
+            method = "shop" if method != "razorpay" else "shop"
+            pay_status = "pending"
 
+        entry = Queue(
+            customer_id=customer.id, barber_id=barber.id,
+            service_id=service.id, shop_id=shop.id,
+            token_number=last_token + 1, status="waiting",
+            joined_at=datetime.utcnow(),
+            payment_method=method, payment_status=pay_status,
+            razorpay_payment_id=rzp_id or None,
+        )
         db.session.add(entry)
         db.session.flush()
 
         phone = phone10(data.get("customer_phone"))
         if len(phone) == 10:
-            db.session.add(
-                CustomerBooking(phone=phone, queue_id=entry.id)
-            )
+            db.session.add(CustomerBooking(phone=phone, queue_id=entry.id))
 
         advance_queue(shop.id)
         db.session.commit()
 
-        return jsonify({
-            "success": True,
-            "message": "Successfully joined the queue.",
-            "booking": queue_item_json(entry),
-        }), 201
+        return jsonify({"success": True,
+                        "message": "Successfully joined the queue.",
+                        "booking": queue_item_json(entry)}), 201
 
     except Exception:
         db.session.rollback()
         import logging
         logging.exception("Queue booking failed")
-        return error_response(
-            "Booking could not be saved. Check the Flask terminal.",
-            500
-        )
-
+        return error_response("Booking could not be saved.", 500)
 
 # --------------------------------------------------
 # ADVANCE QUEUE
@@ -1737,27 +1760,3 @@ def shop_analytics():
         import logging
         logging.exception("Analytics failed")
         return error_response("Could not load analytics.", 500)
-# --------------------------------------------------
-# GET THE LOGGED-IN BARBER'S REGISTERED SHOP
-# --------------------------------------------------
-
-@queue_bp.route("/api/barbers/my-shop", methods=["GET"])
-@barber_required
-def get_my_registered_shop():
-    try:
-        shop = g.barber.shop
-
-        if shop is None:
-            return error_response(
-                "No shop is linked to this barber account.", 404
-            )
-
-        return jsonify({
-            "success": True,
-            "shop": shop_json(shop)
-        }), 200
-
-    except Exception:
-        db.session.rollback()
-        current_app.logger.exception("Could not load barber shop")
-        return error_response("Could not load your registered shop.", 500)
