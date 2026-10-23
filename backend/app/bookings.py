@@ -11,6 +11,7 @@ Advance (scheduled) bookings, stored in your backend database.
 Self-contained: it only needs the existing Shop model. It creates two new
 tables (advance_bookings, shop_availability) through db.create_all().
 """
+from .queue import get_request_barber
 import re
 from datetime import datetime, timedelta
 
@@ -221,9 +222,13 @@ def get_availability():
 @bookings_bp.route("/api/bookings/availability", methods=["POST"])
 def save_availability():
     data = request.get_json(silent=True) or {}
-    shop = find_shop(data.get("shop_name"))
-    if not shop:
-        return err("Shop not found. Save your shop details in Profile first.", 404)
+    barber = get_request_barber()
+    if barber is None:
+        return err("Please log in as the shop owner first.", 401)
+    shop = barber.shop
+    # shop = find_shop(data.get("shop_name"))
+    # if not shop:
+    #     return err("Shop not found. Save your shop details in Profile first.", 404)
 
     days = sorted({to_int(d, -1) for d in (data.get("days") or [])})
     if not days or any(d < 0 or d > 6 for d in days):
@@ -370,12 +375,19 @@ def list_bookings():
     query = AdvanceBooking.query
     shop_name = request.args.get("shop_name")
     phone = digits10(request.args.get("phone"))
-
     if shop_name:
         shop = find_shop(shop_name)
         if not shop:
             return err("Shop not found", 404)
+        barber = get_request_barber()
+        if barber is None or barber.shop_id != shop.id:
+            return err("Please log in as the shop owner.", 401)
         query = query.filter(AdvanceBooking.shop_id == shop.id)
+    # if shop_name:
+    #     shop = find_shop(shop_name)
+    #     if not shop:
+    #         return err("Shop not found", 404)
+    #     query = query.filter(AdvanceBooking.shop_id == shop.id)
     elif len(phone) == 10:
         query = query.filter(AdvanceBooking.customer_phone == phone)
     else:
@@ -414,7 +426,8 @@ def update_booking(booking_id):
         booking.status = "cancelled"
 
     elif by == "barber":
-        if str(data.get("shop_name") or "").strip().lower() != booking.shop.name.lower():
+        barber = get_request_barber()
+        if barber is None or barber.shop_id != booking.shop_id:
             return err("This booking belongs to another shop", 403)
         transitions = {
             "confirm": ("pending", "confirmed"),
