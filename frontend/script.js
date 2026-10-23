@@ -12965,7 +12965,9 @@ S.shops.forEach((s, i) => {
 
       // Hide the old demo shops; show every real registered shop.
       const demo = ['royal cuts', 'the blade room', 'style studio', 'classic barber'];
-      const realShops = records.filter(shop =>shop && shop.id != null && demo.includes(String(shop.name || '').trim().toLowerCase()));
+      const realShops = records.filter(shop =>
+        shop && shop.id != null && !demo.includes(String(shop.name || '').trim().toLowerCase())
+      );
 
       S.shops = realShops.map(normalize);
 
@@ -13060,4 +13062,3 @@ S.shops.forEach((s, i) => {
 
   window.restoreBarberQServices = restoreServices;
 })();
-
