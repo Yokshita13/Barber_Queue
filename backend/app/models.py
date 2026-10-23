@@ -1,10 +1,3 @@
-"""SQLAlchemy models for BarberQ.
-
-This schema remains compatible with the existing deployed database. The real-shop
-flow changes in queue.py do not require a database migration.
-"""
-
-from datetime import datetime
 from datetime import datetime
 from .extensions import db
 
@@ -83,8 +76,15 @@ class Shop(db.Model):
     back_populates="shop",
     cascade="all, delete-orphan",
     order_by="ShopPhoto.id"
-)
-
+    )
+# inside class Shop
+    services = db.relationship(
+        "ShopService",
+        back_populates="shop",
+        cascade="all, delete-orphan",
+        order_by="ShopService.position",
+    )
+    
     queues = db.relationship(
         "Queue",
         back_populates="shop"
@@ -335,3 +335,20 @@ class Appointment(db.Model):
     )
     def __repr__(self):
         return f"<Appointment {self.id}>"
+    
+# new class (bottom of models.py)
+class ShopService(db.Model):
+    """Services offered by ONE shop (what customers see and book)."""
+    __tablename__ = "shop_services"
+
+    id = db.Column(db.Integer, primary_key=True)
+    shop_id = db.Column(db.Integer, db.ForeignKey("shops.id"),
+                        nullable=False, index=True)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.String(200))
+    icon = db.Column(db.String(10), default="✂️")
+    price = db.Column(db.Float, nullable=False, default=0)
+    duration = db.Column(db.Integer, nullable=False, default=30)
+    position = db.Column(db.Integer, default=0)
+
+    shop = db.relationship("Shop", back_populates="services")
