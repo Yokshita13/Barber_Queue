@@ -2,6 +2,8 @@
 
 Glowora is a queue and booking management app for barber shops and salons, for both men and women. Customers can find a shop, join the live queue and pay online, while shop owners manage their queue, services, staff and earnings from a dedicated dashboard.
 
+Live demo: https://yokshita13.github.io/Barber_Queue/
+
 ## Features
 
 ### For customers
