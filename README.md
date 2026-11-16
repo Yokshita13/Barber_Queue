@@ -37,4 +37,4 @@ Mobile-friendly barber dashboard with bottom navigation
 
 ## License
 
-Add your license here (for example MIT).
+Built by [Yokshita](https://github.com/Yokshita13).
